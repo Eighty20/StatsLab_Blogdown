@@ -16,17 +16,14 @@ ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
     title = "StatsLab"
     dateformat = "Jan 1, 2006"
     # description = "..."
-    #authorimage = "/img/stats.png"
+    authorimage = "/img/stats.png"
     #authorimage = "/img/8020logo.png"
-    authorimage = "/img/logo.jpg"
+    #authorimage = "/img/logo.jpg"
     highlightjs = true
     # highlightjsstyle = "github"
 
 ## Social Accounts
 [params.social]
-    github = "lurd4862"
-    linkedin = "stefan-fouchè-8a126711a"
-    email = "stefan.fouche.ltd@gmail.com?"
 
 ## Main Menu
 [[menu.main]]

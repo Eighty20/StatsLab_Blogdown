@@ -284,28 +284,27 @@ dummy_data_2 </code></pre>
 <pre><code>## # A tibble: 26 x 5
 ##    shop  churn_rate attrition join_rate sales
 ##    &lt;chr&gt;      &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt;
-##  1 A         0.816     0.0599    0.748   1782
-##  2 B         0.917     0.904     0.856   1621
-##  3 C         0.227     0.905     0.189  47083
-##  4 D         0.0998    0.306     0.989  33752
-##  5 E         0.358     0.664     0.426  38972
-##  6 F         0.701     0.514     0.826  48892
-##  7 G         0.0605    0.297     0.172  52671
-##  8 H         0.703     0.715     0.0578  6049
-##  9 I         0.216     0.556     0.0117 25885
-## 10 J         0.169     0.0167    0.652  18082
+##  1 A          0.378     0.698    0.663  13458
+##  2 B          0.671     0.722    0.0411 45121
+##  3 C          0.125     0.148    0.981  13213
+##  4 D          0.320     0.212    0.476  12900
+##  5 E          0.570     0.632    0.0736  4598
+##  6 F          0.585     0.655    0.417  28275
+##  7 G          0.946     0.872    0.633   3052
+##  8 H          0.332     0.706    0.207   4079
+##  9 I          0.481     0.550    0.212  38775
+## 10 J          0.412     0.603    0.807  30924
 ## # ... with 16 more rows</code></pre>
 <p>If we wanted to take the each shop row and multiply the columns together to find the multiplicative affect how would we do it?</p>
 <p>One way to do this is to use some form of apply function:</p>
 <pre class="r"><code>dummy_data_2 %&gt;%
   select(-1) %&gt;% 
   apply(function(x) prod(x),MARGIN = 1)</code></pre>
-<pre><code>##  [1]    65.13870  1151.37363  1827.84636  1021.85299  3946.76891
-##  [6] 14551.78797   162.76008   175.94442    36.40378    33.33664
-## [11]    99.92195  1182.09327    32.49529  1256.86748   336.57108
-## [16] 11513.52019  5213.89781    53.11338  2558.59682   384.98485
-## [21] 14616.62284   113.90007  3258.42216    15.73666  7553.95365
-## [26]   280.28230</code></pre>
+<pre><code>##  [1] 2354.20848  898.83070  240.11499  414.98638  121.94412 4519.44534
+##  [7] 1594.12227  197.32160 2177.76869 6194.68841 1230.71328  232.19827
+## [13] 8554.58622 1373.46879 2637.84225 9230.19167 4443.06977 3761.06395
+## [19] 1672.07343   31.21451 9297.11250 5828.84597  655.61483 3620.88779
+## [25]  148.30688 9168.15598</code></pre>
 <p>This feels sort of ugly and returns a vector… We would prefer to remain type stable here inside a dataframe.</p>
 <p>We could simply reshape this data so that we are infact summarizing over rows not columns:</p>
 <pre class="r"><code>dummy_data_2 %&gt;% 
@@ -313,18 +312,18 @@ dummy_data_2 </code></pre>
   group_by(shop) %&gt;% 
   summarise(prod = value %&gt;% prod)</code></pre>
 <pre><code>## # A tibble: 26 x 2
-##    shop     prod
-##    &lt;chr&gt;   &lt;dbl&gt;
-##  1 A        65.1
-##  2 B      1151  
-##  3 C      1828  
-##  4 D      1022  
-##  5 E      3947  
-##  6 F     14552  
-##  7 G       163  
-##  8 H       176  
-##  9 I        36.4
-## 10 J        33.3
+##    shop   prod
+##    &lt;chr&gt; &lt;dbl&gt;
+##  1 A      2354
+##  2 B       899
+##  3 C       240
+##  4 D       415
+##  5 E       122
+##  6 F      4519
+##  7 G      1594
+##  8 H       197
+##  9 I      2178
+## 10 J      6195
 ## # ... with 16 more rows</code></pre>
 <p>By reshaping the data we remain inside of a tidy context while leveraging our sql like backend <code>dplyr</code> to solve the problem</p>
 </div>
@@ -566,30 +565,65 @@ data_characters[[1]]</code></pre>
 <p>Put this into a dataframe:</p>
 <pre class="r"><code>GOT_df &lt;-
   tibble::tibble(char_name = data_characters %&gt;% map_chr(&quot;name&quot;),
-                 data_char = data_characters)
+                 data_char = data_characters) %&gt;% 
+    mutate(gender = data_char %&gt;% map_chr(&quot;gender&quot;)) %&gt;% 
+    mutate(culture = data_char %&gt;% map_chr(&quot;culture&quot;)) %&gt;% 
+    mutate(born = data_char %&gt;% map_chr(&quot;born&quot;)) %&gt;% 
+    mutate(died = data_char %&gt;% map_chr(&quot;died&quot;)) %&gt;% 
+    mutate(titles = data_char %&gt;% map(&quot;titles&quot;)) %&gt;% 
+    mutate(aliases = data_char %&gt;% map(&quot;aliases&quot;)) %&gt;% 
+    mutate(father = data_char %&gt;% map_chr(&quot;father&quot;)) %&gt;% 
+    mutate(mother = data_char %&gt;% map_chr(&quot;mother&quot;)) %&gt;% 
+    # mutate(spouse = data_char %&gt;% map(~.x %&gt;% pluck(&quot;spouse&quot;) %&gt;% httr::GET())) %&gt;% 
+    # mutate(allegiances = data_char %&gt;% map(~.x %&gt;% pluck(&quot;allegiances&quot;) %&gt;% httr::GET())) %&gt;%
+    mutate(playedBy = data_char %&gt;% map(&quot;playedBy&quot;))
 
 GOT_df</code></pre>
-<pre><code>## # A tibble: 50 x 2
-##    char_name data_char  
-##    &lt;chr&gt;     &lt;list&gt;     
-##  1 &quot;&quot;        &lt;list [16]&gt;
-##  2 Walder    &lt;list [16]&gt;
-##  3 &quot;&quot;        &lt;list [16]&gt;
-##  4 &quot;&quot;        &lt;list [16]&gt;
-##  5 &quot;&quot;        &lt;list [16]&gt;
-##  6 &quot;&quot;        &lt;list [16]&gt;
-##  7 &quot;&quot;        &lt;list [16]&gt;
-##  8 &quot;&quot;        &lt;list [16]&gt;
-##  9 &quot;&quot;        &lt;list [16]&gt;
-## 10 &quot;&quot;        &lt;list [16]&gt;
-## # ... with 40 more rows</code></pre>
+<pre><code>## # A tibble: 50 x 11
+##    char_name data_char  gender culture  born  died  titles  aliases father
+##    &lt;chr&gt;     &lt;list&gt;     &lt;chr&gt;  &lt;chr&gt;    &lt;chr&gt; &lt;chr&gt; &lt;list&gt;  &lt;list&gt;  &lt;chr&gt; 
+##  1 &quot;&quot;        &lt;list [16… Female Braavosi &quot;&quot;    &quot;&quot;    &lt;list … &lt;list … &quot;&quot;    
+##  2 Walder    &lt;list [16… Male   &quot;&quot;       &quot;&quot;    &quot;&quot;    &lt;list … &lt;list … &quot;&quot;    
+##  3 &quot;&quot;        &lt;list [16… Male   &quot;&quot;       &quot;&quot;    &quot;&quot;    &lt;list … &lt;list … &quot;&quot;    
+##  4 &quot;&quot;        &lt;list [16… Female Braavosi &quot;&quot;    &quot;&quot;    &lt;list … &lt;list … &quot;&quot;    
+##  5 &quot;&quot;        &lt;list [16… Male   &quot;&quot;       &quot;&quot;    &quot;&quot;    &lt;list … &lt;list … &quot;&quot;    
+##  6 &quot;&quot;        &lt;list [16… Female Braavosi &quot;&quot;    &quot;&quot;    &lt;list … &lt;list … &quot;&quot;    
+##  7 &quot;&quot;        &lt;list [16… Female &quot;&quot;       &quot;&quot;    &quot;&quot;    &lt;list … &lt;list … &quot;&quot;    
+##  8 &quot;&quot;        &lt;list [16… Male   &quot;&quot;       &quot;&quot;    &quot;&quot;    &lt;list … &lt;list … &quot;&quot;    
+##  9 &quot;&quot;        &lt;list [16… Female &quot;&quot;       &quot;&quot;    &quot;&quot;    &lt;list … &lt;list … &quot;&quot;    
+## 10 &quot;&quot;        &lt;list [16… Female Braavosi &quot;&quot;    &quot;&quot;    &lt;list … &lt;list … &quot;&quot;    
+## # ... with 40 more rows, and 2 more variables: mother &lt;chr&gt;,
+## #   playedBy &lt;list&gt;</code></pre>
+<p>So we can pull out the data from these nested lists into other columns or even apply models to them…</p>
 <p>Let’s visualize the cultures of all the characters:</p>
 <pre class="r"><code>GOT_df %&gt;% 
-  mutate(culture = data_char %&gt;% map_chr(&quot;culture&quot;)) %&gt;% 
+  filter(culture != &quot;&quot;) %&gt;% 
   # select(-data_char) %&gt;% 
   ggplot()+
   geom_bar(aes(x = culture, y = ..count.., fill = culture))</code></pre>
 <p><img src="../../posts/2018-03-27-data-wrangling_files/figure-html/unnamed-chunk-16-1.png" width="672" /></p>
+<p>OK, so in this sample sent back from the api we have this distribution of characters by cultures.</p>
+<p>How many people died?</p>
+<pre class="r"><code>GOT_df %&gt;% 
+  mutate(died = ifelse(died == &quot;&quot;,0,1)) %&gt;% 
+  # select(-data_char) %&gt;% 
+  ggplot()+
+  geom_bar(aes(y = died, x = culture, fill = culture), stat = &quot;identity&quot;)</code></pre>
+<p><img src="../../posts/2018-03-27-data-wrangling_files/figure-html/unnamed-chunk-17-1.png" width="672" /></p>
+<p>What’s the probability of dying if you have some sort of title:</p>
+<pre class="r"><code>GOT_df %&gt;% 
+  mutate(died = ifelse(died == &quot;&quot;,FALSE,TRUE)) %&gt;% 
+  mutate(has_title = titles %&gt;% map_lgl(~ifelse(any(.x != &quot;&quot;), TRUE, FALSE))) %&gt;% 
+  group_by(has_title,died) %&gt;% 
+  tally %&gt;% 
+  spread(key = died, value = n, sep = &quot;_&quot;) %&gt;% 
+  mutate(prob_of_dying = died_TRUE/(died_TRUE+died_FALSE))</code></pre>
+<pre><code>## # A tibble: 2 x 4
+## # Groups:   has_title [2]
+##   has_title died_FALSE died_TRUE prob_of_dying
+##   &lt;lgl&gt;          &lt;int&gt;     &lt;int&gt;         &lt;dbl&gt;
+## 1 F                 12         5         0.294
+## 2 T                 20        13         0.394</code></pre>
 </div>
 </div>
 </div>

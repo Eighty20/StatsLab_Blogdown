@@ -249,18 +249,56 @@ Put this into a dataframe:
 
 GOT_df <-
   tibble::tibble(char_name = data_characters %>% map_chr("name"),
-                 data_char = data_characters)
+                 data_char = data_characters) %>% 
+    mutate(gender = data_char %>% map_chr("gender")) %>% 
+    mutate(culture = data_char %>% map_chr("culture")) %>% 
+    mutate(born = data_char %>% map_chr("born")) %>% 
+    mutate(died = data_char %>% map_chr("died")) %>% 
+    mutate(titles = data_char %>% map("titles")) %>% 
+    mutate(aliases = data_char %>% map("aliases")) %>% 
+    mutate(father = data_char %>% map_chr("father")) %>% 
+    mutate(mother = data_char %>% map_chr("mother")) %>% 
+    # mutate(spouse = data_char %>% map(~.x %>% pluck("spouse") %>% httr::GET())) %>% 
+    # mutate(allegiances = data_char %>% map(~.x %>% pluck("allegiances") %>% httr::GET())) %>%
+    mutate(playedBy = data_char %>% map("playedBy"))
 
 GOT_df
 ```
+
+So we can pull out the data from these nested lists into other columns or even apply models to them...
 
 Let's visualize the cultures of all the characters:  
 
 ```{r}
 GOT_df %>% 
-  mutate(culture = data_char %>% map_chr("culture")) %>% 
+  filter(culture != "") %>% 
   # select(-data_char) %>% 
   ggplot()+
   geom_bar(aes(x = culture, y = ..count.., fill = culture))
+```
+
+OK, so in this sample sent back from the api we have this distribution of characters by cultures.
+
+How many people died?
+
+```{r}
+GOT_df %>% 
+  mutate(died = ifelse(died == "",0,1)) %>% 
+  # select(-data_char) %>% 
+  ggplot()+
+  geom_bar(aes(y = died, x = culture, fill = culture), stat = "identity")
+```
+
+What's the probability of dying if you have some sort of title:  
+
+```{r}
+GOT_df %>% 
+  mutate(died = ifelse(died == "",FALSE,TRUE)) %>% 
+  mutate(has_title = titles %>% map_lgl(~ifelse(any(.x != ""), TRUE, FALSE))) %>% 
+  group_by(has_title,died) %>% 
+  tally %>% 
+  spread(key = died, value = n, sep = "_") %>% 
+  mutate(prob_of_dying = died_TRUE/(died_TRUE+died_FALSE))
+  
 ```
 

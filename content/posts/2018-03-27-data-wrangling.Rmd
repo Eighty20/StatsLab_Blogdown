@@ -217,7 +217,9 @@ The api can be found via:
 Let's look at what we get if we ask for some jason data on all the characters (1 entry):  
 
 ```{r}
-data_characters_request <- httr::GET(url = "https://anapioficeandfire.com/api/characters?pageSize=1000")
+data_characters_request <-
+  # httr::GET(url = "https://anapioficeandfire.com/api/characters?pageSize=1000")
+  httr::GET(url = "https://www.anapioficeandfire.com/api/characters")
 
 data_characters <- 
   data_characters_request %>%
@@ -233,14 +235,45 @@ What info did we recieve from the api?
 data_characters[[1]] %>% names
 ```
 
+Let's get all the data from the api:
+
+```{r, eval=FALSE}
+extract_api_data <- function(page = 1) {
+  
+  data_characters_request <-
+  httr::GET(url = paste0("https://anapioficeandfire.com/api/characters?page=",page)) %>% 
+    content()
+  
+}
+
+all_pages <- 
+  map(1:214,extract_api_data) 
+
+all_pages %>% 
+  saveRDS("../../static/data/data-wrangling/all_pages.rds")
+
+```
+
+```{r,include=FALSE}
+
+data_characters <- 
+  readRDS("../../static/data/data-wrangling/all_pages.rds") %>%
+  unlist(recursive = FALSE)
+```
+
 
 OK, so we have a nested structure of data describing each GOT character...
 
 Let's see which characters we have in here...
 
 ```{r}
+# data_characters <- 
+#   all_pages %>% 
+#   unlist(recursive = FALSE)
+
 data_characters %>% 
-  map("name")
+  map("name") %>% 
+  tail(20)
 ```
 
 Put this into a dataframe:  
@@ -248,21 +281,10 @@ Put this into a dataframe:
 ```{r}
 
 GOT_df <-
-  tibble::tibble(char_name = data_characters %>% map_chr("name"),
-                 data_char = data_characters) %>% 
-    mutate(gender = data_char %>% map_chr("gender")) %>% 
-    mutate(culture = data_char %>% map_chr("culture")) %>% 
-    mutate(born = data_char %>% map_chr("born")) %>% 
-    mutate(died = data_char %>% map_chr("died")) %>% 
-    mutate(titles = data_char %>% map("titles")) %>% 
-    mutate(aliases = data_char %>% map("aliases")) %>% 
-    mutate(father = data_char %>% map_chr("father")) %>% 
-    mutate(mother = data_char %>% map_chr("mother")) %>% 
-    # mutate(spouse = data_char %>% map(~.x %>% pluck("spouse") %>% httr::GET())) %>% 
-    # mutate(allegiances = data_char %>% map(~.x %>% pluck("allegiances") %>% httr::GET())) %>%
-    mutate(playedBy = data_char %>% map("playedBy"))
+  map_df(data_characters,`[`, c("name","gender","culture","born","died")) %>%
+    mutate(titles = data_characters %>% map("titles"))
 
-GOT_df
+GOT_df %>% sample_n(20)
 ```
 
 So we can pull out the data from these nested lists into other columns or even apply models to them...
@@ -274,7 +296,9 @@ GOT_df %>%
   filter(culture != "") %>% 
   # select(-data_char) %>% 
   ggplot()+
-  geom_bar(aes(x = culture, y = ..count.., fill = culture))
+  geom_bar(aes(x = culture, y = ..count.., fill = culture))+
+  ggplot2::theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  coord_flip()
 ```
 
 OK, so in this sample sent back from the api we have this distribution of characters by cultures.
@@ -283,10 +307,13 @@ How many people died?
 
 ```{r}
 GOT_df %>% 
+  filter(culture != "") %>% 
   mutate(died = ifelse(died == "",0,1)) %>% 
   # select(-data_char) %>% 
   ggplot()+
-  geom_bar(aes(y = died, x = culture, fill = culture), stat = "identity")
+  geom_bar(aes(y = died, x = culture, fill = culture), stat = "identity")+
+  ggplot2::theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  coord_flip()
 ```
 
 What's the probability of dying if you have some sort of title:  

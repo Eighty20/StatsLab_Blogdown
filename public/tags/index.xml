@@ -30,6 +30,15 @@
     </item>
     
     <item>
+      <title>Data Wrangling</title>
+      <link>/tags/data-wrangling/</link>
+      <pubDate>Tue, 27 Mar 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/data-wrangling/</guid>
+      <description></description>
+    </item>
+    
+    <item>
       <title>Dimensionality_reduction</title>
       <link>/tags/dimensionality_reduction/</link>
       <pubDate>Fri, 06 Jan 2017 00:00:00 +0000</pubDate>
@@ -71,6 +80,15 @@
       <pubDate>Fri, 06 Jan 2017 00:00:00 +0000</pubDate>
       
       <guid>/tags/reinforcement_learning/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Tidyr</title>
+      <link>/tags/tidyr/</link>
+      <pubDate>Tue, 27 Mar 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/tidyr/</guid>
       <description></description>
     </item>
     

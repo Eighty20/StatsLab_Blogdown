@@ -1,0 +1,266 @@
+---
+title: Data Wrangling
+author: Stefan
+date: 2018-03-27
+slug: data-wrangling
+categories:
+  - R
+tags:
+  - data-wrangling
+  - tidyr
+---
+
+```{r, include=FALSE}
+require(EightyR)
+load_toolbox()
+# install.packages("openssl")
+load_pkg(c("openssl","httr","jsonlite"))
+```
+
+# Why data-wrangling
+
+If you can wrangle data into the proper form you can do anything with it...
+
+![](/Pictures/Creativity_painting.jpg)
+
+Data-wrangling is absolutely essential for every data science task where we need to work with collected data.  
+
+> A recent article from the New York Times said “Data scientists, according to interviews and expert estimates, spend from 50 percent to 80 percent of their time mired in the mundane labor of collecting and preparing data, before it can be explored for useful information.”
+
+An excelent talk on data wrangling by Jenny Bryan:  
+<https://www.youtube.com/watch?v=4MfUCX_KpdE>  
+
+It is important to highlight the following facts;  
+- Excellent data wrangling skills will allow you to make R tools "flow" into one another.  
+  - Different functions require different input formats and so do different solutions!  
+- The correct shape for the data will greatly simplify the stats needed to solve a problem.  
+  - For example where you would have looped over data you can now simply aggregate  
+  - For example where you would have repeated a model or visualization you now apply it over a hierarchy!  
+- Being data fluent will allow you to come up with innovative solutions!  
+
+# The basics - tabular data examples
+
+***
+
+Here we will use an example of grocery store data.  
+
+## Import data
+
+<!-- create dummy data -->
+
+```{r, eval=FALSE,include=FALSE}
+test_set <- 
+readRDS("~/Temp/test_data.rds") %>% 
+  sample_n(1000) 
+
+test_set %>% 
+  glimpse
+
+randomize <- function(vec) {
+  mean_ = vec %>% mean()
+  var_ = vec %>% var()
+  return(vec + runif(n = length(vec),min = mean_ - var_, max = mean_ + var_))
+}
+
+shuffle <- function(vec) {
+  return(sample(vec,size = vec %>% length()))
+}
+
+test_set <- 
+test_set %>% 
+  mutate(customer_no = .$customer_no %>% randomize() %>%  as.character() %>%  openssl::md5()) %>% 
+  mutate_all(~.x %>% shuffle())
+
+test_set %>% 
+  saveRDS(file = "static/data/data-wrangling/dummy_data.rds")
+  
+```
+
+What does the data look like?:
+
+```{r}
+dummy_data <- 
+  readRDS("../../static/data/data-wrangling/dummy_data.rds")
+
+dummy_data %>% glimpse
+```
+
+## Reshaping to answer a question
+
+**The basics**  
+
+### Widening
+
+What if I asked you; *"Show me the spend in each spend_time on a customer level"*.
+
+For a person and also for some models you will need to widen the data. By 'widen' we mean adding columns. Humans read better when you describe an obeservation using columns after all...  
+
+To widen this data we use the function `tidyr::spread`  
+
+```{r}
+dummy_data %>% 
+  select(customer_no,spend_time,spend_sum) %>% 
+  tidyr::spread(key = spend_time, value = spend_sum, fill = 0) 
+```
+
+What were the averages for these metrics?
+
+```{r}
+wide_summarised <- 
+  dummy_data %>% 
+  select(customer_no,spend_time,spend_sum) %>% 
+  tidyr::spread(key = spend_time, value = spend_sum, fill = 0) %>% 
+  summarise_if(is.numeric,mean,na.rm=TRUE)
+
+wide_summarised
+```
+
+### Moving back to long format
+
+***
+
+This was very basic, but what if we wanted to do this in reverse?  
+Of course we can do the exact opposite using `tidyr::gather`  
+
+Let's visualize the spend in each time category by moving back to the less natural 'long' format. Functions generally become more powerful the longer we can shape the data since they naturally scan vectors of columns  
+
+```{r}
+wide_summarised %>% 
+  tidyr::gather(key = "time_category", value = "average_spend") %>% 
+  ggplot(aes( x = time_category, y = average_spend))+
+  geom_bar(stat = "identity")
+```
+
+With the wide format we would need to plot each column individually but now we can do them altogether.  
+
+### Bit of both
+
+***
+
+What if I asked you *"Show me all the time interactions for numeric variables on a customer level"*  
+
+Let's look at the releavant data for spend again:
+
+```{r}
+dummy_data %>% 
+  select_if(is.numeric)
+```
+
+How would I wrangle out the interactions?  
+Well one way is to name the interactions by gathering the relevant metrics together before we widen them  
+
+```{r}
+dummy_data %>% 
+  select(store_counts,item_sum,discount_sum,spend_sum,customer_no,spend_time) %>% 
+  gather(key = "metric", value = "value",-customer_no, -spend_time) %>% 
+  mutate(interaction = paste0(spend_time,"_",metric)) %>% 
+  spread(key = interaction,value = value) 
+  # arrange(-afternoon_spend_sum)
+```
+
+### Changing a problem
+
+***
+
+Let's say for instance we have the following data:  
+
+```{r}
+dummy_data_2 <- 
+tibble(shop = LETTERS,
+       churn_rate = runif(26, 0, 1),
+       attrition = runif(26, 0, 1),
+       join_rate = runif(26, 0, 1),
+       sales = rnorm(1,mean = 5, sd = 3)*runif(26,10^2,10^4))
+
+dummy_data_2 
+```
+
+If we wanted to take the each shop row and multiply the columns together to find the multiplicative affect how would we do it?
+
+One way to do this is to use some form of apply function:
+
+```{r}
+dummy_data_2 %>%
+  select(-1) %>% 
+  apply(function(x) prod(x),MARGIN = 1)
+  
+```
+
+This feels sort of ugly and returns a vector... We would prefer to remain type stable here inside a dataframe.
+
+We could simply reshape this data so that we are infact summarizing over rows not columns:
+
+```{r}
+dummy_data_2 %>% 
+  gather(key = "metric", value = "value",-shop) %>% 
+  group_by(shop) %>% 
+  summarise(prod = value %>% prod)
+```
+
+By reshaping the data we remain inside of a tidy context while leveraging our sql like backend `dplyr` to solve the problem
+
+## Advanced wrangling
+
+***
+
+*How do we use wrangling when the data and the question become more complex?*  
+
+Let's follow through the examples given by Jenny Brian on the Game Of Thrones data
+
+### About the data
+
+Here we have a dataset api that we can use to pull data out about any Game Of Thrones character.
+
+The api can be found via:  
+<https://anapioficeandfire.come>  
+
+Let's look at what we get if we ask for some jason data on all the characters (1 entry):  
+
+```{r}
+data_characters_request <- httr::GET(url = "https://anapioficeandfire.com/api/characters?pageSize=1000")
+
+data_characters <- 
+  data_characters_request %>%
+  content()
+
+
+data_characters[[1]]
+```
+
+What info did we recieve from the api?  
+
+```{r}
+data_characters[[1]] %>% names
+```
+
+
+OK, so we have a nested structure of data describing each GOT character...
+
+Let's see which characters we have in here...
+
+```{r}
+data_characters %>% 
+  map("name")
+```
+
+Put this into a dataframe:  
+
+```{r}
+
+GOT_df <-
+  tibble::tibble(char_name = data_characters %>% map_chr("name"),
+                 data_char = data_characters)
+
+GOT_df
+```
+
+Let's visualize the cultures of all the characters:  
+
+```{r}
+GOT_df %>% 
+  mutate(culture = data_char %>% map_chr("culture")) %>% 
+  # select(-data_char) %>% 
+  ggplot()+
+  geom_bar(aes(x = culture, y = ..count.., fill = culture))
+```
+

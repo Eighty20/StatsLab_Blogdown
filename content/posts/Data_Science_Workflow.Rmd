@@ -30,6 +30,19 @@ Here are the top reasons why a data science workflow is vital:
 - Returning to the same methodology is met with less panic  
 - Changing the project structure becomes more difficult the longer you wait
 
+## Project setup
+
+If you are starting a project in R;  
+- If a template exists fork that repository  
+- Always use a R-project with git enabled for the coding folder  
+- Always script using a Rmd  
+  - If you need to source the code in shell use `knitr::purl`  
+- Always keep your functions in a seperate script and keep some comments for future use or if you want to add roxygen  
+
+If you are working in python;  
+- Always init your coding folder as a git repo  
+- Use jupityr notebooks or comment your code properly  
+- Use a virtual environment for the project  
 
 ### Projects structure
 
@@ -46,7 +59,7 @@ The git repository will usually comprise of the following folders;
 
 `static` 
 
-A folder for keeping sub folders for images/references/material used in markdowns and client rendered documents
+A folder for keeping sub folders for images/references/material used in markdowns and client rendered documents. Anything that won't change after being added...  
 
 ***
 
@@ -139,7 +152,7 @@ Any assumptions made, operations made, checks done should be output somewhere. E
 
 ***
 
-### When possible output should be propperly knit/saved
+### When possible; output should be propperly knit/saved
 
 This helps keep track of what you've done and lets others see your progress while enabling them to validate/peer review your work without having to understand every line of code.  
 

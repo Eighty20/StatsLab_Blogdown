@@ -6,10 +6,19 @@
     <description>Recent content in Tags on </description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
-    <lastBuildDate>Fri, 06 Jan 2017 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Wed, 15 Nov 2017 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="/tags/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Benchmarking</title>
+      <link>/tags/benchmarking/</link>
+      <pubDate>Wed, 15 Nov 2017 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/benchmarking/</guid>
+      <description></description>
+    </item>
     
     <item>
       <title>Clustering</title>
@@ -23,7 +32,7 @@
     <item>
       <title>Cross Validation</title>
       <link>/tags/cross-validation/</link>
-      <pubDate>Fri, 06 Jan 2017 00:00:00 +0000</pubDate>
+      <pubDate>Wed, 15 Nov 2017 00:00:00 +0000</pubDate>
       
       <guid>/tags/cross-validation/</guid>
       <description></description>
@@ -59,16 +68,25 @@
     <item>
       <title>Machine_learning</title>
       <link>/tags/machine_learning/</link>
-      <pubDate>Fri, 06 Jan 2017 00:00:00 +0000</pubDate>
+      <pubDate>Wed, 15 Nov 2017 00:00:00 +0000</pubDate>
       
       <guid>/tags/machine_learning/</guid>
       <description></description>
     </item>
     
     <item>
+      <title>Parallel</title>
+      <link>/tags/parallel/</link>
+      <pubDate>Wed, 15 Nov 2017 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/parallel/</guid>
+      <description></description>
+    </item>
+    
+    <item>
       <title>Regression</title>
       <link>/tags/regression/</link>
-      <pubDate>Fri, 06 Jan 2017 00:00:00 +0000</pubDate>
+      <pubDate>Wed, 15 Nov 2017 00:00:00 +0000</pubDate>
       
       <guid>/tags/regression/</guid>
       <description></description>

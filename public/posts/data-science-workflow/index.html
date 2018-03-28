@@ -143,6 +143,19 @@
 </li>
 <li>Changing the project structure becomes more difficult the longer you wait</li>
 </ul>
+</div>
+<div id="project-setup" class="section level2">
+<h2>Project setup</h2>
+<p>If you are starting a project in R;<br />
+- If a template exists fork that repository<br />
+- Always use a R-project with git enabled for the coding folder<br />
+- Always script using a Rmd<br />
+- If you need to source the code in shell use <code>knitr::purl</code><br />
+- Always keep your functions in a seperate script and keep some comments for future use or if you want to add roxygen</p>
+<p>If you are working in python;<br />
+- Always init your coding folder as a git repo<br />
+- Use jupityr notebooks or comment your code properly<br />
+- Use a virtual environment for the project</p>
 <div id="projects-structure" class="section level3">
 <h3>Projects structure</h3>
 <p>Your project should have at least 2 main housing folders;</p>
@@ -156,7 +169,7 @@
 <p>The git repository is essential for effective collaboration, tracking and version control.</p>
 <p>The git repository will usually comprise of the following folders;</p>
 <p><code>static</code></p>
-<p>A folder for keeping sub folders for images/references/material used in markdowns and client rendered documents</p>
+<p>A folder for keeping sub folders for images/references/material used in markdowns and client rendered documents. Anything that won’t change after being added…</p>
 <hr />
 <p><code>R/Py_scripts</code></p>
 <ul>
@@ -246,7 +259,7 @@
 <hr />
 </div>
 <div id="when-possible-output-should-be-propperly-knitsaved" class="section level3">
-<h3>When possible output should be propperly knit/saved</h3>
+<h3>When possible; output should be propperly knit/saved</h3>
 <p>This helps keep track of what you’ve done and lets others see your progress while enabling them to validate/peer review your work without having to understand every line of code.</p>
 <hr />
 </div>

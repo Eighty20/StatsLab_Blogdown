@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en" class="wf-firasans-n4-active wf-active">
+	<head>
+    <link href="http://gmpg.org/xfn/11" rel="profile">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!-- Enable responsiveness on mobile devices --> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+    
+    	
+    <meta name="generator" content="Hugo 0.37.1" />
+    
+    <title>Benchmarking machine learning models in parallel &middot; </title>
+    <meta content="Benchmarking machine learning models in parallel - " property="og:title">
+    <meta content=" - " property="og:description">    
+    <!-- CSS --> 
+    <link rel="stylesheet" href="../../css/print.css" media="print">
+    <link rel="stylesheet" href="../../css/poole.css">
+    <link rel="stylesheet" href="../../css/hyde.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Sans:300,300i,400,400i,500">
+    
+    <script defer src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+    <!-- highlight.js--> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css">
+    <!-- Customised CSS -->
+    <link rel="stylesheet" href="../../css/custom.css">
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <!-- Icons -->
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="../../apple-touch-icon-144-precomposed.png">
+    <link rel="shortcut icon" href="../../favicon.png">
+    
+
+	</head>
+    <body>
+        <div class="sidebar">
+	<div class="container text-center sidebar-sticky">
+		<div class="sidebar-about text-center">
+			<a href="../../"><h1 class="brand">StatsLab</h1></a>
+			 <img src="../../img/stats.png" alt="Author Image" class="img-circle headshot center"> 
+			<p class="lead">
+				 Internal initiative at <br> <a href="http://www.eighty20.co.za/"> Eighty20</a> <br> We love R and Python 
+			</p>
+		</div>
+		
+<div>
+	<ul class="sidebar-nav">
+		
+		
+				<li>
+					<a href="../../posts/"> <span>Posts</span></a>
+				</li>
+				<li>
+					<a href="../../about_me/"> <span>About</span></a>
+				</li>
+				<li>
+					<a href="../../tags/"> <span>Search by Tag</span></a>
+				</li>
+		</li>
+	</ul>
+</div>
+
+        <p>
+		<section class="row text-center">
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+</section>
+
+        </p>
+        </p>
+	</div>
+	<div>
+	</div>
+</div>
+
+        <div class="content container">
+            <div class="post">
+  <h1>Benchmarking machine learning models in parallel</h1>
+  
+  <div class="col-sm-12 col-md-12">
+    <span class="text-left post-date meta">
+            
+       <i class="fa fa-calendar" aria-hidden="true"></i> Nov 11, 2017 
+      
+      
+        
+        
+            in
+            
+            
+                <a class="meta" href="../../categories/r">R</a>
+                
+            
+        
+      
+      
+      
+        
+        
+            <br/>
+             <i class="fa fa-tags" aria-hidden="true"></i>
+            
+            <a class="meta" href="../../tags/cross-validation">cross-validation</a> 
+        
+            <a class="meta" href="../../tags/benchmarking">benchmarking</a> 
+        
+            <a class="meta" href="../../tags/machine_learning">machine_learning</a> 
+        
+            <a class="meta" href="../../tags/parallel">parallel</a> 
+        
+            <a class="meta" href="../../tags/regression">regression</a>
+        
+      
+      
+      </span>  
+  </div>    
+  
+  <div id="overview" class="section level2">
+<h2>Overview</h2>
+<p>Having just started playing with deeplearning models in R, I wanted to visually compare them to other more traditional ML workflows. Of course, deeplearning is generally used where other models fail, but with no need for feature selection and rapidly increasing power and ease of use they may just evolve into a general learning paradigm.</p>
+<div class="figure">
+<img src="../../Pictures/Deeplearning_vs_machinelearning.png" />
+
+</div>
+<p>However, with tabular data and packages like caret the machine learning methods have become so streamlined that minimal user input is required at all.</p>
+<p>How will my models score if I run all of them with minimal input?</p>
+</div>
+<div id="setting-up-the-data" class="section level2">
+<h2>Setting up the data</h2>
+<p>I will use a classical example of classification model to compare basic deeplearning MLP layouts to basic ML methods.</p>
+<p>The good’ol <code>iris</code> dataset!</p>
+<pre class="r"><code>iris %&gt;%
+  ggplot()+
+  geom_point(aes(x=Petal.Width, y= Petal.Length, col = Species))+
+  ggtitle(&quot;Good&#39;ol iris!&quot;)</code></pre>
+<p><img src="../../posts/Benchmarking_in_parallel_files/figure-html/unnamed-chunk-1-1.png" width="672" /></p>
+<p>Lets load and split the Iris data into our test and train splits:</p>
+<pre class="r"><code>Model_benchmarking_table &lt;- 
+  iris %&gt;%  mutate_if(is.factor,as.character) %&gt;% modelr::crossv_kfold(k = 10, id = &quot;fold_number&quot;) %&gt;% 
+  select(fold_number,everything()) %&gt;% 
+  dplyr::rename(training_data = train)</code></pre>
+<p>Genrally we do not want to split the data like this in advance since our different models may require different pre-processing on the data. In some cases pre-processing is preffered before splitting the data into test and train sets.</p>
+<p>However splitting the data like this keeps all our folds in one tibble and allows us to expand on it like a database. We will use this database later to visualize the performance of the different methods on a more granular level.</p>
+<pre class="r"><code>Model_benchmarking_table</code></pre>
+<pre><code>## # A tibble: 10 x 3
+##    fold_number training_data  test          
+##    &lt;chr&gt;       &lt;list&gt;         &lt;list&gt;        
+##  1 01          &lt;S3: resample&gt; &lt;S3: resample&gt;
+##  2 02          &lt;S3: resample&gt; &lt;S3: resample&gt;
+##  3 03          &lt;S3: resample&gt; &lt;S3: resample&gt;
+##  4 04          &lt;S3: resample&gt; &lt;S3: resample&gt;
+##  5 05          &lt;S3: resample&gt; &lt;S3: resample&gt;
+##  6 06          &lt;S3: resample&gt; &lt;S3: resample&gt;
+##  7 07          &lt;S3: resample&gt; &lt;S3: resample&gt;
+##  8 08          &lt;S3: resample&gt; &lt;S3: resample&gt;
+##  9 09          &lt;S3: resample&gt; &lt;S3: resample&gt;
+## 10 10          &lt;S3: resample&gt; &lt;S3: resample&gt;</code></pre>
+</div>
+<div id="training-functions" class="section level2">
+<h2>Training functions</h2>
+<p>In order to run all our models in parallel and on each fold we will need to establish pre-defined functions for them that we can call using only data input. This way we can leverage map reduce and tibbles while keeping our workflow clean.</p>
+<p>First we will start off by building our basic ML model functions. This is made quite easy with the caret package.</p>
+<p>The caret package workflow in this case consists of the following building blocks:<br />
+- pre-process - train-control - train - validate {ROC,Confusion_matrix etc.}</p>
+<div id="ml-models" class="section level3">
+<h3>ML models</h3>
+<p>For our caret models we can pre-define the formula object:</p>
+<pre class="r"><code>formula_caret &lt;- Species~.
+cl = makeCluster(4)</code></pre>
+<div id="k-nn" class="section level4">
+<h4>K-NN</h4>
+<pre class="r"><code>caret_knn &lt;- function(df,formula_caret = Species ~ .) {
+  
+  list(
+  
+train(formula_caret
+     ,data = df
+     ,method = &quot;knn&quot;
+     )
+  )
+}</code></pre>
+</div>
+<div id="random-forest" class="section level4">
+<h4>Random Forest</h4>
+<p>Useful ensamble method.</p>
+<pre class="r"><code>caret_rf &lt;- function(df,formula_caret = Species ~ .) {
+  
+  list(
+    
+train(formula_caret
+      ,df
+      ,method = &quot;rf&quot;
+      ,prox=TRUE
+      )
+  )
+  
+}</code></pre>
+</div>
+<div id="gbm" class="section level4">
+<h4>GBM</h4>
+<p>Gradient boosted machine, popular with tabular data predictions.</p>
+<pre class="r"><code>caret_gbm &lt;- function(df,formula_caret = Species ~ .) {
+  
+  list(
+  
+train(formula_caret
+     ,data = df
+     ,method = &quot;gbm&quot;
+     )
+  )
+}</code></pre>
+</div>
+<div id="caret-nnet" class="section level4">
+<h4>Caret nnet</h4>
+<pre class="r"><code>caret_nnet &lt;- function(df,formula_caret = Species ~ .) {
+  
+  list(
+    
+ train(formula_caret
+      ,df
+      ,method = &quot;nnet&quot;
+      ,prox=TRUE
+      )
+  )
+  
+}</code></pre>
+</div>
+</div>
+</div>
+<div id="train-caret-models" class="section level2">
+<h2>Train caret models</h2>
+<pre class="r"><code>set.seed(8020)
+doParallel::registerDoParallel(cl)
+
+Model_benchmarking_table &lt;- 
+  Model_benchmarking_table %&gt;% 
+  mutate(
+         random_forest = training_data %&gt;% map(~caret_rf(df = data.frame(.x)))
+         ,gradient_boosted_machine = training_data %&gt;% map(~caret_gbm(df = data.frame(.x)))
+         ,neural_network = training_data %&gt;% map(~caret_nnet(df = data.frame(.x)))
+         ,KNN = training_data %&gt;% map(~caret_knn(df = data.frame(.x)))
+  )
+          
+stopCluster(cl)</code></pre>
+<p>If we train the models like this we can store all our results in a tibble:</p>
+<pre class="r"><code>Model_benchmarking_table[,4:7]</code></pre>
+<pre><code>## # A tibble: 10 x 4
+##    random_forest gradient_boosted_machine neural_network KNN       
+##    &lt;list&gt;        &lt;list&gt;                   &lt;list&gt;         &lt;list&gt;    
+##  1 &lt;list [1]&gt;    &lt;list [1]&gt;               &lt;list [1]&gt;     &lt;list [1]&gt;
+##  2 &lt;list [1]&gt;    &lt;list [1]&gt;               &lt;list [1]&gt;     &lt;list [1]&gt;
+##  3 &lt;list [1]&gt;    &lt;list [1]&gt;               &lt;list [1]&gt;     &lt;list [1]&gt;
+##  4 &lt;list [1]&gt;    &lt;list [1]&gt;               &lt;list [1]&gt;     &lt;list [1]&gt;
+##  5 &lt;list [1]&gt;    &lt;list [1]&gt;               &lt;list [1]&gt;     &lt;list [1]&gt;
+##  6 &lt;list [1]&gt;    &lt;list [1]&gt;               &lt;list [1]&gt;     &lt;list [1]&gt;
+##  7 &lt;list [1]&gt;    &lt;list [1]&gt;               &lt;list [1]&gt;     &lt;list [1]&gt;
+##  8 &lt;list [1]&gt;    &lt;list [1]&gt;               &lt;list [1]&gt;     &lt;list [1]&gt;
+##  9 &lt;list [1]&gt;    &lt;list [1]&gt;               &lt;list [1]&gt;     &lt;list [1]&gt;
+## 10 &lt;list [1]&gt;    &lt;list [1]&gt;               &lt;list [1]&gt;     &lt;list [1]&gt;</code></pre>
+<p>This allows us wrangle performance metric for each crossvalidation fold or bootstrap sample so that we can visualize them holistically:</p>
+</div>
+<div id="measure-performance" class="section level2">
+<h2>Measure performance</h2>
+<p>Now that we have trained the models on the training data let’s make this table long</p>
+<pre class="r"><code>Model_benchmarking_table &lt;- 
+  Model_benchmarking_table %&gt;% 
+  gather(key = &quot;model_name&quot;,value = &quot;model_object&quot;,4:7)
+
+Model_benchmarking_table</code></pre>
+<pre><code>## # A tibble: 40 x 5
+##    fold_number training_data  test           model_name    model_object
+##    &lt;chr&gt;       &lt;list&gt;         &lt;list&gt;         &lt;chr&gt;         &lt;list&gt;      
+##  1 01          &lt;S3: resample&gt; &lt;S3: resample&gt; random_forest &lt;list [1]&gt;  
+##  2 02          &lt;S3: resample&gt; &lt;S3: resample&gt; random_forest &lt;list [1]&gt;  
+##  3 03          &lt;S3: resample&gt; &lt;S3: resample&gt; random_forest &lt;list [1]&gt;  
+##  4 04          &lt;S3: resample&gt; &lt;S3: resample&gt; random_forest &lt;list [1]&gt;  
+##  5 05          &lt;S3: resample&gt; &lt;S3: resample&gt; random_forest &lt;list [1]&gt;  
+##  6 06          &lt;S3: resample&gt; &lt;S3: resample&gt; random_forest &lt;list [1]&gt;  
+##  7 07          &lt;S3: resample&gt; &lt;S3: resample&gt; random_forest &lt;list [1]&gt;  
+##  8 08          &lt;S3: resample&gt; &lt;S3: resample&gt; random_forest &lt;list [1]&gt;  
+##  9 09          &lt;S3: resample&gt; &lt;S3: resample&gt; random_forest &lt;list [1]&gt;  
+## 10 10          &lt;S3: resample&gt; &lt;S3: resample&gt; random_forest &lt;list [1]&gt;  
+## # ... with 30 more rows</code></pre>
+<p>Now we can measure accuracy by getting our predictions vs actuals and looking at the confusion matrix</p>
+<pre class="r"><code>Model_benchmarking_table &lt;- 
+  Model_benchmarking_table %&gt;% 
+  mutate(actuals = test %&gt;% map(~.x %&gt;% data.frame %&gt;% select(Species) %&gt;% flatten_chr)) %&gt;% 
+  mutate(predicted = map2(test,model_object, ~predict(object = .y,newdata =  as.data.frame(.x)) %&gt;% map(as.character) %&gt;% flatten_chr)) %&gt;% 
+  mutate(confusion_matrix = map2(actuals,predicted,~table(.x,.y))) %&gt;% 
+  mutate(Accuracy = confusion_matrix %&gt;% map_dbl(~ diag(.x) %&gt;% sum/sum(.x)))
+
+Model_benchmarking_table[,4:9]</code></pre>
+<pre><code>## # A tibble: 40 x 6
+##    model_name    model_object actuals  predicted confusion_matrix Accuracy
+##    &lt;chr&gt;         &lt;list&gt;       &lt;list&gt;   &lt;list&gt;    &lt;list&gt;              &lt;dbl&gt;
+##  1 random_forest &lt;list [1]&gt;   &lt;chr [1… &lt;chr [15… &lt;S3: table&gt;         1.00 
+##  2 random_forest &lt;list [1]&gt;   &lt;chr [1… &lt;chr [15… &lt;S3: table&gt;         0.933
+##  3 random_forest &lt;list [1]&gt;   &lt;chr [1… &lt;chr [15… &lt;S3: table&gt;         0.800
+##  4 random_forest &lt;list [1]&gt;   &lt;chr [1… &lt;chr [15… &lt;S3: table&gt;         0.933
+##  5 random_forest &lt;list [1]&gt;   &lt;chr [1… &lt;chr [15… &lt;S3: table&gt;         1.00 
+##  6 random_forest &lt;list [1]&gt;   &lt;chr [1… &lt;chr [15… &lt;S3: table&gt;         0.933
+##  7 random_forest &lt;list [1]&gt;   &lt;chr [1… &lt;chr [15… &lt;S3: table&gt;         0.933
+##  8 random_forest &lt;list [1]&gt;   &lt;chr [1… &lt;chr [15… &lt;S3: table&gt;         1.00 
+##  9 random_forest &lt;list [1]&gt;   &lt;chr [1… &lt;chr [15… &lt;S3: table&gt;         0.933
+## 10 random_forest &lt;list [1]&gt;   &lt;chr [1… &lt;chr [15… &lt;S3: table&gt;         1.00 
+## # ... with 30 more rows</code></pre>
+<p>We have all the info in our table now</p>
+<p><strong>Mean accuracy:</strong></p>
+<pre class="r"><code>Model_benchmarking_table %&gt;% 
+  group_by(model_name) %&gt;% 
+  summarise(mean_accuracy = mean(Accuracy))</code></pre>
+<pre><code>## # A tibble: 4 x 2
+##   model_name               mean_accuracy
+##   &lt;chr&gt;                            &lt;dbl&gt;
+## 1 gradient_boosted_machine         0.933
+## 2 KNN                              0.967
+## 3 neural_network                   0.973
+## 4 random_forest                    0.947</code></pre>
+</div>
+<div id="plot-performance" class="section level2">
+<h2>Plot performance</h2>
+<pre class="r"><code>Model_benchmarking_table %&gt;% 
+  ggplot()+
+  geom_jitter(aes(x=fold_number,y=Accuracy,col = model_name))</code></pre>
+<p><img src="../../posts/Benchmarking_in_parallel_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+<pre class="r"><code>Model_benchmarking_table %&gt;% 
+  ggplot()+
+  geom_violin(aes(x=model_name,y=Accuracy,col = model_name))+
+  # geom_point(aes(x=model_name,y=Accuracy,col = model_name))
+  geom_jitter(aes(x=model_name,y=Accuracy,col = model_name), alpha = 0.5)</code></pre>
+<p><img src="../../posts/Benchmarking_in_parallel_files/figure-html/unnamed-chunk-14-2.png" width="672" /></p>
+<pre class="r"><code>  # geom_boxplot(aes(x=model_name,y=Accuracy,col = model_name))</code></pre>
+</div>
+<div id="deeplearning-model-with-keras" class="section level2">
+<h2>Deeplearning model with keras</h2>
+<p>Now that we have a workflow to test various machine learning models on a dataset using a formula, let’s build a basic deep learning model using a basic MLP layout and try to match those benchmarks.</p>
+<p>If the neural network via caret is any indication this model should perform very well…</p>
+<div id="one-hot-encoding-and-pre-processing" class="section level3">
+<h3>One hot encoding and pre-processing</h3>
+<p>Its classification and keras has the <code>to_categorical</code> function to help us turn that response variable into the deeplearning version of a sparse matrix so we can predict these classes.</p>
+<p>Remember to encode the classes as integers, not characters!</p>
+<pre class="r"><code>iris_data &lt;- 
+  iris %&gt;% 
+  mutate(Species = as.numeric(Species) -1) %&gt;% 
+  as.matrix()
+
+ dimnames(iris_data) &lt;- NULL
+ 
+ iris_data_X &lt;-  normalize(iris_data[,1:4])
+
+ 
+set.seed(123)
+split &lt;- sample.split(iris$Species,SplitRatio=0.7)
+
+data_train_X &lt;- iris_data_X[split,]
+data_test_X &lt;- iris_data_X[!split,] 
+
+data_train_Y &lt;- iris_data[split,5] %&gt;%  to_categorical()
+data_test_Y &lt;- iris_data[!split,5] %&gt;%  to_categorical()</code></pre>
+</div>
+</div>
+<div id="construct-a-basic-mlp" class="section level2">
+<h2>Construct a basic MLP</h2>
+<p>To train any deeplearning model you need to construct layers of neurons, in this case no extra fluff!</p>
+<pre class="r"><code>model_keras &lt;- keras_model_sequential() 
+
+model_keras %&gt;% 
+    layer_dense(units = 8, activation = &#39;relu&#39;, input_shape = c(4)) %&gt;% 
+    layer_dense(units = 5, activation = &#39;relu&#39;) %&gt;% 
+    layer_dense(units = 3, activation = &#39;softmax&#39;)
+
+model_keras</code></pre>
+</div>
+<div id="fit-deep-learning-model" class="section level2">
+<h2>Fit deep learning model</h2>
+<p>The model itself runs from gpu so I have only printed the output here in this document.</p>
+</div>
+<div id="get-predictions" class="section level2">
+<h2>Get predictions</h2>
+<p>Normally we would calculate the confusion matrices ourselves or with <code>caret::confusionMatrix()</code>:</p>
+<pre class="r"><code># Predict the classes for the test data
+classes &lt;- model_keras %&gt;% predict_classes(data_test_X)
+
+# Confusion matrix
+cm &lt;- table(iris_data[!split,5], classes)</code></pre>
+<p>One measure of accuracy would’ve been:</p>
+<pre class="r"><code>diag(cm) %&gt;% sum/sum(cm)</code></pre>
+<p>But indeed straight from keras and tensorboard:</p>
+<pre class="r"><code>history %&gt;% plot</code></pre>
+<div class="figure">
+<img src="../../Pictures/Tensorboard.png" />
+
+</div>
+<p>It seems to be reporting the accuracy on its test split as:</p>
+<pre class="r"><code>history$metrics$val_acc %&gt;% last()</code></pre>
+<p><code>0.952381</code></p>
+<p>That seems to be in line with our average ratings across the auto-tuned ML libraries… Without needing feature selection. In a more complex dataset with hundreds of features (like pixels on frame of a video) it is obvious why these models perform so well.</p>
+</div>
+<div id="conclusion" class="section level2">
+<h2>Conclusion</h2>
+<p>Even for basic tabular data and classification (not a typical use case of deeplearning) we can get very good scores compared to out of box alternatives from some of the leading ML packages in R.</p>
+<p>Deeplearning is definitely a top contender!</p>
+<div class="figure">
+<img src="../../Pictures/Deeplearning.jpg" />
+
+</div>
+</div>
+
+</div>
+            <div class="footer">
+                <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+
+<script type="text/javascript">
+    hljs.initHighlightingOnLoad();
+</script>
+
+
+<script src="//yihui.name/js/math-code.js"></script>
+<script async
+src="//cdn.bootcss.com/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+
+            </div>
+        </div>
+        
+                
+    </body>
+</html>

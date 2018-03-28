@@ -282,30 +282,30 @@ tibble(shop = LETTERS,
 
 dummy_data_2 </code></pre>
 <pre><code>## # A tibble: 26 x 5
-##    shop  churn_rate attrition join_rate  sales
-##    &lt;chr&gt;      &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;  &lt;dbl&gt;
-##  1 A        0.836      0.648     0.982  - 7372
-##  2 B        0.204      0.448     0.579  - 5455
-##  3 C        0.144      0.629     0.0897 -10897
-##  4 D        0.613      0.441     0.542  - 4545
-##  5 E        0.489      0.637     0.874  - 9285
-##  6 F        0.233      0.0538    0.448  - 1718
-##  7 G        0.470      0.605     0.594  - 1606
-##  8 H        0.298      0.903     0.113  - 9657
-##  9 I        0.00932    0.112     0.161  - 1367
-## 10 J        0.877      0.774     0.350  - 9395
+##    shop  churn_rate attrition join_rate sales
+##    &lt;chr&gt;      &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt;
+##  1 A          0.474    0.584     0.533  27377
+##  2 B          0.253    0.461     0.474  40744
+##  3 C          0.676    0.789     0.0969 32710
+##  4 D          0.727    0.210     0.157  31021
+##  5 E          0.999    0.568     0.985  12518
+##  6 F          0.139    0.198     0.839  39294
+##  7 G          0.160    0.408     0.805  18308
+##  8 H          0.949    0.136     0.955  18103
+##  9 I          0.798    0.0512    0.317  52889
+## 10 J          0.243    0.691     0.645  53227
 ## # ... with 16 more rows</code></pre>
 <p>If we wanted to take the each shop row and multiply the columns together to find the multiplicative affect how would we do it?</p>
 <p>One way to do this is to use some form of apply function:</p>
 <pre class="r"><code>dummy_data_2 %&gt;%
   select(-1) %&gt;% 
   apply(function(x) prod(x),MARGIN = 1)</code></pre>
-<pre><code>##  [1] -3924.4372829  -288.3776622   -88.8732364  -665.9119114 -2528.8914412
-##  [6]    -9.6701460  -271.1741510  -293.6889924    -0.2305908 -2229.3350845
-## [11]  -133.3646933  -470.3825967  -943.6348487   -85.3304136  -103.3258761
-## [16]   -71.3809613 -2818.6435187 -1284.9967780 -1124.2495409  -238.4170893
-## [21] -1535.6149690  -894.9843507   -44.8670172   -24.2972668  -827.4207793
-## [26]  -100.7363682</code></pre>
+<pre><code>##  [1]  4045.044857  2247.404307  1690.131498   742.859294  7000.588260
+##  [6]   907.736541   965.218599  2238.078265   686.260166  5765.176616
+## [11]   146.419435  1614.534020  1871.145959   319.033604    34.179988
+## [16] 11370.142019  8388.596173    10.590789  5242.093908     8.679686
+## [21]   677.669835   301.271009   126.013473  8037.699977    12.805506
+## [26]  3889.182407</code></pre>
 <p>This feels sort of ugly and returns a vector… We would prefer to remain type stable here inside a dataframe.</p>
 <p>We could simply reshape this data so that we are infact summarizing over rows not columns:</p>
 <pre class="r"><code>dummy_data_2 %&gt;% 
@@ -313,18 +313,18 @@ dummy_data_2 </code></pre>
   group_by(shop) %&gt;% 
   summarise(prod = value %&gt;% prod)</code></pre>
 <pre><code>## # A tibble: 26 x 2
-##    shop       prod
-##    &lt;chr&gt;     &lt;dbl&gt;
-##  1 A     -3924    
-##  2 B     - 288    
-##  3 C     -  88.9  
-##  4 D     - 666    
-##  5 E     -2529    
-##  6 F     -   9.67 
-##  7 G     - 271    
-##  8 H     - 294    
-##  9 I     -   0.231
-## 10 J     -2229    
+##    shop   prod
+##    &lt;chr&gt; &lt;dbl&gt;
+##  1 A      4045
+##  2 B      2247
+##  3 C      1690
+##  4 D       743
+##  5 E      7001
+##  6 F       908
+##  7 G       965
+##  8 H      2238
+##  9 I       686
+## 10 J      5765
 ## # ... with 16 more rows</code></pre>
 <p>By reshaping the data we remain inside of a tidy context while leveraging our sql like backend <code>dplyr</code> to solve the problem</p>
 </div>
@@ -501,28 +501,28 @@ data_characters %&gt;%
 
 GOT_df %&gt;% sample_n(20)</code></pre>
 <pre><code>## # A tibble: 20 x 6
-##    name                gender culture   born         died           titles
-##    &lt;chr&gt;               &lt;chr&gt;  &lt;chr&gt;     &lt;chr&gt;        &lt;chr&gt;          &lt;list&gt;
-##  1 Mollos              Male   &quot;&quot;        &quot;&quot;           &quot;&quot;             &lt;list…
-##  2 Torwynd             Male   Free Folk &quot;&quot;           In 300 AC      &lt;list…
-##  3 Falia Flowers       Female &quot;&quot;        In either 2… &quot;&quot;             &lt;list…
-##  4 Waldon Wynch        Male   Ironborn  &quot;&quot;           &quot;&quot;             &lt;list…
-##  5 Lyle Crakehall      Male   &quot;&quot;        At Crakehall &quot;&quot;             &lt;list…
-##  6 Ossy                Male   &quot;&quot;        &quot;&quot;           &quot;&quot;             &lt;list…
-##  7 Moonshadow          Female &quot;&quot;        &quot;&quot;           &quot;&quot;             &lt;list…
-##  8 Monster             Male   Free Folk In 299 AC, … &quot;&quot;             &lt;list…
-##  9 Betharios           Female &quot;&quot;        &quot;&quot;           &quot;&quot;             &lt;list…
-## 10 Tom of Sevenstreams Male   &quot;&quot;        In or betwe… &quot;&quot;             &lt;list…
-## 11 Lia Serry           Female &quot;&quot;        &quot;&quot;           &quot;&quot;             &lt;list…
-## 12 Ambrose Butterwell  Male   &quot;&quot;        In 160 AC o… &quot;&quot;             &lt;list…
-## 13 Lorra Royce         Female &quot;&quot;        &quot;&quot;           &quot;&quot;             &lt;list…
-## 14 Osfryd Kettleblack  Male   &quot;&quot;        &quot;&quot;           &quot;&quot;             &lt;list…
-## 15 Maddy               Female &quot;&quot;        &quot;&quot;           &quot;&quot;             &lt;list…
-## 16 Larra Blackmont     Female Dornish   &quot;&quot;           &quot;&quot;             &lt;list…
-## 17 Robin Potter        Male   &quot;&quot;        &quot;&quot;           &quot;&quot;             &lt;list…
-## 18 Torbert             Male   &quot;&quot;        &quot;&quot;           &quot;&quot;             &lt;list…
-## 19 Podrick Payne       Male   &quot;&quot;        In 286 AC o… &quot;&quot;             &lt;list…
-## 20 Mycah               Male   Westeros  In 285 AC    In 298 AC, at… &lt;list…</code></pre>
+##    name             gender culture  born             died          titles 
+##    &lt;chr&gt;            &lt;chr&gt;  &lt;chr&gt;    &lt;chr&gt;            &lt;chr&gt;         &lt;list&gt; 
+##  1 Rast             Male   &quot;&quot;       &quot;&quot;               In +/- 299 A… &lt;list …
+##  2 Kennos of Kayce  Male   &quot;&quot;       &quot;&quot;               &quot;&quot;            &lt;list …
+##  3 Tristimun        Male   &quot;&quot;       &quot;&quot;               &quot;&quot;            &lt;list …
+##  4 Tysane Frey      Female &quot;&quot;       In 292 AC        &quot;&quot;            &lt;list …
+##  5 Byam Flint       Male   &quot;&quot;       &quot;&quot;               In 299 AC, a… &lt;list …
+##  6 Zia Frey         Female &quot;&quot;       In 285 AC        &quot;&quot;            &lt;list …
+##  7 Hotho Harlaw     Male   Ironborn &quot;&quot;               &quot;&quot;            &lt;list …
+##  8 Baelor Targaryen Male   &quot;&quot;       In 170 AC        In 209 AC, a… &lt;list …
+##  9 Pollitor         Male   &quot;&quot;       &quot;&quot;               &quot;&quot;            &lt;list …
+## 10 Beck             Male   &quot;&quot;       In 299 AC        At Donnelwood &lt;list …
+## 11 Davos Seaworth   Male   Westeros In 260 AC or be… &quot;&quot;            &lt;list …
+## 12 Balon Greyjoy    Male   &quot;&quot;       &quot;&quot;               299 AC, at P… &lt;list …
+## 13 Rickard Thorne   Male   &quot;&quot;       &quot;&quot;               In 130 AC, a… &lt;list …
+## 14 Desmond          Male   &quot;&quot;       &quot;&quot;               In 298 AC, a… &lt;list …
+## 15 Harry Strickland Male   &quot;&quot;       &quot;&quot;               &quot;&quot;            &lt;list …
+## 16 Rafe             Male   &quot;&quot;       &quot;&quot;               &quot;&quot;            &lt;list …
+## 17 Zei              Female &quot;&quot;       &quot;&quot;               &quot;&quot;            &lt;list …
+## 18 Moro             Male   Dothraki &quot;&quot;               &quot;&quot;            &lt;list …
+## 19 Kyle Royce       Male   &quot;&quot;       &quot;&quot;               At King&#39;s La… &lt;list …
+## 20 Otter Gimpknee   Male   &quot;&quot;       &quot;&quot;               &quot;&quot;            &lt;list …</code></pre>
 <p>So we can pull out the data from these nested lists into other columns or even apply models to them…</p>
 <p>Let’s visualize the cultures of all the characters:</p>
 <pre class="r"><code>GOT_df %&gt;% 

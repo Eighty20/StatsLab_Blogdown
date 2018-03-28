@@ -23,16 +23,6 @@
     </item>
     
     <item>
-      <title>Data_Wrangling</title>
-      <link>/post/data-wrangling/</link>
-      <pubDate>Tue, 27 Mar 2018 00:00:00 +0000</pubDate>
-      
-      <guid>/post/data-wrangling/</guid>
-      <description>require(EightyR) ## Loading required package: EightyR load_toolbox() ## ------------------------------------------- ## Loading the Analytics Toolbox libary ## ------------------------------------------- ## ## purrr ## ## ggplot2 ## ## dplyr ## ## tidyr ## ## readr ## ## lubridate ## ## openxlsx # install.packages(&amp;quot;openssl&amp;quot;) load_pkg(c(&amp;quot;openssl&amp;quot;)) Why data-wrangling  Data-wrangling is absolutely essential for every data science task where we need to work with collected data.
- A recent article from the New York Times said “Data scientists, according to interviews and expert estimates, spend from 50 percent to 80 percent of their time mired in the mundane labor of collecting and preparing data, before it can be explored for useful information.</description>
-    </item>
-    
-    <item>
       <title>Data Science Workflow</title>
       <link>/posts/data-science-workflow/</link>
       <pubDate>Mon, 26 Mar 2018 00:00:00 +0000</pubDate>
@@ -46,6 +36,16 @@ Here are the top reasons why a data science workflow is vital:
  Data output is tracked
  Logical seperation of scripts make productizing easy
  Good naming conventions make tracking of the project flow easy</description>
+    </item>
+    
+    <item>
+      <title>Benchmarking machine learning models in parallel</title>
+      <link>/posts/benchmarking_in_parallel/</link>
+      <pubDate>Wed, 15 Nov 2017 00:00:00 +0000</pubDate>
+      
+      <guid>/posts/benchmarking_in_parallel/</guid>
+      <description>Overview Having just started playing with deeplearning models in R, I wanted to visually compare them to other more traditional ML workflows. Of course, deeplearning is generally used where other models fail, but with no need for feature selection and rapidly increasing power and ease of use they may just evolve into a general learning paradigm.
+ However, with tabular data and packages like caret the machine learning methods have become so streamlined that minimal user input is required at all.</description>
     </item>
     
     <item>

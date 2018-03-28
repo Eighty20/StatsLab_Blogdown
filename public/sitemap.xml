@@ -8,13 +8,13 @@
   </url>
   
   <url>
-    <loc>/post/data-wrangling/</loc>
-    <lastmod>2018-03-27T00:00:00+00:00</lastmod>
+    <loc>/posts/data-science-workflow/</loc>
+    <lastmod>2018-03-26T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>/posts/data-science-workflow/</loc>
-    <lastmod>2018-03-26T00:00:00+00:00</lastmod>
+    <loc>/posts/benchmarking_in_parallel/</loc>
+    <lastmod>2017-11-15T00:00:00+00:00</lastmod>
   </url>
   
   <url>
@@ -39,6 +39,12 @@
   </url>
   
   <url>
+    <loc>/tags/benchmarking/</loc>
+    <lastmod>2017-11-15T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
     <loc>/categories/</loc>
     <priority>0</priority>
   </url>
@@ -51,7 +57,7 @@
   
   <url>
     <loc>/tags/cross-validation/</loc>
-    <lastmod>2017-01-06T00:00:00+00:00</lastmod>
+    <lastmod>2017-11-15T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -81,18 +87,18 @@
   
   <url>
     <loc>/tags/machine_learning/</loc>
-    <lastmod>2017-01-06T00:00:00+00:00</lastmod>
+    <lastmod>2017-11-15T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>/tags/parallel/</loc>
+    <lastmod>2017-11-15T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
     <loc>/posts/</loc>
-    <lastmod>2018-03-27T00:00:00+00:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>/post/</loc>
     <lastmod>2018-03-27T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
@@ -105,7 +111,7 @@
   
   <url>
     <loc>/tags/regression/</loc>
-    <lastmod>2017-01-06T00:00:00+00:00</lastmod>
+    <lastmod>2017-11-15T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -117,7 +123,7 @@
   
   <url>
     <loc>/tags/</loc>
-    <lastmod>2017-01-06T00:00:00+00:00</lastmod>
+    <lastmod>2017-11-15T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   

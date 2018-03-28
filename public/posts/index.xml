@@ -39,6 +39,16 @@ Here are the top reasons why a data science workflow is vital:
     </item>
     
     <item>
+      <title>Benchmarking machine learning models in parallel</title>
+      <link>/posts/benchmarking_in_parallel/</link>
+      <pubDate>Wed, 15 Nov 2017 00:00:00 +0000</pubDate>
+      
+      <guid>/posts/benchmarking_in_parallel/</guid>
+      <description>Overview Having just started playing with deeplearning models in R, I wanted to visually compare them to other more traditional ML workflows. Of course, deeplearning is generally used where other models fail, but with no need for feature selection and rapidly increasing power and ease of use they may just evolve into a general learning paradigm.
+ However, with tabular data and packages like caret the machine learning methods have become so streamlined that minimal user input is required at all.</description>
+    </item>
+    
+    <item>
       <title>Design and Analysis of Experiments with R</title>
       <link>/posts/design_and_analysis_of_experiments_with_r/</link>
       <pubDate>Tue, 07 Nov 2017 00:00:00 +0000</pubDate>

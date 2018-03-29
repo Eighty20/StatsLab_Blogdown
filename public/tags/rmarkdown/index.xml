@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Rmarkdown on </title>
+    <link>/tags/rmarkdown/</link>
+    <description>Recent content in Rmarkdown on </description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Thu, 29 Mar 2018 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="/tags/rmarkdown/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>How to add a blog to Blogdown</title>
+      <link>/posts/how_to_add_a_blog/</link>
+      <pubDate>Thu, 29 Mar 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/posts/how_to_add_a_blog/</guid>
+      <description>Pre-requisites Create from scratch Clone or open the blog repository from github Create a post using “Addins” dropdown Change/check your date format Write a kickass post Compile your new work using Blogdown Push your post to the website  Create from existing Rmd   Pre-requisites  Install blogdown and Hugo in R-Console
+https://bookdown.org/yihui/blogdown/installation.html   Create from scratch Creating it from scratch is probably the easiest since you can run and test your code as you type it up.</description>
+    </item>
+    
+  </channel>
+</rss>

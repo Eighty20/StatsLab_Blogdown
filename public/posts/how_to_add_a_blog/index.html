@@ -94,17 +94,54 @@
        <i class="fa fa-calendar" aria-hidden="true"></i> Mar 3, 2018 
       
       
+        
+        
+            in
+            
+            
+                <a class="meta" href="../../categories/r">R</a>
+                
+            
+        
+      
+      
+      
+        
+        
+            <br/>
+             <i class="fa fa-tags" aria-hidden="true"></i>
+            
+            <a class="meta" href="../../tags/blogdown">blogdown</a> 
+        
+            <a class="meta" href="../../tags/rmarkdown">rmarkdown</a>
+        
       
       
       </span>  
   </div>    
   
-  <div id="pre-requisites" class="section level1">
-<h1>Pre-requisites</h1>
+  <div id="TOC">
+<ul>
+<li><a href="#pre-requisites">Pre-requisites</a></li>
+<li><a href="#create-from-scratch">Create from scratch</a><ul>
+<li><a href="#clone-or-open-the-blog-repository-from-github">Clone or open the blog repository from github</a></li>
+<li><a href="#create-a-post-using-addins-dropdown">Create a post using “Addins” dropdown</a></li>
+<li><a href="#changecheck-your-date-format">Change/check your date format</a></li>
+<li><a href="#write-a-kickass-post">Write a kickass post</a></li>
+<li><a href="#compile-your-new-work-using-blogdown">Compile your new work using Blogdown</a></li>
+<li><a href="#push-your-post-to-the-website">Push your post to the website</a></li>
+</ul></li>
+<li><a href="#create-from-existing-rmd">Create from existing Rmd</a></li>
+</ul>
+</div>
+
+<div id="pre-requisites" class="section level2">
+<h2>Pre-requisites</h2>
 <ul>
 <li>Install blogdown and Hugo in R-Console<br />
 <a href="https://bookdown.org/yihui/blogdown/installation.html" class="uri">https://bookdown.org/yihui/blogdown/installation.html</a></li>
 </ul>
+</div>
 <div id="create-from-scratch" class="section level2">
 <h2>Create from scratch</h2>
 <p>Creating it from scratch is probably the easiest since you can run and test your code as you type it up. This way you don’t have to worry about changing your relative file paths…</p>
@@ -117,7 +154,7 @@
 <p>Inside this directory run the command:<br />
 <code>git clone https://github.com/Eighty20/StatsLab_Blogdown.git</code></p>
 <div class="figure">
-<img src="" />
+<img src="../../Pictures/How_to_add_blog/git_clone_R.PNG" />
 
 </div>
 </div>
@@ -128,7 +165,7 @@
 <p>Run the command:<br />
 <code>git clone https://github.com/Eighty20/StatsLab_Blogdown.git</code></p>
 <div class="figure">
-<img src="" />
+<img src="../../Pictures/How_to_add_blog/git_clone_gitbash.PNG" />
 
 </div>
 </div>
@@ -137,6 +174,10 @@
 <h3>Create a post using “Addins” dropdown</h3>
 <p>Open the R project file inside the repository</p>
 <p>Click on the <code>Addins - New Post</code> button</p>
+<div class="figure">
+<img src="../../Pictures/How_to_add_blog/Addins_add_post.PNG" />
+
+</div>
 <ul>
 <li>Name it<br />
 </li>
@@ -149,17 +190,13 @@
 <li>Change ouput format to .Rmd</li>
 </ul>
 <div class="figure">
-<img src="" />
+<img src="../../Pictures/How_to_add_blog/New_post_settings.PNG" />
 
 </div>
 </div>
 <div id="changecheck-your-date-format" class="section level3">
 <h3>Change/check your date format</h3>
 <p>The website expects your date to be formatted as a number not text and it wants yyyy-mm-dd</p>
-<div class="figure">
-<img src="" />
-
-</div>
 </div>
 <div id="write-a-kickass-post" class="section level3">
 <h3>Write a kickass post</h3>
@@ -169,7 +206,7 @@
 <p>Since you are inside <code>website/content/posts/</code> you need to reference your data accordingly:<br />
 <code>data.table::fread(&quot;../../static/data/your-folder/your-dataset&quot;)</code></p>
 <div class="figure">
-<img src="" />
+<img src="../../Pictures/How_to_add_blog/Data_referrence.PNG" />
 
 </div>
 </div>
@@ -186,7 +223,7 @@
 <code>blogdown::serve_site()</code></p>
 <p>You should see a preview of your work in the Viewer pane:</p>
 <div class="figure">
-<img src="" />
+<img src="../../Pictures/How_to_add_blog/Blogdown_serve_site.PNG" />
 
 </div>
 <p>This is interactive and will update if you continue editing the page</p>
@@ -230,7 +267,6 @@
 </li>
 <li>Push your post to the website</li>
 </ul>
-</div>
 </div>
 
 </div>

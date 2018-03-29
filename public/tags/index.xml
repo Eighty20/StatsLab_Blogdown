@@ -30,6 +30,15 @@
     </item>
     
     <item>
+      <title>Blogdown</title>
+      <link>/tags/blogdown/</link>
+      <pubDate>Thu, 29 Mar 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/blogdown/</guid>
+      <description></description>
+    </item>
+    
+    <item>
       <title>Clustering</title>
       <link>/tags/clustering/</link>
       <pubDate>Fri, 06 Jan 2017 00:00:00 +0000</pubDate>
@@ -125,6 +134,15 @@
       <pubDate>Fri, 06 Jan 2017 00:00:00 +0000</pubDate>
       
       <guid>/tags/reinforcement_learning/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Rmarkdown</title>
+      <link>/tags/rmarkdown/</link>
+      <pubDate>Thu, 29 Mar 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/rmarkdown/</guid>
       <description></description>
     </item>
     

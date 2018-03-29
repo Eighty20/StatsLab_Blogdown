@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Data Wrangling on </title>
-    <link>/tags/data-wrangling/</link>
-    <description>Recent content in Data Wrangling on </description>
+    <title>Purrr on </title>
+    <link>/tags/purrr/</link>
+    <description>Recent content in Purrr on </description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
     <lastBuildDate>Wed, 28 Mar 2018 00:00:00 +0000</lastBuildDate>
     
-	<atom:link href="/tags/data-wrangling/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="/tags/purrr/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
@@ -22,17 +22,6 @@ Especially if you want to keep your workspace nice and tidy with all your data i
 With no actual experience trying to get at these nested tibbles can seem almost impossible:
 via GIPHY
 --  Downloading data from an api created by Blizzard To illustrate how you would deal with nested data I found an api that let’s you download all kinds of data on the e-sport/game called Overwatch.</description>
-    </item>
-    
-    <item>
-      <title>Data Wrangling</title>
-      <link>/posts/data-wrangling/</link>
-      <pubDate>Tue, 27 Mar 2018 00:00:00 +0000</pubDate>
-      
-      <guid>/posts/data-wrangling/</guid>
-      <description>Why data-wrangling If you can wrangle data into the proper form you can do anything with it…
- Data-wrangling is absolutely essential for every data science task where we need to work with collected data.
- A recent article from the New York Times said “Data scientists, according to interviews and expert estimates, spend from 50 percent to 80 percent of their time mired in the mundane labor of collecting and preparing data, before it can be explored for useful information.</description>
     </item>
     
   </channel>

@@ -1,0 +1,387 @@
+---
+title: "Dealing with nested data"
+author: "Stefan Fouche"
+date: 2018-03-28
+output: html_document
+categories:
+  - R
+tags:
+  - data-wrangling
+  - purrr
+  - jsonlite
+  - api
+---
+
+```{r, include=FALSE}
+# load_pkg(c("openssl","httr","jsonlite"))
+library(openssl)
+library(httr)
+library(jsonlite)
+library(tidyverse)
+library(magrittr)
+
+```
+
+Dealing with nested data can be really frustrating...  
+Especially if you want to keep your workspace nice and tidy with all your data in tables!  
+
+With no actual experience trying to get at these nested tibbles can seem almost impossible:
+
+<!-- <iframe src="https://giphy.com/embed/Bqn8Z7xdPCFy0" width="480" height="270" frameBorder="0" class="giphy-embed" allowFullScreen></iframe><p><a href="https://giphy.com/gifs/water-funny-Bqn8Z7xdPCFy0">via GIPHY</a></p> -->
+
+![](/Pictures/water_giff.gif)
+
+## Downloading data from an api created by Blizzard
+
+To illustrate how you would deal with nested data I found an api that let's you download all kinds of data on the e-sport/game called Overwatch. By downloading this game data you could make all kinds of predictions for your fantasy league team etc.
+
+According to a response from the api...  
+
+List of api requests possible:  
+- /rankings - returns current rankings  
+- /schedule - returns current schedule including past matches   
+- /matches - Returns all matches  
+- /matches/:matchID  
+- /match - Returns all matches  
+- /match/:matchID - Returns a specific match  
+- /teams - Returns all teams  
+- /teams/:TeamID - Returns a specific team  
+- /news - Returns all news items  
+- /news/:blogID - Returns a specified news item  
+- /data/countries - Returns list of countries  
+- /v2/email - Unsure what this does, but it was in the js  
+- /live-match - Presumably returns live data for a match?  
+- /v2/streams - Returns owl stream links  
+- /maps - Returns list of maps  
+- /vods - Returns list of vods for prior matches  
+
+### Get some data...  
+
+First we can get some data on the maps played...
+
+```{r}
+data_request <-
+  httr::GET(url = "https://api.overwatchleague.com/maps")
+
+data_content <- 
+  data_request %>% 
+  httr::content()
+```
+
+What is in here?
+
+```{r}
+data_content[[1]] %>% 
+  names
+```
+
+Which of these are nested deeper?
+
+```{r}
+data_types <- 
+  as.data.frame(data_content[[1]] %>% map_chr(class)) %>% 
+  setNames("data_type")
+
+data_types
+```
+
+```{r}
+owl_map_df <-
+  fromJSON("https://api.overwatchleague.com/maps", flatten = TRUE) %>% 
+  select(id,type, esportsApiId,everything())
+
+owl_map_df %>% 
+  names
+```
+
+This wasn't too bad... Let's get some teams!!  
+
+### Teams?
+
+Can we also build a lookup table for teams?  
+
+What does the staging response look like?  
+
+```{r}
+owl_teams_df <-
+  fromJSON("https://api.overwatchleague.com/teams", flatten = TRUE) 
+
+owl_teams_df %>% 
+  names
+
+```
+
+Let's clean this
+
+First we do the teams:  
+
+```{r}
+
+teams_cleaned_df <- 
+  owl_teams_df$competitors %>% 
+  select(competitor.name,competitor.id,competitor.handle,competitor.abbreviatedName) %>% 
+  tbl_df()
+
+teams_cleaned_df
+
+```
+
+And now the players!  
+
+```{r}
+players_cleaned_df <- 
+  owl_teams_df$competitors$competitor.players %>% 
+  map(~.x %>% select(player.id,team.id,player.availableLanguages,player.handle,player.name,player.homeLocation,player.familyName,player.nationality,player.attributes.heroes,player.attributes.player_number,player.attributes.role)) %>% 
+  reduce(bind_rows) %>% 
+  tbl_df()
+
+players_cleaned_df %>% glimpse
+
+```
+
+So with the players we do have some nested fields but these are just vectors...
+
+For now we will do 2 things;  
+1. We will keep the nested fields because we could unnest and invert the data to uncover relationships between character preferences and win rates for example...  
+2. We will create 2 new fields to describe these nested fields.  
+
+```{r}
+players_cleaned_df %<>% 
+  mutate(player.nr_of_languages = player.availableLanguages %>% map_int(length)) %>% 
+  mutate(player.nr_of_heros = player.attributes.heroes %>% map_int(length)) 
+
+players_cleaned_df %>% 
+  select(player.id,player.nr_of_languages,player.nr_of_heros)
+```
+
+OK great! Now we have some player and team data, let's start by joining these to get ready for the join to matches played and their results...  
+
+Does the ids match?  
+
+```{r}
+players_cleaned_df$team.id %in% teams_cleaned_df$competitor.id %>% any()
+```
+
+Yes, so we can join on this:
+
+```{r}
+players_cleaned_df <- 
+players_cleaned_df %>% 
+  left_join(teams_cleaned_df, by = c("team.id" = "competitor.id"))
+
+players_cleaned_df %>% 
+  glimpse
+```
+
+Seems like we have a complete dataset on teams and their players with some usefull features describing them.
+
+Now we need to get some actual match data!  
+
+## Get some matches
+
+```{r}
+owl_matches_df <-
+  fromJSON("https://api.overwatchleague.com/matches", flatten = TRUE) 
+
+owl_matches_df %>% 
+  names
+
+```
+
+Huh... Well, contents is a deep structure; let's go scavenging for easter eggs  
+
+```{r}
+owl_matches_df$content %>% 
+  names
+```
+
+OK, so this was also a json but the nifty json package has flattened some of these nested results into columns.  
+What types of columns do we have left?
+
+```{r}
+owl_matches_df$content %>% 
+  map_chr(class) %>% 
+  data.frame() %>% 
+  setNames("var_type")
+```
+
+Seems as though the rabit hole goes all the way down...  
+
+Many of these features have sub lists and in them sub dataframes...  
+
+```{r}
+owl_matches_df$content$scores[[1]]
+```
+
+Scores can be unnested from here and joined to an id  
+
+```{r}
+owl_matches_df$content$competitors[[1]]$id
+```
+
+It would seem as though the players field contains all the players, not just the players that played since the game is a 6 player first person shooter:  
+
+```{r}
+owl_matches_df$content$competitors[[1]]$players
+```
+
+We can see if the match has been played:  
+
+```{r}
+owl_matches_df$content$state
+```
+
+At this point we can create an initial frame for each of the overall matchups:
+
+```{r}
+matches_cleaned_df <- 
+  owl_matches_df$content %>% 
+  select(id,competitors,scores,state,endDate,winner.name,bracket.id) %>% 
+  dplyr::rename(match_id = id) %>% 
+  mutate(competitors = competitors %>% map(~.x %>% select(id)))
+
+matches_cleaned_df
+```
+
+The only problem here is that we have to columns with data frames in them so let's fix that  
+One way of tidying this is to throw them together by mapping a `bind_cols` function over them and that allows us to use `unnest` to go into long format. Think of it as a `reduce` into another `bind_cols`
+
+```{r}
+matches_cleaned_df %<>% 
+  mutate(match_outcome = pmap(matches_cleaned_df,~bind_cols(..2,..3))) %>% 
+  select(-competitors,-scores) %>% 
+  unnest() %>% 
+  dplyr::rename(team.id = id, match_score = value)
+  # mutate(match_outcome = list(competitors,scores) %>% reduce(bind_cols) %>% list())
+```
+
+Inside each of these matches there are games. This is because the match is decided by the team that wins the most of the rounds of games.  
+
+```{r}
+owl_matches_df$content$games[[1]] %>% 
+  names
+```
+
+Seems like some useful info here.
+
+```{r}
+owl_matches_df$content$games[[1]] %>% 
+    map_chr(class) %>% 
+  data.frame() %>% 
+  setNames("var_type")
+```
+
+It seems as though we can drop a lot of these columns already. And we can wrangle the data so that it is also on a team level not a game level.  
+Furthermore; the list of players another level down shows only the players that played. This is crucial! This means we can join player info onto this list and record statistics only when a player plays a game...  
+
+Another key insight here is that the order these lists were arranged in is team1 first and then team2 second. I guess to normalize the data structure these teams were not named in the games sub data frames.  
+
+```{r}
+games_cleaned_df <- 
+  owl_matches_df$content %>% 
+  select(id,games) %>% 
+  dplyr::rename(match_id = id) %>%
+  mutate(games = games %>% map(~.x %>%
+                                 select(
+                                   id,
+                                   number,
+                                   attributes.map,
+                                   attributes.mapScore.team1,
+                                   attributes.mapScore.team2,
+                                   players
+                                   ) %>% 
+                                 tidyr::gather(
+                                   key = "team_tag",
+                                   value = "team_score",
+                                   attributes.mapScore.team1,
+                                   attributes.mapScore.team2
+                                   ) %>% 
+                                 dplyr::rename(game_id = id, game_number = number)
+                                 
+                                 )) %>% 
+  unnest() %>% 
+  mutate(players = players %>% map(~.x %>% select(team.id,player.id,player.name))) %>% 
+  unnest() %>% 
+  tbl_df()
+  
+games_cleaned_df %>% glimpse
+```
+
+Unfortunately the api did not include a clear mapping from games to teams for score. One would have to figure out how to join them or realize that the "team1" was always ontop in the matches hierarchy.  
+
+Even more disappointing is the fact that the players have no juicy data in here like kills or assists etc.  
+
+If this was available one could immediately start joining these tables and train some machine learning models to predict wins, hero picks, find factors associated with winning etc.  
+
+## Visualize some data!
+
+```{r, include=FALSE,eval=FALSE}
+# the data we have so far...
+games_cleaned_df
+matches_cleaned_df
+players_cleaned_df
+owl_map_df
+
+```
+
+Nationality of the players
+
+```{r}
+players_cleaned_df %>% 
+  ggplot(aes(x = player.nationality))+
+  geom_bar(aes(fill = player.nationality))
+```
+
+nationality by team counting number of players
+
+```{r}
+players_cleaned_df %>% 
+  ggplot(aes(x = competitor.name,group = player.nationality))+
+  geom_bar(aes(fill = player.nationality))+
+  coord_flip()
+```
+
+Any correlation between average number of game wins and number of nationalities in a team?
+
+```{r}
+# matches_cleaned_df %>%
+games_cleaned_df %>% 
+  group_by(match_id,team.id) %>% 
+  summarise(team_score = sum(team_score,na.rm = TRUE)) %>% 
+  right_join(matches_cleaned_df) %>% 
+  # group_by(match_id, winner.name) %>%
+  # summarise(nr_wins = max(match_score)) %>%
+  right_join(players_cleaned_df, by = c("winner.name" = "competitor.name")) %>%
+  group_by(winner.name) %>%
+  mutate(nr_uniq_nationalities = unique(player.nationality) %>% length) %>%
+  summarise(mean_wins = mean(team_score,na.rm = TRUE),
+            nr_uniq_nationalities = mean(nr_uniq_nationalities,na.rm = TRUE)) %>%
+
+# players_cleaned_df %>%
+  gather(key = "metric", value = "count",nr_uniq_nationalities,mean_wins) %>%
+  ggplot(aes(x = winner.name, y = count, group = metric, fill = metric))+
+  geom_bar(stat = "identity", position = "dodge")+
+  coord_flip()
+```
+
+Any correlation between average number of game wins and the map being played?
+
+```{r}
+# matches_cleaned_df %>%
+games_cleaned_df %>% 
+  group_by(match_id,team.id,attributes.map) %>% 
+  summarise(team_score = sum(team_score,na.rm = TRUE)) %>% 
+  left_join(matches_cleaned_df) %>% 
+  # group_by(match_id, winner.name) %>%
+  # summarise(nr_wins = max(match_score)) %>%
+  right_join(players_cleaned_df, by = c("winner.name" = "competitor.name")) %>%
+  group_by(winner.name,attributes.map) %>%
+  mutate(nr_uniq_nationalities = unique(player.nationality) %>% length) %>%
+  summarise(mean_wins = mean(team_score,na.rm = TRUE),
+            nr_uniq_nationalities = mean(nr_uniq_nationalities,na.rm = TRUE)) %>%
+
+# players_cleaned_df %>%
+  ggplot(aes(x = attributes.map, y = mean_wins, group = winner.name, fill = winner.name))+
+  geom_bar(stat = "identity")+
+  coord_flip()
+```

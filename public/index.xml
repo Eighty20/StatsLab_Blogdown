@@ -6,10 +6,23 @@
     <description>Recent content on </description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
-    <lastBuildDate>Tue, 27 Mar 2018 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Wed, 28 Mar 2018 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Dealing with nested data</title>
+      <link>/posts/using_e-sports_api/</link>
+      <pubDate>Wed, 28 Mar 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/posts/using_e-sports_api/</guid>
+      <description>Dealing with nested data can be really frustrating…
+Especially if you want to keep your workspace nice and tidy with all your data in tables!
+With no actual experience trying to get at these nested tibbles can seem almost impossible:
+via GIPHY
+--  Downloading data from an api created by Blizzard To illustrate how you would deal with nested data I found an api that let’s you download all kinds of data on the e-sport/game called Overwatch.</description>
+    </item>
     
     <item>
       <title>Data Wrangling</title>

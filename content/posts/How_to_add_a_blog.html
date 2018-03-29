@@ -1,0 +1,142 @@
+---
+title: "How to add a blog to Blogdown"
+author: "stefan"
+date: 2018-03-29
+output: html_document
+---
+
+
+
+<div id="pre-requisites" class="section level1">
+<h1>Pre-requisites</h1>
+<ul>
+<li>Install blogdown and Hugo in R-Console<br />
+<a href="https://bookdown.org/yihui/blogdown/installation.html" class="uri">https://bookdown.org/yihui/blogdown/installation.html</a></li>
+</ul>
+<div id="create-from-scratch" class="section level2">
+<h2>Create from scratch</h2>
+<p>Creating it from scratch is probably the easiest since you can run and test your code as you type it up. This way you don’t have to worry about changing your relative file paths…</p>
+<div id="clone-or-open-the-blog-repository-from-github" class="section level3">
+<h3>Clone or open the blog repository from github</h3>
+<div id="using-r-studio" class="section level4">
+<h4>Using R-studio</h4>
+<p>In R-studio open the terminal tab or press <code>shift-alt-t</code>.</p>
+<p>Navigate to the directory where you wish to save the repo using <code>cd</code> and <code>mkdir</code>.</p>
+<p>Inside this directory run the command:<br />
+<code>git clone https://github.com/Eighty20/StatsLab_Blogdown.git</code></p>
+<div class="figure">
+<img src="" />
+
+</div>
+</div>
+<div id="using-gitbash-in-windows" class="section level4">
+<h4>Using GitBash in windows</h4>
+<p>Create a folder to work in.</p>
+<p>Open GitBash in this folder (try using <code>right-click</code>).</p>
+<p>Run the command:<br />
+<code>git clone https://github.com/Eighty20/StatsLab_Blogdown.git</code></p>
+<div class="figure">
+<img src="" />
+
+</div>
+</div>
+</div>
+<div id="create-a-post-using-addins-dropdown" class="section level3">
+<h3>Create a post using “Addins” dropdown</h3>
+<p>Open the R project file inside the repository</p>
+<p>Click on the <code>Addins - New Post</code> button</p>
+<ul>
+<li>Name it<br />
+</li>
+<li>Change output folder to “posts”<br />
+</li>
+<li>Change category to R<br />
+</li>
+<li>Add some tags<br />
+</li>
+<li>Change ouput format to .Rmd</li>
+</ul>
+<div class="figure">
+<img src="" />
+
+</div>
+</div>
+<div id="changecheck-your-date-format" class="section level3">
+<h3>Change/check your date format</h3>
+<p>The website expects your date to be formatted as a number not text and it wants yyyy-mm-dd</p>
+<div class="figure">
+<img src="" />
+
+</div>
+</div>
+<div id="write-a-kickass-post" class="section level3">
+<h3>Write a kickass post</h3>
+<div id="how-to-add-data" class="section level4">
+<h4>How to add data</h4>
+<p>Save all your data inside of <code>website/static/data/</code>. Create a folder for your data so we don’t polute this folder too quickly.</p>
+<p>Since you are inside <code>website/content/posts/</code> you need to reference your data accordingly:<br />
+<code>data.table::fread(&quot;../../static/data/your-folder/your-dataset&quot;)</code></p>
+<div class="figure">
+<img src="" />
+
+</div>
+</div>
+<div id="how-to-add-pictures" class="section level4">
+<h4>How to add pictures</h4>
+<p>Place your pictures inside <code>website/static/Pictures/</code></p>
+<p>insert your pictures using:<br />
+<code>![](/Pictures/your-image.jpg)</code></p>
+</div>
+</div>
+<div id="compile-your-new-work-using-blogdown" class="section level3">
+<h3>Compile your new work using Blogdown</h3>
+<p>Now that you have finished your epic post you need to knit the post. You don’t need to click the Knit button; just run the following command in Console:<br />
+<code>blogdown::serve_site()</code></p>
+<p>You should see a preview of your work in the Viewer pane:</p>
+<div class="figure">
+<img src="" />
+
+</div>
+<p>This is interactive and will update if you continue editing the page</p>
+</div>
+<div id="push-your-post-to-the-website" class="section level3">
+<h3>Push your post to the website</h3>
+<p>Now that the site has been previewed and your post looks OK you can push the changes to the github repo that the site is monitoring:</p>
+<p>Go to your terminal and make sure you are in the root folder of the website.</p>
+<ul>
+<li>Get the remote nodes<br />
+<code>git fetch</code><br />
+</li>
+<li>Check that you are up to date<br />
+<code>git status</code><br />
+</li>
+<li>If you are behind you should first pull<br />
+<code>git pull</code><br />
+</li>
+<li>Stage/add your work to the website<br />
+<code>git add .</code><br />
+</li>
+<li>Save your work<br />
+<code>git commit -m &quot;this is my save of this work where I did this post&quot;</code><br />
+</li>
+<li>Update the site<br />
+<code>git push</code></li>
+</ul>
+<p>The website will check in on the repository every now and then, wait 15 min and refresh the page</p>
+</div>
+</div>
+<div id="create-from-existing-rmd" class="section level2">
+<h2>Create from existing Rmd</h2>
+<ul>
+<li>Clone/fork or open the blog repository from github<br />
+</li>
+<li>Copy your Rmd into <code>/content/posts/</code><br />
+</li>
+<li>Change your data and picture references<br />
+</li>
+<li>Compile your new work using Blogdown<br />
+</li>
+<li>Push your post to the website</li>
+</ul>
+</div>
+</div>

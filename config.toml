@@ -6,7 +6,7 @@ theme = "hyde-hyde"
 ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
 
 ## Hugo Built-in Features
-# disqusShortname = ""
+disqusShortname = "StatsLab"
 # googleAnalytics = ""
 # enableRobotsTXT = true
 

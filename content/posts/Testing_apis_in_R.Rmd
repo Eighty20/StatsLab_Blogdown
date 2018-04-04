@@ -294,3 +294,7 @@ curl -H "Content-Type: application/json" -X GET -d '{"vore":"carni", "bodywt":85
 
 
 
+curl -H "Content-Type: application/json" -X GET -d '{"vore":"carni", "bodywt":85, "brainwt":0.325, "awake":17.8}' ec2-34-242-232-117.eu-west-1.compute.amazonaws.com/predict
+
+ec2-34-242-232-117.eu-west-1.compute.amazonaws.com/predict?vore="carni"?bodywt=85?brainwt=0.325?awake=17.8
+

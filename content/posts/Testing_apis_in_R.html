@@ -148,9 +148,9 @@ example_model</code></pre>
 ## Resampling results across tuning parameters:
 ## 
 ##   mtry  RMSE       Rsquared   MAE      
-##   2     1.8293078  0.8620245  1.3672692
-##   4     0.9844935  0.9616120  0.7259877
-##   6     0.6042393  0.9854875  0.4390618
+##   2     1.7813950  0.8756513  1.2763373
+##   4     1.0270894  0.9597886  0.7262237
+##   6     0.6690122  0.9809295  0.4638578
 ## 
 ## RMSE was used to select the optimal model using the smallest value.
 ## The final value used for the model was mtry = 6.</code></pre>
@@ -264,5 +264,7 @@ r$run(host = &quot;0.0.0.0&quot;, port=8000)</code></pre>
 curl -H &quot;Content-Type: application/json&quot; -X GET -d &#39;{&quot;vore&quot;:&quot;carni&quot;, &quot;bodywt&quot;:85, &quot;brainwt&quot;:0.325, &quot;awake&quot;:17.8}&#39; http://127.0.0.1:8000/predict
 </code></pre>
 <p><code>Next sleep cycle predicted to be 10.9981933333333</code></p>
+<p>curl -H “Content-Type: application/json” -X GET -d ‘{“vore”:“carni”, “bodywt”:85, “brainwt”:0.325, “awake”:17.8}’ ec2-34-242-232-117.eu-west-1.compute.amazonaws.com/predict</p>
+<p>ec2-34-242-232-117.eu-west-1.compute.amazonaws.com/predict?vore=“carni”?bodywt=85?brainwt=0.325?awake=17.8</p>
 </div>
 </div>

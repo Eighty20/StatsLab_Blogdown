@@ -166,8 +166,8 @@ load_pkg(&quot;plumber&quot;)
 
 r &lt;- plumb(&quot;hello_api.R&quot;)  # Where &#39;plumber.R&#39; is the location of the file shown above
 r$run(host = &quot;0.0.0.0&quot;, port=8000)</code></pre>
-<p>Remember to give this file execution rights if you want to run it using ./<br />
-We will run this process in a shell using the following bash code:</p>
+<p>Remember to give this file execution rights if you want to run it using ./, you can do this using the command <code>chmod</code></p>
+<p>We will run this process in a shell using the following bash code:</p>
 <pre class="r"><code>./run_hello_api.r </code></pre>
 <div class="figure">
 <img src="../../Pictures/Listening_on_port.PNG" />
@@ -233,9 +233,9 @@ example_model</code></pre>
 ## Resampling results across tuning parameters:
 ## 
 ##   mtry  RMSE       Rsquared   MAE      
-##   2     1.7225192  0.8840067  1.3024766
-##   4     0.9046268  0.9697508  0.6699813
-##   6     0.5856041  0.9834435  0.4144115
+##   2     1.7367740  0.8829980  1.2873729
+##   4     0.9476455  0.9651214  0.6744648
+##   6     0.6132564  0.9835677  0.4140211
 ## 
 ## RMSE was used to select the optimal model using the smallest value.
 ## The final value used for the model was mtry = 6.</code></pre>
@@ -245,6 +245,8 @@ example_model</code></pre>
 <h3>Create the api</h3>
 <p>OK, so we need to first define the <code>plumber.R</code> file that we will serve.</p>
 <p>Notice that we can define the template very verbosely so that we can both leverage the GET protocol to feedback some characteristics and to populate the HTML page should a user inspect the api to learn how to use it.</p>
+<p>This was based on the awesome post by blogger shirin:<br />
+<a href="https://shirinsplayground.netlify.com/2018/01/plumber/" class="uri">https://shirinsplayground.netlify.com/2018/01/plumber/</a></p>
 <pre class="r"><code># script name:
 # plumber.R
 
@@ -333,7 +335,7 @@ r$run(host = &quot;0.0.0.0&quot;, port=8000)</code></pre>
 <div id="ssh-into-the-server" class="section level3">
 <h3>SSH into the server</h3>
 <p>In any shell:</p>
-<pre class="bash"><code>ssh -i &quot;path/My_Private_Key.pem&quot; ec2-user@ec2{My_IP}.eu-west-1.compute.amazonaws.com</code></pre>
+<pre class="bash"><code>ssh -i &quot;path/{My_Private_Key}.pem&quot; ec2-user@ec2{My_IP}.eu-west-1.compute.amazonaws.com</code></pre>
 <p>Clone the repo with your code:</p>
 <pre class="bash"><code>git clone origin https://github.com/lurd4862/Testing_apis_R.git</code></pre>
 <p>Change the paths referencing your model…</p>

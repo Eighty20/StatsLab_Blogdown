@@ -63,7 +63,8 @@ r <- plumb("hello_api.R")  # Where 'plumber.R' is the location of the file shown
 r$run(host = "0.0.0.0", port=8000)
 ```
 
-Remember to give this file execution rights if you want to run it using ./  
+Remember to give this file execution rights if you want to run it using ./, you can do this using the command `chmod`
+
 We will run this process in a shell using the following bash code:
 
 ```{r, eval=FALSE}
@@ -145,6 +146,9 @@ Simple enough to train on this data and without any tuning we can assume a margi
 OK, so we need to first define the `plumber.R` file that we will serve.  
 
 Notice that we can define the template very verbosely so that we can both leverage the GET protocol to feedback some characteristics and to populate the HTML page should a user inspect the api to learn how to use it.  
+
+This was based on the awesome post by blogger shirin:  
+<https://shirinsplayground.netlify.com/2018/01/plumber/>  
 
 ```{r,eval=FALSE}
 # script name:
@@ -248,7 +252,7 @@ Note that with AWS linux you need to make sure all the dependancies are installe
 In any shell:  
 
 ```{bash, eval=FALSE}
-ssh -i "path/My_Private_Key.pem" ec2-user@ec2{My_IP}.eu-west-1.compute.amazonaws.com
+ssh -i "path/{My_Private_Key}.pem" ec2-user@ec2{My_IP}.eu-west-1.compute.amazonaws.com
 ```
 
 Clone the repo with your code:  

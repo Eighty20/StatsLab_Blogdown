@@ -6,10 +6,23 @@
     <description>Recent content in Posts on </description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
-    <lastBuildDate>Thu, 29 Mar 2018 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Wed, 04 Apr 2018 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="/posts/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Serving a machine learning model via API</title>
+      <link>/posts/testing_apis_in_r/</link>
+      <pubDate>Wed, 04 Apr 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/posts/testing_apis_in_r/</guid>
+      <description>About the Plumer package In oder to serve our API we will make use of the great Plumer package in R
+ To read more about this package go to:
+https://www.rplumber.io/docs/
+ Setup Load in some packages.
+If you are going to host the api on a suse or redhat linux server make sure you have all the dependencies as well as the packages installed to follow through this example yourself.</description>
+    </item>
     
     <item>
       <title>How to add a blog to Blogdown</title>
@@ -99,19 +112,6 @@ Lawson, John. Design and Analysis of Experiments with R. Chapman and Hall/CRC, 2
       
       <guid>/posts/testing_apis_in_r.nb/</guid>
       <description>R Notebook          code{white-space: pre;} pre:not([class]) { background-color: white; }  if (window.hljs) { hljs.configure({languages: []}); hljs.initHighlightingOnLoad(); if (document.readyState &amp;&amp; document.readyState === &#34;complete&#34;) { window.setTimeout(function() { hljs.initHighlighting(); }, 0); } }  h1 { font-size: 34px; } h1.title { font-size: 38px; } h2 { font-size: 30px; } h3 { font-size: 24px; } h4 { font-size: 18px; } h5 { font-size: 16px; } h6 { font-size: 12px; } .</description>
-    </item>
-    
-    <item>
-      <title>Serving a machine learning model via API</title>
-      <link>/posts/testing_apis_in_r/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>/posts/testing_apis_in_r/</guid>
-      <description>About the Plumer package In oder to serve our API we will make use of the great Plumer package in R
- To read more about this package go to:
-https://www.rplumber.io/docs/
- Setup Load in some packages.
-If you are going to host the api on a suse or redhat linux server make sure you have all the dependencies as well as the packages installed to follow through this example yourself.</description>
     </item>
     
   </channel>

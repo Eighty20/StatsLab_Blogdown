@@ -1,8 +1,15 @@
 ---
 title: "Serving a machine learning model via API"
 output: html_notebook
+date: 2018-04-04
 editor_options: 
   chunk_output_type: inline
+categories:
+  - R
+tags:
+  - machine_learning
+  - API
+  - plumer
 ---
 
 ## About the Plumer package

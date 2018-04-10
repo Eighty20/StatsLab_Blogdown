@@ -249,16 +249,16 @@ teams_cleaned_df</code></pre>
 players_cleaned_df %&gt;% glimpse</code></pre>
 <pre><code>## Observations: 126
 ## Variables: 11
-## $ player.id                       &lt;int&gt; 3660, 3985, 4658, 5717, 3380, ...
+## $ player.id                       &lt;int&gt; 3660, 3985, 4658, 3983, 5717, ...
 ## $ team.id                         &lt;int&gt; 4523, 4523, 4523, 4523, 4523, ...
 ## $ player.availableLanguages       &lt;list&gt; [&quot;en&quot;, &quot;en&quot;, &lt;&quot;en&quot;, &quot;ko&quot;&gt;, &quot;e...
 ## $ player.handle                   &lt;chr&gt; &quot;harryhook.5132&quot;, &quot;akm.8009&quot;, ...
 ## $ player.name                     &lt;chr&gt; &quot;HarryHook&quot;, &quot;aKm&quot;, &quot;Rascal&quot;, ...
 ## $ player.homeLocation             &lt;chr&gt; &quot;Asturias&quot;, &quot;Angoulême&quot;, &quot;Seou...
 ## $ player.familyName               &lt;chr&gt; &quot;Tejedor Rua&quot;, &quot;Bignet&quot;, &quot;Kim&quot;...
-## $ player.nationality              &lt;chr&gt; &quot;ES&quot;, &quot;FR&quot;, &quot;KR&quot;, &quot;KR&quot;, &quot;FI&quot;, ...
+## $ player.nationality              &lt;chr&gt; &quot;ES&quot;, &quot;FR&quot;, &quot;KR&quot;, &quot;FR&quot;, &quot;KR&quot;, ...
 ## $ player.attributes.heroes        &lt;list&gt; [&lt;&quot;lucio&quot;, &quot;soldier-76&quot;, &quot;zen...
-## $ player.attributes.player_number &lt;int&gt; 9, 5, 27, 2, 13, 10, 4, 7, 23,...
+## $ player.attributes.player_number &lt;int&gt; 9, 5, 27, 24, 2, 13, 4, 7, 23,...
 ## $ player.attributes.role          &lt;chr&gt; &quot;support&quot;, &quot;offense&quot;, &quot;offense...</code></pre>
 <p>So with the players we do have some nested fields but these are just vectors…</p>
 <p>For now we will do 2 things;<br />
@@ -276,9 +276,9 @@ players_cleaned_df %&gt;%
 ##  1      3660                      1                  3
 ##  2      3985                      1                  2
 ##  3      4658                      2                  3
-##  4      5717                      1                  2
-##  5      3380                      1                  3
-##  6      3577                      1                  3
+##  4      3983                      1                  3
+##  5      5717                      1                  2
+##  6      3380                      1                  3
 ##  7      4125                      1                  3
 ##  8      3969                      1                  3
 ##  9      4608                      1                  3
@@ -297,19 +297,19 @@ players_cleaned_df %&gt;%
   glimpse</code></pre>
 <pre><code>## Observations: 126
 ## Variables: 16
-## $ player.id                       &lt;int&gt; 3660, 3985, 4658, 5717, 3380, ...
+## $ player.id                       &lt;int&gt; 3660, 3985, 4658, 3983, 5717, ...
 ## $ team.id                         &lt;int&gt; 4523, 4523, 4523, 4523, 4523, ...
 ## $ player.availableLanguages       &lt;list&gt; [&quot;en&quot;, &quot;en&quot;, &lt;&quot;en&quot;, &quot;ko&quot;&gt;, &quot;e...
 ## $ player.handle                   &lt;chr&gt; &quot;harryhook.5132&quot;, &quot;akm.8009&quot;, ...
 ## $ player.name                     &lt;chr&gt; &quot;HarryHook&quot;, &quot;aKm&quot;, &quot;Rascal&quot;, ...
 ## $ player.homeLocation             &lt;chr&gt; &quot;Asturias&quot;, &quot;Angoulême&quot;, &quot;Seou...
 ## $ player.familyName               &lt;chr&gt; &quot;Tejedor Rua&quot;, &quot;Bignet&quot;, &quot;Kim&quot;...
-## $ player.nationality              &lt;chr&gt; &quot;ES&quot;, &quot;FR&quot;, &quot;KR&quot;, &quot;KR&quot;, &quot;FI&quot;, ...
+## $ player.nationality              &lt;chr&gt; &quot;ES&quot;, &quot;FR&quot;, &quot;KR&quot;, &quot;FR&quot;, &quot;KR&quot;, ...
 ## $ player.attributes.heroes        &lt;list&gt; [&lt;&quot;lucio&quot;, &quot;soldier-76&quot;, &quot;zen...
-## $ player.attributes.player_number &lt;int&gt; 9, 5, 27, 2, 13, 10, 4, 7, 23,...
+## $ player.attributes.player_number &lt;int&gt; 9, 5, 27, 24, 2, 13, 4, 7, 23,...
 ## $ player.attributes.role          &lt;chr&gt; &quot;support&quot;, &quot;offense&quot;, &quot;offense...
 ## $ player.nr_of_languages          &lt;int&gt; 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, ...
-## $ player.nr_of_heros              &lt;int&gt; 3, 2, 3, 2, 3, 3, 3, 3, 3, 3, ...
+## $ player.nr_of_heros              &lt;int&gt; 3, 2, 3, 3, 2, 3, 3, 3, 3, 3, ...
 ## $ competitor.name                 &lt;chr&gt; &quot;Dallas Fuel&quot;, &quot;Dallas Fuel&quot;, ...
 ## $ competitor.handle               &lt;chr&gt; &quot;fuel.6990&quot;, &quot;fuel.6990&quot;, &quot;fue...
 ## $ competitor.abbreviatedName      &lt;chr&gt; &quot;DAL&quot;, &quot;DAL&quot;, &quot;DAL&quot;, &quot;DAL&quot;, &quot;D...</code></pre>
@@ -492,7 +492,7 @@ What types of columns do we have left?</p>
 ## 8   NULL    4404      TEAM      4492                        en
 ## 9   NULL    4404      TEAM      3661                        en
 ## 10  NULL    4404      TEAM      4626                        en
-## 11  NULL    4404      TEAM      5715                        en
+## 11  NULL    4404      TEAM      5715                    en, ko
 ##     player.handle player.name player.homeLocation player.game
 ## 1       moth.3967        Moth       Worcester, MA   OVERWATCH
 ## 2       dhak.8567        dhaK               Gijón   OVERWATCH
@@ -540,7 +540,7 @@ What types of columns do we have left?</p>
 ## 8     https://bnetcmsus-a.akamaihd.net/cms/page_media/NFY3Y5MRRO951512777247574.png
 ## 9     https://bnetcmsus-a.akamaihd.net/cms/page_media/WSFQZ1R6LCJ31512777247534.png
 ## 10    https://bnetcmsus-a.akamaihd.net/cms/page_media/QCO0N7H8SQFT1512777247525.png
-## 11    https://bnetcmsus-a.akamaihd.net/cms/page_media/S02042JXNHF81515718127993.png
+## 11       https://bnetcmsus-a.akamaihd.net/cms/gallery/7YOLZ6HNVS2Y1522979583351.png
 ##    player.type   player.attributes.heroes player.attributes.player_number
 ## 1       PLAYER          ana, lucio, mercy                              64
 ## 2       PLAYER          lucio, mercy, ana                              10
@@ -556,7 +556,7 @@ What types of columns do we have left?</p>
 ##    player.attributes.preferred_slot player.attributes.role
 ## 1                                 4                support
 ## 2                                 4                support
-## 3                                 2                   flex
+## 3                                 1                   flex
 ## 4                                 0                offense
 ## 5                                 0                offense
 ## 6                                 5                support
@@ -579,102 +579,86 @@ What types of columns do we have left?</p>
 ## 11                           NA                       &lt;NA&gt;
 ## 
 ## [[2]]
-##    flags team.id team.type player.id player.availableLanguages
-## 1   NULL    4405      TEAM      4632                        en
-## 2   NULL    4405      TEAM      4630                        en
-## 3   NULL    4405      TEAM      4635                    en, ko
-## 4   NULL    4405      TEAM      4636                    en, ko
-## 5   NULL    4405      TEAM      4633                        en
-## 6   NULL    4405      TEAM      4634                    en, ko
-## 7   NULL    4405      TEAM      4637                        en
-## 8   NULL    4405      TEAM      3663                        en
-## 9   NULL    4405      TEAM      3983                        en
-## 10  NULL    4405      TEAM      4142                        en
-## 11  NULL    4405      TEAM      3987                        en
-##       player.handle player.name player.homeLocation player.game
-## 1   silkthread.9968  Silkthread            Katy, TX   OVERWATCH
-## 2  grimreality.4793 Grimreality           Chico, CA   OVERWATCH
-## 3        kariv.3355       Kariv               Seoul   OVERWATCH
-## 4         fate.1459        Fate               Seoul   OVERWATCH
-## 5        verbo.6137       Verbo             Toronto   OVERWATCH
-## 6         envy.3537        Envy               Seoul   OVERWATCH
-## 7        space.7513       Space   New York City, NY   OVERWATCH
-## 8    numlocked.8944   Numlocked      Leamington Spa   OVERWATCH
-## 9        unkoe.9342       Unkoe              Nevers   OVERWATCH
-## 10   agilities.5443   Agilities           Blairmore   OVERWATCH
-## 11        soon.8087        Soon Hangest-En-Santerre   OVERWATCH
-##    player.attributesVersion player.familyName player.givenName
-## 1                     1.0.0              Wang              Ted
-## 2                     1.0.0          Schaefer      Christopher
-## 3                     1.0.0               Bak        Young-Seo
-## 4                     1.0.0               Koo        Pan-Seung
-## 5                     1.0.0           Disalvo          Stefano
-## 6                     1.0.0               Lee         Kang-Jae
-## 7                     1.0.0           Halpern             Indy
-## 8                     1.0.0            Barton        Sebastian
-## 9                     1.0.0         Chevasson         Benjamin
-## 10                    1.0.0           Girardi            Brady
-## 11                    1.0.0           Tarlier          Terence
-##    player.nationality
-## 1                  US
-## 2                  US
-## 3                  KR
-## 4                  KR
-## 5                  CA
-## 6                  KR
-## 7                  US
-## 8                  GB
-## 9                  FR
-## 10                 CA
-## 11                 FR
-##                                                                  player.headshot
-## 1  https://bnetcmsus-a.akamaihd.net/cms/page_media/WZ8MLSBXCD6E1512776701242.png
-## 2  https://bnetcmsus-a.akamaihd.net/cms/page_media/4HL7NR9URCMU1512776701054.png
-## 3  https://bnetcmsus-a.akamaihd.net/cms/page_media/6QOV26CVECXE1512776701055.png
-## 4  https://bnetcmsus-a.akamaihd.net/cms/page_media/3SWJQYWMYTV11512776700780.png
-## 5  https://bnetcmsus-a.akamaihd.net/cms/page_media/GB1BRHQZ4CLL1512776701508.png
-## 6  https://bnetcmsus-a.akamaihd.net/cms/page_media/6FAQKR0XRZ821512776700785.png
-## 7  https://bnetcmsus-a.akamaihd.net/cms/page_media/BP0XDXDMWZ421512776701354.png
-## 8  https://bnetcmsus-a.akamaihd.net/cms/page_media/H4XYM23GR1061512776701073.png
-## 9  https://bnetcmsus-a.akamaihd.net/cms/page_media/AAKTVQLMQ0IZ1512776701428.png
-## 10 https://bnetcmsus-a.akamaihd.net/cms/page_media/47PKEMP7FWAQ1512776700755.png
-## 11 https://bnetcmsus-a.akamaihd.net/cms/page_media/E29MO86JEHJD1512776701352.png
-##    player.type player.attributes.hero_image   player.attributes.heroes
-## 1       PLAYER                           NA      tracer, genji, mccree
-## 2       PLAYER                           NA tracer, mccree, soldier-76
-## 3       PLAYER                           NA  zenyatta, ana, widowmaker
-## 4       PLAYER                           NA winston, reinhardt, tracer
-## 5       PLAYER                           NA          lucio, mercy, ana
-## 6       PLAYER                           NA        dva, zarya, roadhog
-## 7       PLAYER                           NA        zarya, roadhog, dva
-## 8       PLAYER                           NA    winston, reinhardt, dva
-## 9       PLAYER                           NA       mercy, zenyatta, ana
-## 10      PLAYER                           NA      genji, tracer, pharah
-## 11      PLAYER                           NA tracer, widowmaker, mccree
-##     player.attributes.hometown player.attributes.player_number
-## 1                     Katy, TX                               9
-## 2                    Chico, CA                               0
-## 3                        Seoul                               7
-## 4                        Seoul                               1
-## 5                      Toronto                              13
-## 6                        Seoul                              10
-## 7      New York City, New York                              16
-## 8               Leamington Spa                               6
-## 9               Nevers, France                              24
-## 10               Blairmore, AB                               3
-## 11 Hangest-En-Santerre, France                              99
-##    player.attributes.preferred_slot player.attributes.role
-## 1                                 3                offense
-## 2                                 3                offense
-## 3                                 1                support
-## 4                                 0                   tank
-## 5                                 4                support
-## 6                                 2                   flex
-## 7                              &lt;NA&gt;                   flex
-## 8                                 0                   tank
-## 9                                 5                support
-## 10                                3                offense
-## 11                                1                offense</code></pre>
+##   flags team.id team.type player.id player.availableLanguages
+## 1  NULL    4405      TEAM      4635                    en, ko
+## 2  NULL    4405      TEAM      4667                    en, ko
+## 3  NULL    4405      TEAM      4636                    en, ko
+## 4  NULL    4405      TEAM      4633                        en
+## 5  NULL    4405      TEAM      3577                        en
+## 6  NULL    4405      TEAM      3663                        en
+## 7  NULL    4405      TEAM      4637                        en
+## 8  NULL    4405      TEAM      4142                        en
+## 9  NULL    4405      TEAM      3987                        en
+##    player.handle player.name player.homeLocation player.game
+## 1     kariv.3355       Kariv               Seoul   OVERWATCH
+## 2     bunny.8066       Bunny               Suwon   OVERWATCH
+## 3      fate.1459        Fate               Seoul   OVERWATCH
+## 4     verbo.6137       Verbo             Toronto   OVERWATCH
+## 5     custa.8424       Custa            Adelaide   OVERWATCH
+## 6 numlocked.8944   Numlocked      Leamington Spa   OVERWATCH
+## 7     space.7513       Space   New York City, NY   OVERWATCH
+## 8 agilities.5443   Agilities           Blairmore   OVERWATCH
+## 9      soon.8087        Soon Hangest-En-Santerre   OVERWATCH
+##   player.attributesVersion player.familyName player.givenName
+## 1                    1.0.0               Bak        Young-Seo
+## 2                    1.0.0              Chae        Jun-Hyeok
+## 3                    1.0.0               Koo        Pan-Seung
+## 4                    1.0.0           Disalvo          Stefano
+## 5                    1.0.0           Kennedy            Scott
+## 6                    1.0.0            Barton        Sebastian
+## 7                    1.0.0           Halpern             Indy
+## 8                    1.0.0           Girardi            Brady
+## 9                    1.0.0           Tarlier          Terence
+##   player.nationality
+## 1                 KR
+## 2                 KR
+## 3                 KR
+## 4                 CA
+## 5                 AU
+## 6                 GB
+## 7                 US
+## 8                 CA
+## 9                 FR
+##                                                                 player.headshot
+## 1 https://bnetcmsus-a.akamaihd.net/cms/page_media/6QOV26CVECXE1512776701055.png
+## 2 https://bnetcmsus-a.akamaihd.net/cms/page_media/S02042JXNHF81515718127993.png
+## 3 https://bnetcmsus-a.akamaihd.net/cms/page_media/3SWJQYWMYTV11512776700780.png
+## 4 https://bnetcmsus-a.akamaihd.net/cms/page_media/GB1BRHQZ4CLL1512776701508.png
+## 5    https://bnetcmsus-a.akamaihd.net/cms/gallery/5BKHVJ9PGEFR1522979605000.png
+## 6 https://bnetcmsus-a.akamaihd.net/cms/page_media/H4XYM23GR1061512776701073.png
+## 7 https://bnetcmsus-a.akamaihd.net/cms/page_media/BP0XDXDMWZ421512776701354.png
+## 8 https://bnetcmsus-a.akamaihd.net/cms/page_media/47PKEMP7FWAQ1512776700755.png
+## 9 https://bnetcmsus-a.akamaihd.net/cms/page_media/E29MO86JEHJD1512776701352.png
+##   player.type player.attributes.hero_image   player.attributes.heroes
+## 1      PLAYER                           NA  zenyatta, ana, widowmaker
+## 2      PLAYER                           NA tracer, mccree, soldier-76
+## 3      PLAYER                           NA winston, reinhardt, tracer
+## 4      PLAYER                           NA          lucio, mercy, ana
+## 5      PLAYER                           NA     zenyatta, lucio, mercy
+## 6      PLAYER                           NA    winston, reinhardt, dva
+## 7      PLAYER                           NA        zarya, roadhog, dva
+## 8      PLAYER                           NA      genji, tracer, pharah
+## 9      PLAYER                           NA tracer, widowmaker, mccree
+##    player.attributes.hometown player.attributes.player_number
+## 1                       Seoul                               7
+## 2                        &lt;NA&gt;                               8
+## 3                       Seoul                               1
+## 4                     Toronto                              13
+## 5                        &lt;NA&gt;                              10
+## 6              Leamington Spa                               6
+## 7     New York City, New York                              16
+## 8               Blairmore, AB                               3
+## 9 Hangest-En-Santerre, France                              99
+##   player.attributes.preferred_slot player.attributes.role
+## 1                                3                support
+## 2                                1                offense
+## 3                                0                   tank
+## 4                                4                support
+## 5                                4                support
+## 6                                0                   tank
+## 7                                2                   flex
+## 8                                5                offense
+## 9                                1                offense</code></pre>
 <p>We can see if the match has been played:</p>
 <pre class="r"><code>owl_matches_df$content$state</code></pre>
 <pre><code>##  [1] &quot;CONCLUDED&quot; &quot;CONCLUDED&quot; &quot;CONCLUDED&quot; &quot;CONCLUDED&quot; &quot;CONCLUDED&quot;
@@ -805,9 +789,9 @@ games_cleaned_df %&gt;% glimpse</code></pre>
 ## $ attributes.map &lt;chr&gt; &quot;dorado&quot;, &quot;dorado&quot;, &quot;dorado&quot;, &quot;dorado&quot;, &quot;dorado...
 ## $ team_tag       &lt;chr&gt; &quot;attributes.mapScore.team1&quot;, &quot;attributes.mapSco...
 ## $ team_score     &lt;int&gt; 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3,...
-## $ team.id        &lt;int&gt; 4405, 4404, 4405, 4404, 4404, 4404, 4404, 4404,...
-## $ player.id      &lt;int&gt; 3983, 4025, 4142, 4488, 4489, 4491, 4492, 4626,...
-## $ player.name    &lt;chr&gt; &quot;Unkoe&quot;, &quot;dhaK&quot;, &quot;Agilities&quot;, &quot;sleepy&quot;, &quot;Danteh...</code></pre>
+## $ team.id        &lt;int&gt; 4405, 4405, 4405, 4405, 4405, 4405, 4404, 4404,...
+## $ player.id      &lt;int&gt; 4634, 4635, 4142, 3987, 3983, 4636, 4491, 4025,...
+## $ player.name    &lt;chr&gt; &quot;Envy&quot;, &quot;Kariv&quot;, &quot;Agilities&quot;, &quot;Soon&quot;, &quot;Unkoe&quot;, ...</code></pre>
 <p>Unfortunately the api did not include a clear mapping from games to teams for score. One would have to figure out how to join them or realize that the “team1” was always ontop in the matches hierarchy.</p>
 <p>Even more disappointing is the fact that the players have no juicy data in here like kills or assists etc.</p>
 <p>If this was available one could immediately start joining these tables and train some machine learning models to predict wins, hero picks, find factors associated with winning etc.</p>

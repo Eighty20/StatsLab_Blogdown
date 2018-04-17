@@ -40,11 +40,11 @@ In that great python notebook the author *kylemcdonald* defines a t-sne loss fun
 
 We can build one quite simply by defining the encoding layers and the decoding layers;  
 
-![](Pictures/Autoencoders/what_are_autoencoders.png)
+![](/Pictures/Autoencoders/what_are_autoencoders.png)
 
 Initially people did this by defining a simple symmetrical neural network like this:  
 
-![](Pictures/Autoencoders/autoencoder_net.png)  
+![](/Pictures/Autoencoders/autoencoder_net.png)  
 
 The initial half was responsible for encoding into lower dimensional space and the decoder was responible for mapping it back again to validate information loss.  
 In practice the network does not need to be symmetrical at all and can be more complicated such as having CNN layers for image encoding.  

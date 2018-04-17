@@ -6,10 +6,19 @@
     <description>Recent content on </description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
-    <lastBuildDate>Wed, 04 Apr 2018 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Tue, 17 Apr 2018 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Let&#39;s play with autoencoders (Keras, R)</title>
+      <link>/posts/autoencoders_keras_r/</link>
+      <pubDate>Tue, 17 Apr 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/posts/autoencoders_keras_r/</guid>
+      <description>What are autoencoders? How do we build them? Build it Step 1 - load and prepare the data Step 2 - define the encoder and decoder Step 3 - compile and train the autoencoder Step 4 - Extract the weights of the encoder Step 5 - Load up the weights into an ecoder model and predict Conclusion    library(ggplot2) library(keras) library(tidyverse) ## ── Attaching packages ──────────────────────────────────────────────────── tidyverse 1.</description>
+    </item>
     
     <item>
       <title>Serving a machine learning model via API</title>
@@ -114,15 +123,6 @@ Lawson, John. Design and Analysis of Experiments with R. Chapman and Hall/CRC, 2
       <description>Hugo is a static site engine written in Go.
 It makes use of a variety of open source projects including:
  Cobra Viper J Walter Weatherman Cast  Learn more and contribute on GitHub.</description>
-    </item>
-    
-    <item>
-      <title></title>
-      <link>/posts/testing_apis_in_r.nb/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>/posts/testing_apis_in_r.nb/</guid>
-      <description>R Notebook          code{white-space: pre;} pre:not([class]) { background-color: white; }  if (window.hljs) { hljs.configure({languages: []}); hljs.initHighlightingOnLoad(); if (document.readyState &amp;&amp; document.readyState === &#34;complete&#34;) { window.setTimeout(function() { hljs.initHighlighting(); }, 0); } }  h1 { font-size: 34px; } h1.title { font-size: 38px; } h2 { font-size: 30px; } h3 { font-size: 24px; } h4 { font-size: 18px; } h5 { font-size: 16px; } h6 { font-size: 12px; } .</description>
     </item>
     
   </channel>

@@ -66,9 +66,18 @@
     </item>
     
     <item>
+      <title>Deep_learning</title>
+      <link>/tags/deep_learning/</link>
+      <pubDate>Tue, 17 Apr 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/deep_learning/</guid>
+      <description></description>
+    </item>
+    
+    <item>
       <title>Dimensionality_reduction</title>
       <link>/tags/dimensionality_reduction/</link>
-      <pubDate>Fri, 06 Jan 2017 00:00:00 +0000</pubDate>
+      <pubDate>Tue, 17 Apr 2018 00:00:00 +0000</pubDate>
       
       <guid>/tags/dimensionality_reduction/</guid>
       <description></description>
@@ -89,6 +98,15 @@
       <pubDate>Wed, 28 Mar 2018 00:00:00 +0000</pubDate>
       
       <guid>/tags/jsonlite/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Keras</title>
+      <link>/tags/keras/</link>
+      <pubDate>Tue, 17 Apr 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/keras/</guid>
       <description></description>
     </item>
     
@@ -161,6 +179,15 @@
       <pubDate>Tue, 27 Mar 2018 00:00:00 +0000</pubDate>
       
       <guid>/tags/tidyr/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Transfer_learning</title>
+      <link>/tags/transfer_learning/</link>
+      <pubDate>Tue, 17 Apr 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/transfer_learning/</guid>
       <description></description>
     </item>
     

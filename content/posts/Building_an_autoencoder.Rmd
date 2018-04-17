@@ -93,18 +93,20 @@ input_layer <-
 
 encoder <- 
   input_layer %>% 
-  layer_dense(units = 20, activation = "relu") %>% 
+  layer_dense(units = 150, activation = "relu") %>% 
   layer_dropout(rate = 0.2) %>% 
-  layer_dense(units = 10, activation = "relu") %>%
+  layer_dense(units = 50, activation = "relu") %>%
   layer_dropout(rate = 0.1) %>%
+  layer_dense(units = 25, activation = "relu") %>%
   layer_dense(units = 2) # 2 dimensions for the output layer
 
 decoder <- 
   encoder %>% 
-  layer_dense(units = 20, activation = "relu") %>% 
+  layer_dense(units = 150, activation = "relu") %>% 
   layer_dropout(rate = 0.2) %>% 
-  layer_dense(units = 10, activation = "relu") %>%
+  layer_dense(units = 50, activation = "relu") %>%
   layer_dropout(rate = 0.1) %>%
+  layer_dense(units = 25, activation = "relu") %>%
   layer_dense(units = 4) # 4 dimensions for the original 4 variables
 
 
@@ -187,7 +189,7 @@ autoencoder_weights <-
   autoencoder_model %>%
   keras::get_weights()
 
-autoencoder_weights
+# autoencoder_weights
 ```
 
 We can see that our encoder stops at the 6th layer... Since it produces the 2 dimensional output there.

@@ -257,17 +257,28 @@ Viz_data_encoded <-
   pca %>% 
     tibble::as_tibble() %>% 
     setNames(c("dim_1","dim_2")) %>% 
-    dplyr::mutate(data_origin = "pca"),
+    dplyr::mutate(data_origin = "pca",
+                  Species = train$Species),
   embeded_points %>% 
     tibble::as_tibble() %>% 
     setNames(c("dim_1","dim_2")) %>% 
-    dplyr::mutate(data_origin = "embeded_points")
+    dplyr::mutate(data_origin = "embeded_points",
+                  Species = train$Species)
   )
 
 Viz_data_encoded %>% 
   ggplot(aes(dim_1,dim_2, color = data_origin))+
   geom_point()
 
+```
+
+And now when we add back the labels to this embedding we see something VERY exciting... The deeplearning model has learned something by looking in the mirror the PCA doesn't quite get yet... It is as if the PCA needed one extra layer of abstraction to learn that a line transform could've split versicolor and virginica further away from one another...
+
+```{r}
+Viz_data_encoded %>% 
+  ggplot(aes(dim_1,dim_2, color = Species))+
+  geom_point()+
+  facet_wrap(~data_origin)
 ```
 
 We can tell that the PCA and encoders produce slightly different results... But we should remember that the purpose of the encoder and it's loss function was to embed the information into lower dimensions - so ultimately we should compare predictive properties...

@@ -245,13 +245,13 @@ encoder_model %&gt;% compile(
   keras::predict_on_batch(x = train_X)
 
 embeded_points %&gt;% head</code></pre>
-<pre><code>##           [,1]     [,2]
-## [1,] -1.751314 2.901855
-## [2,] -1.782544 2.828957
-## [3,] -1.583657 2.856472
-## [4,] -2.031840 3.070218
-## [5,] -1.981228 3.577412
-## [6,] -1.672399 2.853027</code></pre>
+<pre><code>##          [,1]      [,2]
+## [1,] 1.143479 -3.810620
+## [2,] 1.167327 -3.383210
+## [3,] 1.081717 -3.423910
+## [4,] 1.208284 -3.375386
+## [5,] 1.098614 -3.852624
+## [6,] 1.266810 -4.145750</code></pre>
 <p>To compare this we also create a pca using the caret package:</p>
 <pre class="r"><code>pre_process &lt;- caret::preProcess(train_X,method = &quot;pca&quot;,pcaComp = 2)
 
@@ -260,28 +260,36 @@ pca &lt;- predict(pre_process,train_X)
 
 pca %&gt;% head</code></pre>
 <pre><code>##         PC1        PC2
-## 2 -2.075801 -0.6166936
-## 3 -2.351071 -0.2605238
-## 4 -2.293479 -0.5228194
-## 5 -2.350056  0.7541068
-## 6 -2.013256  1.6049225
-## 7 -2.421450  0.1467176</code></pre>
+## 1 -2.223830 -0.5134145
+## 2 -2.068118  0.6124364
+## 3 -2.335551  0.2841662
+## 4 -2.275625  0.5331490
+## 5 -2.341120 -0.6780791
+## 6 -2.016228 -1.4902717</code></pre>
 <pre class="r"><code>Viz_data_encoded &lt;- 
   dplyr::bind_rows(
   pca %&gt;% 
     tibble::as_tibble() %&gt;% 
     setNames(c(&quot;dim_1&quot;,&quot;dim_2&quot;)) %&gt;% 
-    dplyr::mutate(data_origin = &quot;pca&quot;),
+    dplyr::mutate(data_origin = &quot;pca&quot;,
+                  Species = train$Species),
   embeded_points %&gt;% 
     tibble::as_tibble() %&gt;% 
     setNames(c(&quot;dim_1&quot;,&quot;dim_2&quot;)) %&gt;% 
-    dplyr::mutate(data_origin = &quot;embeded_points&quot;)
+    dplyr::mutate(data_origin = &quot;embeded_points&quot;,
+                  Species = train$Species)
   )
 
 Viz_data_encoded %&gt;% 
   ggplot(aes(dim_1,dim_2, color = data_origin))+
   geom_point()</code></pre>
 <p><img src="/posts/Building_an_autoencoder_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
+<p>And now when we add back the labels to this embedding we see something VERY exciting… The deeplearning model has learned something by looking in the mirror the PCA doesn’t quite get yet… It is as if the PCA needed one extra layer of abstraction to learn that a line transform could’ve split versicolor and virginica further away from one another…</p>
+<pre class="r"><code>Viz_data_encoded %&gt;% 
+  ggplot(aes(dim_1,dim_2, color = Species))+
+  geom_point()+
+  facet_wrap(~data_origin)</code></pre>
+<p><img src="/posts/Building_an_autoencoder_files/figure-html/unnamed-chunk-16-1.png" width="672" /></p>
 <p>We can tell that the PCA and encoders produce slightly different results… But we should remember that the purpose of the encoder and it’s loss function was to embed the information into lower dimensions - so ultimately we should compare predictive properties…</p>
 </div>
 <div id="measure-prediction-accuracy" class="section level4">
@@ -325,8 +333,8 @@ Viz_data_encoded %&gt;%
 ## Summary of sample sizes: 120, 120, 120, 120, 120, 120, ... 
 ## Resampling results:
 ## 
-##   Accuracy   Kappa    
-##   0.9343549  0.9006512
+##   Accuracy  Kappa    
+##   0.870376  0.8037107
 ## 
 ## Tuning parameter &#39;mtry&#39; was held constant at a value of 2
 ## [1] &quot;embeded_points&quot;
@@ -341,8 +349,8 @@ Viz_data_encoded %&gt;%
 ## Summary of sample sizes: 120, 120, 120, 120, 120, 120, ... 
 ## Resampling results:
 ## 
-##   Accuracy   Kappa    
-##   0.9819344  0.9723866
+##   Accuracy   Kappa   
+##   0.9493289  0.923162
 ## 
 ## Tuning parameter &#39;mtry&#39; was held constant at a value of 2</code></pre>
 <p>Absolutely crazy…</p>

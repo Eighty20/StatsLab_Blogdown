@@ -94,6 +94,7 @@ input_layer <-
 encoder <- 
   input_layer %>% 
   layer_dense(units = 150, activation = "relu") %>% 
+  layer_batch_normalization() %>% 
   layer_dropout(rate = 0.2) %>% 
   layer_dense(units = 50, activation = "relu") %>%
   layer_dropout(rate = 0.1) %>%
@@ -112,6 +113,8 @@ decoder <-
 
 ```
 
+After the initial run of this post I added a normalization layer at the start and I moved from the popular RMSPROP optimzation algo to the ADAM algo. This improved the reconstruction part `decoder` to almost insane levels while leaving the encoder more or less the same.
+
 ### Step 3 - compile and train the autoencoder
 
 To train the encoder we need to capture the initial input as our goal and back-propogate to best represent it  
@@ -122,7 +125,7 @@ autoencoder_model <- keras_model(inputs = input_layer, outputs = decoder)
 
 autoencoder_model %>% compile(
   loss='mean_squared_error',
-  optimizer='rmsprop',
+  optimizer='adam',
   metrics = c('accuracy')
 )
 
@@ -136,7 +139,7 @@ history <-
   autoencoder_model %>%
   keras::fit(train_X,
              train_X,
-             epochs=200,
+             epochs=100,
              shuffle=TRUE,
              validation_data= list(test_X, test_X)
              )
@@ -176,9 +179,9 @@ Viz_data %>%
 
 ```
 
-OK.. so this isn't quite as sexy as I wanted... The lossy reconstruction is effectively just linear components. I expected the embedding to use linear compositions since we were activating the perceptrons using a regularized linear activation function (relu); the decoder seems to map these back linearly aswel when it returns to the higher dimensions which makes perfect sense...
+~~OK.. so this isn't quite as sexy as I wanted~~ Nevermind, after playing with some dropout and normalization layers together with the optimizer the result is just redic. This dataset isn't even very large, but at least the iris dataset is nice and clean. 
 
-What we can do is try to use non-linear activation functions... IF we wanted to reconstruct the data better, or use a more advanced loss function...
+~~The lossy reconstruction is effectively just linear components.~~ Now it is non-linear... 
 
 ### Step 4 - Extract the weights of the encoder
 
@@ -219,7 +222,7 @@ encoder_model %>% keras::load_model_weights_hdf5(filepath = "../../static/data/a
 
 encoder_model %>% compile(
   loss='mean_squared_error',
-  optimizer='rmsprop',
+  optimizer='adam',
   metrics = c('accuracy')
 )
 
@@ -267,7 +270,7 @@ Viz_data_encoded %>%
 
 ```
 
-We can tell that the PCA and encoders produce VERY different results... But we should remember that the purpose of the encoder and it's loss function was to embed the information into lower dimensions - so ultimately we should compare predictive properties...
+We can tell that the PCA and encoders produce slightly different results... But we should remember that the purpose of the encoder and it's loss function was to embed the information into lower dimensions - so ultimately we should compare predictive properties...
 
 #### Measure prediction accuracy
 

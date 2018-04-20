@@ -101,6 +101,7 @@ test_X &lt;- test[,1:4] %&gt;% as.matrix()</code></pre>
 encoder &lt;- 
   input_layer %&gt;% 
   layer_dense(units = 150, activation = &quot;relu&quot;) %&gt;% 
+  layer_batch_normalization() %&gt;% 
   layer_dropout(rate = 0.2) %&gt;% 
   layer_dense(units = 50, activation = &quot;relu&quot;) %&gt;%
   layer_dropout(rate = 0.1) %&gt;%
@@ -115,6 +116,7 @@ decoder &lt;-
   layer_dropout(rate = 0.1) %&gt;%
   layer_dense(units = 25, activation = &quot;relu&quot;) %&gt;%
   layer_dense(units = 4) # 4 dimensions for the original 4 variables</code></pre>
+<p>After the initial run of this post I added a normalization layer at the start and I moved from the popular RMSPROP optimzation algo to the ADAM algo. This improved the reconstruction part <code>decoder</code> to almost insane levels while leaving the encoder more or less the same.</p>
 </div>
 <div id="step-3---compile-and-train-the-autoencoder" class="section level3">
 <h3>Step 3 - compile and train the autoencoder</h3>
@@ -124,7 +126,7 @@ We treat this as a basic regression so we will use some arbitrary regression los
 
 autoencoder_model %&gt;% compile(
   loss=&#39;mean_squared_error&#39;,
-  optimizer=&#39;rmsprop&#39;,
+  optimizer=&#39;adam&#39;,
   metrics = c(&#39;accuracy&#39;)
 )
 
@@ -135,6 +137,8 @@ summary(autoencoder_model)</code></pre>
 ## input_1 (InputLayer)             (None, 4)                     0           
 ## ___________________________________________________________________________
 ## dense_1 (Dense)                  (None, 150)                   750         
+## ___________________________________________________________________________
+## batch_normalization_1 (BatchNorm (None, 150)                   600         
 ## ___________________________________________________________________________
 ## dropout_1 (Dropout)              (None, 150)                   0           
 ## ___________________________________________________________________________
@@ -158,16 +162,16 @@ summary(autoencoder_model)</code></pre>
 ## ___________________________________________________________________________
 ## dense_8 (Dense)                  (None, 4)                     104         
 ## ===========================================================================
-## Total params: 19,006
-## Trainable params: 19,006
-## Non-trainable params: 0
+## Total params: 19,606
+## Trainable params: 19,306
+## Non-trainable params: 300
 ## ___________________________________________________________________________</code></pre>
 <p>Now we train onto itself:</p>
 <pre class="r"><code>history &lt;-
   autoencoder_model %&gt;%
   keras::fit(train_X,
              train_X,
-             epochs=200,
+             epochs=100,
              shuffle=TRUE,
              validation_data= list(test_X, test_X)
              )</code></pre>
@@ -197,8 +201,8 @@ Viz_data %&gt;%
   ggplot(aes(Petal.Length,Sepal.Width, color = data_origin))+
   geom_point()</code></pre>
 <p><img src="/posts/Building_an_autoencoder_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
-<p>OK.. so this isn’t quite as sexy as I wanted… The lossy reconstruction is effectively just linear components. I expected the embedding to use linear compositions since we were activating the perceptrons using a regularized linear activation function (relu); the decoder seems to map these back linearly aswel when it returns to the higher dimensions which makes perfect sense…</p>
-<p>What we can do is try to use non-linear activation functions… IF we wanted to reconstruct the data better, or use a more advanced loss function…</p>
+<p><del>OK.. so this isn’t quite as sexy as I wanted</del> Nevermind, after playing with some dropout and normalization layers together with the optimizer the result is just redic. This dataset isn’t even very large, but at least the iris dataset is nice and clean.</p>
+<p><del>The lossy reconstruction is effectively just linear components.</del> Now it is non-linear…</p>
 </div>
 </div>
 <div id="step-4---extract-the-weights-of-the-encoder" class="section level3">
@@ -212,9 +216,9 @@ Viz_data %&gt;%
 <p>We can see that our encoder stops at the 6th layer… Since it produces the 2 dimensional output there.</p>
 <p>We can also inspect the types of these variables:</p>
 <pre class="r"><code>autoencoder_weights %&gt;% purrr::map_chr(class)</code></pre>
-<pre><code>##  [1] &quot;matrix&quot; &quot;array&quot;  &quot;matrix&quot; &quot;array&quot;  &quot;matrix&quot; &quot;array&quot;  &quot;matrix&quot;
+<pre><code>##  [1] &quot;matrix&quot; &quot;array&quot;  &quot;array&quot;  &quot;array&quot;  &quot;array&quot;  &quot;array&quot;  &quot;matrix&quot;
 ##  [8] &quot;array&quot;  &quot;matrix&quot; &quot;array&quot;  &quot;matrix&quot; &quot;array&quot;  &quot;matrix&quot; &quot;array&quot; 
-## [15] &quot;matrix&quot; &quot;array&quot;</code></pre>
+## [15] &quot;matrix&quot; &quot;array&quot;  &quot;matrix&quot; &quot;array&quot;  &quot;matrix&quot; &quot;array&quot;</code></pre>
 <div id="save-the-weights" class="section level4">
 <h4>Save the weights</h4>
 <pre class="r"><code>  keras::save_model_weights_hdf5(object = autoencoder_model,filepath = &#39;../../static/data/autoencoder_weights.hdf5&#39;,overwrite = TRUE)</code></pre>
@@ -230,7 +234,7 @@ encoder_model %&gt;% keras::load_model_weights_hdf5(filepath = &quot;../../stati
 
 encoder_model %&gt;% compile(
   loss=&#39;mean_squared_error&#39;,
-  optimizer=&#39;rmsprop&#39;,
+  optimizer=&#39;adam&#39;,
   metrics = c(&#39;accuracy&#39;)
 )</code></pre>
 <div id="compare-to-pca" class="section level4">
@@ -242,12 +246,12 @@ encoder_model %&gt;% compile(
 
 embeded_points %&gt;% head</code></pre>
 <pre><code>##           [,1]     [,2]
-## [1,] -2.690584 2.761996
-## [2,] -2.502537 2.562161
-## [3,] -2.464878 2.445349
-## [4,] -2.688922 2.767783
-## [5,] -2.892215 2.901564
-## [6,] -2.533939 2.570662</code></pre>
+## [1,] -1.751314 2.901855
+## [2,] -1.782544 2.828957
+## [3,] -1.583657 2.856472
+## [4,] -2.031840 3.070218
+## [5,] -1.981228 3.577412
+## [6,] -1.672399 2.853027</code></pre>
 <p>To compare this we also create a pca using the caret package:</p>
 <pre class="r"><code>pre_process &lt;- caret::preProcess(train_X,method = &quot;pca&quot;,pcaComp = 2)
 
@@ -256,12 +260,12 @@ pca &lt;- predict(pre_process,train_X)
 
 pca %&gt;% head</code></pre>
 <pre><code>##         PC1        PC2
-## 1 -2.189384  0.5217673
-## 3 -2.303264 -0.2652904
-## 4 -2.244919 -0.5131788
-## 5 -2.303865  0.6851419
-## 6 -1.975288  1.4867733
-## 7 -2.364204  0.1111445</code></pre>
+## 2 -2.075801 -0.6166936
+## 3 -2.351071 -0.2605238
+## 4 -2.293479 -0.5228194
+## 5 -2.350056  0.7541068
+## 6 -2.013256  1.6049225
+## 7 -2.421450  0.1467176</code></pre>
 <pre class="r"><code>Viz_data_encoded &lt;- 
   dplyr::bind_rows(
   pca %&gt;% 
@@ -278,7 +282,7 @@ Viz_data_encoded %&gt;%
   ggplot(aes(dim_1,dim_2, color = data_origin))+
   geom_point()</code></pre>
 <p><img src="/posts/Building_an_autoencoder_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
-<p>We can tell that the PCA and encoders produce VERY different results… But we should remember that the purpose of the encoder and it’s loss function was to embed the information into lower dimensions - so ultimately we should compare predictive properties…</p>
+<p>We can tell that the PCA and encoders produce slightly different results… But we should remember that the purpose of the encoder and it’s loss function was to embed the information into lower dimensions - so ultimately we should compare predictive properties…</p>
 </div>
 <div id="measure-prediction-accuracy" class="section level4">
 <h4>Measure prediction accuracy</h4>
@@ -322,7 +326,7 @@ Viz_data_encoded %&gt;%
 ## Resampling results:
 ## 
 ##   Accuracy   Kappa    
-##   0.9372804  0.9047581
+##   0.9343549  0.9006512
 ## 
 ## Tuning parameter &#39;mtry&#39; was held constant at a value of 2
 ## [1] &quot;embeded_points&quot;
@@ -337,8 +341,8 @@ Viz_data_encoded %&gt;%
 ## Summary of sample sizes: 120, 120, 120, 120, 120, 120, ... 
 ## Resampling results:
 ## 
-##   Accuracy   Kappa  
-##   0.9881885  0.98217
+##   Accuracy   Kappa    
+##   0.9819344  0.9723866
 ## 
 ## Tuning parameter &#39;mtry&#39; was held constant at a value of 2</code></pre>
 <p>Absolutely crazy…</p>

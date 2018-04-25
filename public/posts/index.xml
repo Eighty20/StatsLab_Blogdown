@@ -17,8 +17,8 @@
       <pubDate>Thu, 29 Mar 2018 00:00:00 +0000</pubDate>
       
       <guid>/posts/how_to_add_a_blog/</guid>
-      <description>Pre-requisites Create from scratch Clone or open the blog repository from github Create a post using “Addins” dropdown Change/check your date format Write a kickass post Compile your new work using Blogdown Push your post to the website  Create from existing Rmd   Pre-requisites  Install blogdown and Hugo in R-Console
-https://bookdown.org/yihui/blogdown/installation.html   Create from scratch Creating it from scratch is probably the easiest since you can run and test your code as you type it up.</description>
+      <description>Pre-requisitesCreate from scratchClone or open the blog repository from githubCreate a post using “Addins” dropdownChange/check your date formatWrite a kickass postCompile your new work using BlogdownPush your post to the websiteCreate from existing RmdPre-requisitesInstall blogdown and Hugo in R-Console
+https://bookdown.org/yihui/blogdown/installation.htmlCreate from scratchCreating it from scratch is probably the easiest since you can run and test your code as you type it up.</description>
     </item>
     
     <item>
@@ -31,7 +31,7 @@ https://bookdown.org/yihui/blogdown/installation.html   Create from scratch Crea
 Especially if you want to keep your workspace nice and tidy with all your data in tables!
 With no actual experience trying to get at these nested tibbles can seem almost impossible:
 via GIPHY
---  Downloading data from an api created by Blizzard To illustrate how you would deal with nested data I found an api that let’s you download all kinds of data on the e-sport/game called Overwatch.</description>
+--Downloading data from an api created by BlizzardTo illustrate how you would deal with nested data I found an api that let’s you download all kinds of data on the e-sport/game called Overwatch.</description>
     </item>
     
     <item>
@@ -40,9 +40,9 @@ via GIPHY
       <pubDate>Tue, 27 Mar 2018 00:00:00 +0000</pubDate>
       
       <guid>/posts/data-wrangling/</guid>
-      <description>Why data-wrangling If you can wrangle data into the proper form you can do anything with it…
- Data-wrangling is absolutely essential for every data science task where we need to work with collected data.
- A recent article from the New York Times said “Data scientists, according to interviews and expert estimates, spend from 50 percent to 80 percent of their time mired in the mundane labor of collecting and preparing data, before it can be explored for useful information.</description>
+      <description>Why data-wranglingIf you can wrangle data into the proper form you can do anything with it…
+Data-wrangling is absolutely essential for every data science task where we need to work with collected data.
+A recent article from the New York Times said “Data scientists, according to interviews and expert estimates, spend from 50 percent to 80 percent of their time mired in the mundane labor of collecting and preparing data, before it can be explored for useful information.</description>
     </item>
     
     <item>
@@ -51,14 +51,14 @@ via GIPHY
       <pubDate>Mon, 26 Mar 2018 00:00:00 +0000</pubDate>
       
       <guid>/posts/data-science-workflow/</guid>
-      <description>Why it matters When working with recurring clients and projects together with tight deadlines it is easy to cut corners or forget good practice.
+      <description>Why it mattersWhen working with recurring clients and projects together with tight deadlines it is easy to cut corners or forget good practice.
 Here are the top reasons why a data science workflow is vital:
- Work is well documented
- Folders and files logically are structured
- Projects remain version controlled
- Data output is tracked
- Logical seperation of scripts make productizing easy
- Good naming conventions make tracking of the project flow easy</description>
+Work is well documented
+Folders and files logically are structured
+Projects remain version controlled
+Data output is tracked
+Logical seperation of scripts make productizing easy
+Good naming conventions make tracking of the project flow easy</description>
     </item>
     
     <item>
@@ -67,8 +67,8 @@ Here are the top reasons why a data science workflow is vital:
       <pubDate>Wed, 15 Nov 2017 00:00:00 +0000</pubDate>
       
       <guid>/posts/benchmarking_in_parallel/</guid>
-      <description>Overview Having just started playing with deeplearning models in R, I wanted to visually compare them to other more traditional ML workflows. Of course, deeplearning is generally used where other models fail, but with no need for feature selection and rapidly increasing power and ease of use they may just evolve into a general learning paradigm.
- However, with tabular data and packages like caret the machine learning methods have become so streamlined that minimal user input is required at all.</description>
+      <description>OverviewHaving just started playing with deeplearning models in R, I wanted to visually compare them to other more traditional ML workflows. Of course, deeplearning is generally used where other models fail, but with no need for feature selection and rapidly increasing power and ease of use they may just evolve into a general learning paradigm.
+However, with tabular data and packages like caret the machine learning methods have become so streamlined that minimal user input is required at all.</description>
     </item>
     
     <item>
@@ -77,10 +77,10 @@ Here are the top reasons why a data science workflow is vital:
       <pubDate>Tue, 07 Nov 2017 00:00:00 +0000</pubDate>
       
       <guid>/posts/design_and_analysis_of_experiments_with_r/</guid>
-      <description>Introduction This document will cover in depth the use of DoE experiments in R! We will focus our attention to measuring treatment effects, not variances.
+      <description>IntroductionThis document will cover in depth the use of DoE experiments in R! We will focus our attention to measuring treatment effects, not variances.
 Based on the work:
 Lawson, John. Design and Analysis of Experiments with R. Chapman and Hall/CRC, 20141217. VitalBook file.
-  Definitions  Experiment (also called a Run) is an action where the experimenter changes at least one of the variables being studied and then observes the effect of his or her actions(s).</description>
+DefinitionsExperiment (also called a Run) is an action where the experimenter changes at least one of the variables being studied and then observes the effect of his or her actions(s).</description>
     </item>
     
     <item>
@@ -89,7 +89,16 @@ Lawson, John. Design and Analysis of Experiments with R. Chapman and Hall/CRC, 2
       <pubDate>Fri, 06 Jan 2017 00:00:00 +0000</pubDate>
       
       <guid>/posts/intro-machine-learning/</guid>
-      <description>Important machine learning libraries Future additions  Part 1 - Data Preprocessing Part 2 - Regression Simple Linear Regression Multiple linear regression Polynomial Regression Support vector machine regression Regression Trees Random forest regression A more robust application of machine learning regressions (random forest)  Part 3 - Clustering K-means  Part 4 - Dimensionality Reduction Create PCA  Part 5 - Reinforced Learning Multi-Armed Bandit Problem Upper Confidence Bound (UCB) method Improve results using UCB Visualize the model add selection  Part 6 - Parameter Grid Search, Cross-validation and Boosting Grid Search and Parameter Tuning XGBoost    Important machine learning libraries I created this document to serve as an easy introduction to basic machine learning methods.</description>
+      <description>Important machine learning librariesFuture additionsPart 1 - Data PreprocessingPart 2 - RegressionSimple Linear RegressionMultiple linear regressionPolynomial RegressionSupport vector machine regressionRegression TreesRandom forest regressionA more robust application of machine learning regressions (random forest)Part 3 - ClusteringK-meansPart 4 - Dimensionality ReductionCreate PCAPart 5 - Reinforced LearningMulti-Armed Bandit ProblemUpper Confidence Bound (UCB) methodImprove results using UCBVisualize the model add selectionPart 6 - Parameter Grid Search, Cross-validation and BoostingGrid Search and Parameter TuningXGBoostImportant machine learning librariesI created this document to serve as an easy introduction to basic machine learning methods.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>/posts/predicting_house_prices_keras/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/posts/predicting_house_prices_keras/</guid>
+      <description>Predict house prices - deep learning, kerascode{white-space: pre;}pre:not([class]) {background-color: white;}if (window.hljs) {hljs.configure({languages: []});hljs.initHighlightingOnLoad();if (document.readyState &amp;&amp; document.readyState === &#34;complete&#34;) {window.setTimeout(function() { hljs.initHighlighting(); }, 0);}}h1 {font-size: 34px;}h1.title {font-size: 38px;}h2 {font-size: 30px;}h3 {font-size: 24px;}h4 {font-size: 18px;}h5 {font-size: 16px;}h6 {font-size: 12px;}.</description>
     </item>
     
   </channel>

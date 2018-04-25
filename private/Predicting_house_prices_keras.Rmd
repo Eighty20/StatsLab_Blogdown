@@ -1,0 +1,1646 @@
+---
+title: "Predict house prices - deep learning, keras"
+author: "Stefan Fouche"
+date: 2018-04-22
+slug: Predict_house_prices_DNN
+categories:
+  - R
+tags:
+  - Regression
+  - Deep_learning
+  - Cross-validation
+  - Backtesting
+  - Time-series
+  - Keras
+output:
+  blogdown::html_page:
+    toc: true
+---
+
+## Overview  
+
+In this notebook I try predicting house prices using deep neural nets.  
+
+For a more complete work I first try a "naive" model where we assume the price of a property can be predicted using only descriptive features with no concept of time dependence or autocorrelations. I show how to do this by applying my own version of tidy crossvalidated deep neural networks.  
+
+Next I try to apply stacked deep neural nets on data where we also record the time interaction and correlations. We do this by simultaneously optimizing over 2 networks; a simple network much like the naive model and a LSTM network for forecasting the price over time. This way the naive model will naturally lose some accuracy due to concept drift since the data it is trying to predict is further into the future, but the LSTM model will naturally pick up the slack using this autocorrelation signal.
+
+Lastly I use the LSTM model to produce a 1 month forecast and feed this as a dimension to the inference model during predictions
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# install.packages('mlbench') #if you need to inspect the original data
+# data(BostonHousing) #if you need to inspect the original data
+
+# Core Tidyverse
+library(tidyverse)
+library(glue)
+library(forcats)
+
+# Time Series
+library(timetk)
+library(tidyquant)
+library(tibbletime)
+
+# Visualization
+library(cowplot)
+
+# Preprocessing
+library(recipes)
+
+# Sampling / Accuracy
+library(rsample)
+library(yardstick) 
+
+# Modeling
+library(keras)
+```
+
+## Naive model (no time index)
+
+The naive model is based on the same example in the book <deep learning in R> by François Chollet with J. J. Allaire  
+
+For our first model we will be using the boston housing data from 1970. This data collected features of the sale but had no time index - probably because the data was only collected over 1970; possibly with some cencoring.  
+
+With no time index in the data we can think of the tensors as being 1D tensors since the samples have n features on only 1 axis.
+
+With this model we cannot really predict into the future so our predictions are only valid for predicting house prices right now (1970).
+
+### Load the data
+
+```{r}
+dataset <- dataset_boston_housing()
+c(c(train_data, train_targets), c(test_data, test_targets)) %<-% dataset
+```
+
+The training data we load here is already in a matrix format for us:
+
+```{r}
+train_data %>% head
+```
+
+We have 13 features/dimensions of collected data for each sample that we can use to predict the house price:
+
+```{r}
+train_targets %>% head
+```
+
+### Scale the variables
+
+```{r}
+
+mean <- apply(train_data, 2, mean)
+std <- apply(train_data, 2, sd)
+train_data <- scale(train_data, center = mean, scale = std)
+test_data <- scale(test_data, center = mean, scale = std)
+
+```
+
+### Define the model
+
+We can start by defining the model. Since we will be using cross-validation we define a function that constructs the model. We do this because we need to construct and train a model on each fold so we can gauge the performance accross the different folds as we fine tune our model:  
+
+#### Function that constructs a model
+
+Note that I am assuming the data input is a resample object... That's because I will be creating a tidy crossvalidation and so the objects in my table will be resamples...  
+
+I am also assuming the outcome is called 'target', but this can be generalised using enquo  
+
+```{r}
+
+define_compile_train_predict <- function(train,test,epochs = 100,shuffle = TRUE,...){
+	
+train_X <- train %>% as_tibble() %>% select(-target) %>% as.matrix()
+test_X <- test %>% as_tibble() %>% select(-target) %>% as.matrix()
+train_y <- train %>% as_tibble() %>%  select(target) %>% as.matrix()
+test_y <- test %>% as_tibble() %>%  select(target) %>% as.matrix()
+	
+#define
+base_model <- 
+keras_model_sequential() %>% 
+layer_dense(units = 64, activation = 'relu', input_shape = c(13)) %>% # 1 axis and nr features = number columns
+layer_batch_normalization() %>%
+# layer_dropout(rate = 0.2) %>%
+layer_dense(units = 64, activation ='relu') %>% 
+# layer_dense(units = 25, activation ='relu') %>%
+layer_dense(units = 1) 
+	
+#compile
+base_model %>% compile(
+  loss='mse',
+  optimizer='rmsprop',
+    # optimizer='adam',
+  metrics = c('mae')
+)
+
+#train
+history <- base_model %>% 
+  keras::fit(train_X,
+             train_y,
+             epochs=epochs,
+             shuffle=shuffle,
+             validation_data= list(test_X, test_y),
+  				verbose = 0
+             )	
+
+#predict
+predictions <- 
+	base_model %>% 
+	keras::predict_on_batch(x = train_X)
+
+results <- 
+base_model %>% 
+keras::evaluate(test_X, test_y, verbose = 0)
+
+plot_outp <- 
+	history %>% plot
+
+return(list(predictions = predictions, loss = results$loss, mae = results$mean_absolute_error, plot_outp = plot_outp,base_model=base_model,history = history))
+	
+}
+	
+```
+
+In the example in the book they use a for loop to set up the different folds and then applyt the training and validation inside these loops. Since R has a lot of this already sovled in tidy packages I am just going to leverage them and stay inside of a tidy format so we can keep all the intermediate results and visualize the outputs all in one go
+
+
+#### Construct tidy cross-validation
+
+To do this we first setup a nice tibble using the modelr package:  
+
+```{r}
+tidy_cross_val <- 
+	train_data %>% 
+	as_tibble() %>% 
+	bind_cols(target = train_targets) %>% 
+	modelr::crossv_kfold(k = 5) %>% 
+	rename(fold = .id) %>% 
+	select(fold,everything())
+
+tidy_cross_val
+```
+
+Now we can build the models and also compile them, after that we just `pluck` out the stuff we stored in our function:
+
+```{r}
+# tidy_cross_val$model_output %>% map_dbl(pluck,"mae")
+tidy_cross_val <- 
+tidy_cross_val %>% 
+mutate(model_output = pmap(list(train = train,test = test), define_compile_train_predict,epochs = 200)) %>% 
+mutate(mae = model_output %>% map_dbl(pluck,"mae")) %>% 
+mutate(plot_outp = model_output %>% map(pluck,"plot_outp")) %>% 
+mutate(loss = model_output %>% map_dbl(pluck,"loss")) %>% 
+mutate(predictions = model_output %>% map(pluck,"predictions")) %>% 
+select(everything(),model_output)
+
+tidy_cross_val
+```
+
+From the example in the book <Deep Learning with R> the author managed a MAE of `2.54`  
+
+From our tidy cross-validation output we may notice some extreme values for folds in terms of high mae or loss...
+
+This could either be outliers or over-fitting or may be bad intialization of weights?  
+
+Let's take a closer look at the max mae:  
+
+```{r}
+tidy_cross_val %>% 
+filter(.$mae == max(.$mae)) %>% 
+pull(plot_outp)
+```
+
+We can look at some extreme folds to see if the validation and training loss diverges which should indicate over-fitting. In this case the model seems to fit great
+
+### Measuring over-fit using k-folds\ crossvalidation
+
+We can visualize this over-fitting more generally by looking in the `history` object we saved from the `keras::fit` function. By taking the mae at each epoch for all the folds we can get the average mae over the folds at each epoch and visualize how long we should train before we start making some spuriously accurate predictions:  
+
+```{r}
+
+all_mae_histories <- 
+tidy_cross_val$model_output %>% map_df(pluck,"history","metrics","val_mean_absolute_error") %>% t()
+
+average_mae_history <- data.frame(
+epoch = seq(1:ncol(all_mae_histories)),
+validation_mae = apply(all_mae_histories, 2, mean)
+)
+
+average_mae_history %>% 
+ggplot(aes(x = epoch, y = validation_mae, color = epoch))+
+	geom_line()
+
+average_mae_history %>% 
+ggplot(aes(x = epoch, y = validation_mae, color = epoch))+
+	geom_smooth()
+```
+
+
+### Get results
+
+Once we are happy with our model we can pull out all the results like this:  
+
+```{r}
+tidy_cross_val %>% 
+select(train,predictions) %>% 
+mutate(train = train %>% map(as_tibble)) %>% 
+unnest(.drop = TRUE) %>% 
+head()
+```
+
+But we have only predicted on the training data in our function and we used the model trained only on that fold... Instead it would make a lot more sense to train the model on all the data now that we have tested and tuned the model (possibly censor bad folds?)
+
+#### Using all the data
+
+Run model:  
+
+```{r}
+train <- 
+	train_data %>% 
+	as_tibble() %>% 
+	bind_cols(target = train_targets) 
+
+test <- 
+	test_data %>% 
+	as_tibble() %>% 
+bind_cols(target = test_targets) 
+
+results <- 
+	define_compile_train_predict(train,test,epochs = 100)
+
+print('mae:')
+results$mae
+print('loss:')
+results$loss
+results$plot_outp
+```
+
+Get predictions:  
+
+```{r}
+output_data <-
+bind_cols(predictions = results$predictions,train["target"],train)
+
+output_data %>% head
+```
+
+### Benchmark vs Gradient boosting machines
+
+```{r, message = FALSE}
+train <- 
+	train_data %>% 
+	as_tibble() %>% 
+	bind_cols(target = train_targets %>% as.numeric() )
+
+test <- 
+	test_data %>% 
+	as_tibble() %>% 
+bind_cols(target = test_targets %>% as.numeric() ) 
+
+tr_contrl <- caret::trainControl(method = 'cv', number = 5)
+
+results <- 
+caret::train(form = target~., data = train,method = 'gbm',trControl = tr_contrl)
+
+results %>% summary
+results
+	
+```
+
+So the gradient boosted machine using k-fold can get around 2.4-2.9 MAE and the GBM model is historically the best tabular learning paradigm in the average kaggle contest the last couple of years (around 2016). Our model learned the same ammount of accuracy also using cross-validation.
+
+## Time series models using LSTM together with an inference network
+
+Besides a dense feedforward network we can also predict time series movements of house prices using a LSTM network. This will allow us to predict the average move in house prices over the next couple of months
+
+### Read in the data
+
+> All residential home sales in Ames, Iowa between 2006 and 2010
+
+```{r}
+# https://www.openintro.org/stat/data/ames.csv
+
+if(!file.exists("../../static/data/cencus_data.csv")){
+	download.file(url = 'https://www.openintro.org/stat/data/ames.csv',destfile = 'static/data/cencus_data.csv')
+}
+
+```
+
+So we can tell that in this data we have primarily just a time index and a value. This is enough for us but we need to pre-process and label these 2 fields in a tidy dataframe before we start ironing out the model process.  
+
+### Read in the data
+
+```{r}
+housing_time_series <- 
+	data.table::fread(input = "../../static/data/cencus_data.csv")
+
+housing_time_series %>% head
+```
+
+### Process data
+
+We need to:  
+- Deal with NA's  
+- Create vectorized tensors  
+- Scale tensors into small values  
+- Make sure all tensors have homogeneous scale  
+- Split data into time series and inference sets  
+
+We need to create a date formatted feature and we need to parse our categorical features to vectorized tensors. The reason we do this is because we want to fit 2 different models at the same time. One model will predict the price of a property based on the autocorrelations in the data, much like an arima or ets model would (we can use LSTM networks for this), and the other model will predict the price of the home given the 1D tensor data describing the property - street, size, zoning etc.
+
+Let's count NA's
+
+```{r}
+NA_info <- 
+housing_time_series %>% 
+  as_tibble() %>% 
+map_df(~.x %>% is.na %>% sum) %>% 
+gather(key = "feature", value = "count_NA") %>% 
+arrange(-count_NA)
+```
+
+So out of the 82 columns in the data the colums that have more than 50 NA's are  
+
+```{r}
+remove_features_str <- 
+NA_info %>% 
+filter(count_NA>50) %>% 
+pull(feature)
+
+remove_features_str
+
+remove_features_str %>% length()
+```
+
+For the sake of this tutorial we will just throw these away but it may be useful to impute these using nearest neighbors or mean imputations. You can leverage something like the mice package.
+
+Remove the columns and remove leftover NA observations
+
+```{r}
+housing_time_series_cleaned <- 
+housing_time_series %>% 
+select(-which(names(.) %in% remove_features_str)) %>% 
+na.omit() %>% 
+select(SalePrice,Yr.Sold,Mo.Sold,everything()) %>% 
+select(-PID,-Order
+# ,-Year.Built,-Year.Remod.Add
+)
+	
+housing_time_series_cleaned %>% dim()
+```
+
+So what we are left with is a table with 66 features and 2904 samples...
+
+#### Split the data for 2 models
+
+We want to train a model to predict house prices using the descriptive features and also train an lstm model to predict future price movements.
+
+First we need to split test train sets:
+
+```{r}
+split_data <- 
+caret::createDataPartition(housing_time_series_cleaned$SalePrice, p = 0.8, list = FALSE)
+
+train <- 
+housing_time_series_cleaned[split_data,]
+
+test <- 
+housing_time_series_cleaned[-split_data,]
+```
+
+It's important that our time series does not have missing months since we will lag time vectors later on... If there were missing months the auto correlation of say n month lags will get mixed up with n+1 month lags. Let's check this:  
+
+```{r}
+interaction(test$Yr.Sold,test$Mo.Sold) %>% unique()
+interaction(train$Yr.Sold,train$Mo.Sold) %>% unique()
+```
+
+Since both sets have all 60 months we don't have any problems here...  
+
+For the LSTM model we need only the time index and the value:
+
+For the time series model we are going to train on the moving average monthly house price so the complete model can use this in predictions  
+
+```{r}
+LSTM_train <- 
+train %>% 
+select(SalePrice,Yr.Sold,Mo.Sold) %>% 
+tidyr::unite(col = index,Yr.Sold,Mo.Sold,sep="-") %>% 
+mutate(index = index %>% zoo::as.yearmon() %>% as_date()) %>% 
+rename(value = SalePrice) %>% 
+group_by(index) %>% 
+summarise(value = mean(value,na.rm = TRUE)) %>% 
+as_tbl_time(index = index) 
+
+LSTM_test <- 
+test %>% 
+select(SalePrice,Yr.Sold,Mo.Sold) %>% 
+tidyr::unite(col = index,Yr.Sold,Mo.Sold,sep="-") %>% 
+mutate(index = index %>% zoo::as.yearmon() %>% as_date()) %>% 
+rename(value = SalePrice) %>% 
+group_by(index) %>% 
+summarise(value = mean(value,na.rm = TRUE)) %>% 
+as_tbl_time(index = index) 
+
+LSTM_train %>% head
+
+```
+
+Function that one_hot encodes classes for prediction
+
+```{r}
+
+one_hot_categorical_inputs_fn <- function(tibble_df) {
+	
+one_hot_list <- 
+tibble_df %>% 
+map_if(is.character,as_factor) %>% 
+map_if(is.factor,keras::to_categorical)
+
+bind_binary_classes <- 
+one_hot_list %>% 
+purrr::keep(is.matrix) %>% 
+reduce(cbind)
+
+bind_numeric_features <- 
+one_hot_list %>% 
+purrr::discard(is.matrix) %>% 
+reduce(cbind) %>% 
+as.matrix()
+	
+return(cbind(bind_numeric_features,bind_binary_classes))
+	
+}
+
+```
+
+Before we cast everything to numeric we should scale these numeric variables since the new sparse matrices will have 1's and 0's:  
+
+Function that will scale all the numeric variables
+
+```{r}
+scale_numerics_fn <- function(df_in, mean = NULL, std = NULL,...) {
+	
+numeric_cols <- 
+df_in %>% map_lgl(is.numeric)
+
+scaled_numeric <- 
+df_in %>% 
+select_if(numeric_cols)
+
+if(is.null(mean) | is.null(std)) {
+mean <- apply(scaled_numeric, 2, mean)
+std <- apply(scaled_numeric, 2, sd)
+}
+
+recombined <- 
+cbind(
+scale(scaled_numeric, center = mean, scale = std),
+df_in %>% select_if(!numeric_cols)
+)
+
+return(list(recombined = recombined,mean = mean, std = std))
+
+}
+```
+
+Scale numerics... (Remember that the test set must be scaled using the training scales otherwise you wouldn't be predicting using the same data scale as trained)
+
+Here we will start out with the original cleaned data again because we want to spread the same number of classes in the train and test sets
+
+
+```{r}
+
+data_scaled <- 
+	housing_time_series_cleaned %>% 
+	select(-Yr.Sold,-Mo.Sold,-SalePrice)
+
+data_scaled_outp <- 
+data_scaled %>% 
+scale_numerics_fn
+
+data_scaled <- 
+	data_scaled_outp$recombined
+
+inference_X <- 
+data_scaled %>% 
+one_hot_categorical_inputs_fn()
+
+inference_target <- 
+housing_time_series_cleaned %>% 
+select(SalePrice) %>% 
+as.matrix()
+
+inference_X %>% head
+inference_target %>% head
+
+inference_train_X <- 
+inference_X[split_data,]
+
+inference_test_X <- 
+inference_X[-split_data,]
+	
+inference_train_target <- 
+inference_target[split_data,]
+	
+inference_test_target <- 
+inference_target[-split_data,]
+
+```
+	
+So we have `r dim(inference_train_X)[2]` dimesnions on the tensor axis  
+	
+So at this point we have nicely scaled and homogeneous inputs in a nice vectorized format for our tensors to learn with. The only data we have not vectorized is the time series data we will use in the LSTM model
+
+### Design inference model
+
+Now that our data is processed we can try to build the skeleton of our inference model that we will train together with the LSTM model
+
+We can use the same structure we used in the naive model:  
+
+```{r}
+define_compile_train_predict <- function(train_X,test_X,train_y,test_y,epochs = 100,shuffle = TRUE,...){
+	
+#define
+base_model <- 
+keras_model_sequential() %>% 
+layer_dense(units = 128, activation = 'relu', input_shape = dim(train_X)[2]) %>% # 1 axis and nr features = number columns
+layer_batch_normalization() %>%
+# layer_dropout(rate = 0.2) %>%
+layer_dense(units = 64, activation ='relu') %>% 
+layer_dense(units = 32, activation ='relu') %>% 
+# layer_dense(units = 25, activation ='relu') %>%
+layer_dense(units = 1) 
+	
+#compile
+base_model %>% compile(
+  loss='mse',
+  optimizer='rmsprop',
+    # optimizer='adam',
+  metrics = c('mae')
+)
+
+#train
+history <- base_model %>% 
+  keras::fit(train_X,
+             train_y,
+             epochs=epochs,
+             shuffle=shuffle,
+             validation_data= list(test_X, test_y),
+  				verbose = 0
+             )	
+
+#predict
+predictions <- 
+	base_model %>% 
+	keras::predict_on_batch(x = train_X)
+
+results <- 
+base_model %>% 
+keras::evaluate(test_X, test_y, verbose = 0)
+
+plot_outp <- 
+	history %>% plot
+
+return(list(predictions = predictions, loss = results$loss, mae = results$mean_absolute_error, plot_outp = plot_outp,base_model=base_model,history = history))
+	
+}
+
+```
+
+Let's see out of box performance of our inference network:  
+
+```{r}
+model_outp <- 
+define_compile_train_predict(train_X = inference_train_X, train_y = inference_train_target,test_X = inference_test_X, test_y = inference_test_target)
+
+model_outp$plot_outp
+
+model_outp$history$metrics$val_mean_absolute_error %>% last()
+```
+
+This looks promising... If we calculate the MAE / average price: `r model_outp$history$metrics$val_mean_absolute_error %>% last() / inference_train_target %>% mean * 100` %  
+
+This is the expected % error before we optimize the model and combine the LSTM network. I have not yet tested and tuned the network here so with some revision to the network we could potensially improve this by a lot.
+
+### Design LSTM model
+
+Let's start by visualizing the time series data...  
+
+Now remember we made the training time tibble:  
+
+```{r}
+LSTM_train %>% head
+```
+
+Let's visualize the average price
+
+```{r}
+LSTM_train %>%
+    # filter_time("2008" ~ "end") %>%
+    ggplot(aes(index, value)) +
+    geom_line(color = palette_light()[[1]], alpha = 0.5) +
+    geom_point(color = palette_light()[[1]]) +
+    geom_smooth(method = "loess", span = 0.2, se = FALSE) +
+    theme_tq()+
+labs(title = 'All residential home sales in Ames, Iowa between 2006 and 2010')
+```
+
+So this timeseries actually looks surprisingly stationary with expected volatility around the 2009 market crash. We will have to see if a LSTM network can make some sense out of this.
+
+We define the handy tidy_acf function
+
+```{r}
+tidy_acf <- function(data, value, lags = 0:20) {
+    
+    value_expr <- enquo(value)
+    
+    acf_values <- data %>%
+        pull(value) %>%
+        acf(lag.max = tail(lags, 1), plot = FALSE) %>%
+        .$acf %>%
+        .[,,1]
+    
+    ret <- tibble(acf = acf_values) %>%
+        rowid_to_column(var = "lag") %>%
+        mutate(lag = lag - 1) %>%
+        filter(lag %in% lags)
+    
+    return(ret)
+}
+
+tidy_pacf <- function(data, value, lags = 0:20) {
+    
+    value_expr <- enquo(value)
+    
+    pacf_values <- data %>%
+        pull(value) %>%
+        pacf(lag.max = tail(lags, 1), plot = FALSE) %>%
+        .$acf %>%
+        .[,,1]
+    
+    ret <- tibble(pacf = pacf_values) %>%
+        rowid_to_column(var = "lag") %>%
+        mutate(lag = lag - 1) %>%
+        filter(lag %in% lags)
+    
+    return(ret)
+}
+```
+
+Let's view the significant lags in the ACF and PACF
+
+```{r}
+max_lag <- 100 # these are months, since our samples are sales in a month
+
+LSTM_train %>%
+    tidy_acf(value, lags = 0:max_lag)
+
+LSTM_train %>%
+    tidy_pacf(value, lags = 0:max_lag)
+```
+
+Visualize it:  
+
+```{r}
+LSTM_train %>%
+    tidy_acf(value, lags = 0:max_lag) %>%
+    ggplot(aes(lag, acf)) +
+    geom_segment(aes(xend = lag, yend = 0), color = palette_light()[[1]]) +
+    geom_vline(xintercept = 2, size = 1, color = palette_light()[[2]],alpha = 0.3) +
+    # geom_vline(xintercept = 25, size = 2, color = palette_light()[[2]]) +
+    # annotate("text", label = "10 Year Mark", x = 130, y = 0.8, 
+             # color = palette_light()[[2]], size = 6, hjust = 0) +
+    theme_tq() +
+    labs(title = "ACF: Ames, Iowa home sales",subtitle = 'Mostly white noise, possible 2 lag')
+
+LSTM_train %>%
+    tidy_pacf(value, lags = 0:max_lag) %>%
+    ggplot(aes(lag, pacf)) +
+    geom_segment(aes(xend = lag, yend = 0), color = palette_light()[[1]]) +
+    # geom_vline(xintercept = 3, size = 1, color = palette_light()[[2]],alpha = 0.3) +
+    # annotate("text", label = "10 Year Mark", x = 130, y = 0.8, 
+             # color = palette_light()[[2]], size = 6, hjust = 0) +
+    theme_tq() +
+    labs(title = "PACF: Ames, Iowa home sales",subtitle = 'Mostly white noise, possible 2 lag')
+
+
+```
+
+To remain completely objective here we can consult the `forecast` package:  
+
+```{r}
+forecast::auto.arima(LSTM_train$value,max.q = 0)
+```
+
+For the sake of exploration we can try the ar 2 framework
+
+```{r}
+LSTM_train %>%
+    tidy_acf(value, lags = 0:15) %>%
+    ggplot(aes(lag, acf)) +
+    geom_vline(xintercept = 2, size = 3, color = palette_light()[[2]],alpha=0.3) +
+    geom_segment(aes(xend = lag, yend = 0), color = palette_light()[[1]]) +
+    geom_point(color = palette_light()[[1]], size = 2) +
+    geom_label(aes(label = acf %>% round(2)), vjust = -1,
+              color = palette_light()[[1]]) +
+    annotate("text", label = "2 Month Mark", x = 3, y = 0.8, 
+             color = palette_light()[[2]], size = 5, hjust = 0) +
+    theme_tq() +
+    labs(title = "ACF: Iowa",
+         subtitle = "Zoomed in on Lags 1 to 15")
+
+optimal_lag_setting <- 2
+```
+
+For us to validate the model we will use a method called backtesting. Backtesting is basically splitting the data into different splits of data and for each split leaving out a future horizon that you can predict and measure accuracy. By testing all the different folds we can feel more certain of model performance since it wasn't just a one time lucky score.  
+
+```{r}
+
+# periods_train <- 12 * 50
+# periods_test  <- 12 * 10
+# skip_span     <- 12 * 20
+
+periods_train <- 24
+periods_test  <- 3
+skip_span     <- 6
+
+rolling_origin_resamples <- rolling_origin(
+    LSTM_train,
+    initial    = periods_train,
+    assess     = periods_test,
+    cumulative = FALSE,
+    skip       = skip_span
+)
+
+rolling_origin_resamples
+```
+
+A function that visualizes the different times series splits:  
+
+```{r}
+# Plotting function for a single split
+plot_split <- function(split, expand_y_axis = TRUE, alpha = 1, size = 1, base_size = 14) {
+    
+    # Manipulate data
+    train_tbl <- training(split) %>%
+        add_column(key = "training") 
+    
+    test_tbl  <- testing(split) %>%
+        add_column(key = "testing") 
+    
+    data_manipulated <- bind_rows(train_tbl, test_tbl) %>%
+        as_tbl_time(index = index) %>%
+        mutate(key = fct_relevel(key, "training", "testing"))
+        
+    # Collect attributes
+    train_time_summary <- train_tbl %>%
+        tk_index() %>%
+        tk_get_timeseries_summary()
+    
+    test_time_summary <- test_tbl %>%
+        tk_index() %>%
+        tk_get_timeseries_summary()
+    
+    # Visualize
+    g <- data_manipulated %>%
+        ggplot(aes(x = index, y = value, color = key)) +
+        geom_line(size = size, alpha = alpha) +
+        theme_tq(base_size = base_size) +
+        scale_color_tq() +
+        labs(
+            title    = glue("Split: {split$id}"),
+            subtitle = glue("{train_time_summary$start} to {test_time_summary$end}"),
+            y = "", x = ""
+        ) +
+        theme(legend.position = "none") 
+    
+    if (expand_y_axis) {
+        
+        sun_spots_time_summary <- sun_spots %>% 
+            tk_index() %>% 
+            tk_get_timeseries_summary()
+        
+        g <- g +
+            scale_x_date(limits = c(sun_spots_time_summary$start, 
+                                    sun_spots_time_summary$end))
+    }
+    
+    return(g)
+}
+```
+
+Plotting function that we can map over all these splits
+
+```{r}
+# Plotting function that scales to all splits 
+plot_sampling_plan <- function(sampling_tbl, expand_y_axis = TRUE, 
+                               ncol = 3, alpha = 1, size = 1, base_size = 14, 
+                               title = "Sampling Plan") {
+    
+    # Map plot_split() to sampling_tbl
+    sampling_tbl_with_plots <- sampling_tbl %>%
+        mutate(gg_plots = map(splits, plot_split, 
+                              expand_y_axis = expand_y_axis,
+                              alpha = alpha, base_size = base_size))
+    
+    # Make plots with cowplot
+    plot_list <- sampling_tbl_with_plots$gg_plots 
+    
+    p_temp <- plot_list[[1]] + theme(legend.position = "bottom")
+    legend <- get_legend(p_temp)
+    
+    p_body  <- plot_grid(plotlist = plot_list, ncol = ncol)
+    
+    p_title <- ggdraw() + 
+        draw_label(title, size = 18, fontface = "bold", colour = palette_light()[[1]])
+    
+    g <- plot_grid(p_title, p_body, legend, ncol = 1, rel_heights = c(0.05, 1, 0.05))
+    
+    return(g)
+    
+}
+```
+
+Let's visualize our backtesting folds:  
+
+```{r}
+rolling_origin_resamples %>%
+    plot_sampling_plan(expand_y_axis = FALSE, ncol = 2, alpha = 1, size = 1, base_size = 10, 
+                       title = "Backtesting Strategy: Rolling Origin Sampling Plan")
+
+```
+
+### Test a LSTM model
+
+OK, so now that we have a backtesting strategy set we should try to fit a model on one of the folds:
+
+```{r}
+split    <- rolling_origin_resamples$splits[[1]]
+split_id <- rolling_origin_resamples$id[[1]]
+
+plot_split(split, expand_y_axis = FALSE, size = 0.5) +
+    theme(legend.position = "bottom") +
+    ggtitle(glue("Split: {split_id}"))
+```
+
+#### Split test/train
+
+```{r}
+df_trn <- training(split)
+df_tst <- testing(split)
+
+df <- bind_rows(
+    df_trn %>% add_column(key = "training"),
+    df_tst %>% add_column(key = "testing")
+) %>% 
+    as_tbl_time(index = index)
+
+df
+```
+
+#### Scale and center the data
+
+We can process this data using the recipes package
+
+```{r}
+rec_obj <- recipe(value ~ ., df) %>%
+    step_sqrt(value) %>%
+    step_center(value) %>%
+    step_scale(value) %>%
+    prep()
+
+df_processed_tbl <- bake(rec_obj, df)
+
+df_processed_tbl
+```
+
+We will need to save the scaling factors so that we can restore the scale at the end
+
+```{r}
+center_history <- rec_obj$steps[[2]]$means["value"]
+scale_history  <- rec_obj$steps[[3]]$sds["value"]
+
+c("center" = center_history, "scale" = scale_history)
+
+```
+
+Let's define our model inputs:  
+
+```{r}
+# Model inputs
+lag_setting  <- 3 # = nrow(df_tst)
+batch_size   <- 3
+train_length <- 24 # nrow(df_trn)
+tsteps       <- 1
+epochs       <- 300
+```
+
+Set up training and test sets
+
+```{r}
+# Training Set
+lag_train_tbl <- df_processed_tbl %>%
+    mutate(value_lag = lag(value, n = lag_setting)) %>%
+    filter(!is.na(value_lag)) %>%
+    filter(key == "training") %>%
+    tail(train_length)
+
+x_train_vec <- lag_train_tbl$value_lag
+x_train_arr <- array(data = x_train_vec, dim = c(length(x_train_vec), 1, 1))
+
+y_train_vec <- lag_train_tbl$value
+y_train_arr <- array(data = y_train_vec, dim = c(length(y_train_vec), 1))
+
+# Testing Set
+lag_test_tbl <- df_processed_tbl %>%
+    mutate(
+        value_lag = lag(value, n = lag_setting)
+    ) %>%
+    filter(!is.na(value_lag)) %>%
+    filter(key == "testing")
+
+x_test_vec <- lag_test_tbl$value_lag
+x_test_arr <- array(data = x_test_vec, dim = c(length(x_test_vec), 1, 1))
+
+y_test_vec <- lag_test_tbl$value
+y_test_arr <- array(data = y_test_vec, dim = c(length(y_test_vec), 1))
+```
+
+Test a LSTM network to get a feel for the model:
+
+```{r}
+model <- keras_model_sequential()
+
+model %>%
+    layer_lstm(units            = 10, 
+               input_shape      = c(tsteps, 1), 
+               batch_size       = batch_size,
+               return_sequences = TRUE, 
+               stateful         = TRUE) %>% 
+    layer_lstm(units            = 10, 
+               return_sequences = FALSE, 
+               stateful         = TRUE) %>% 
+    layer_dense(units = 1)
+
+model %>% 
+    compile(loss = 'mae', optimizer = 'adam')
+
+model
+
+```
+
+```{r}
+for (i in 1:epochs) {
+    model %>% keras::fit(x   = x_train_arr, 
+                  y          = y_train_arr, 
+                  batch_size = batch_size,
+                  epochs     = 1, 
+                  verbose    = 0, 
+                  shuffle    = FALSE)
+    
+    model %>% reset_states()
+    # cat("Epoch: ", i, '\n')
+    
+}
+
+```
+
+Now let's predict the next 3 months so we can test the performance of the model
+
+```{r}
+
+pred_out <- model %>% 
+    predict(x_test_arr, batch_size = batch_size) %>%
+    .[,1] 
+
+# Retransform values
+pred_tbl <- tibble(
+    index   = lag_test_tbl$index,
+    value   = (pred_out * scale_history + center_history)^2
+) 
+
+# Combine actual data with predictions
+tbl_1 <- df_trn %>%
+    add_column(key = "actual")
+
+tbl_2 <- df_tst %>%
+    add_column(key = "actual")
+
+tbl_3 <- pred_tbl %>%
+    add_column(key = "predict")
+
+# Create time_bind_rows() to solve dplyr issue
+time_bind_rows <- function(data_1, data_2, index) {
+    index_expr <- enquo(index)
+    bind_rows(data_1, data_2) %>%
+        as_tbl_time(index = !! index_expr)
+}
+
+ret <- list(tbl_1, tbl_2, tbl_3) %>%
+    reduce(time_bind_rows, index = index) %>%
+    arrange(key, index) %>%
+    mutate(key = as_factor(key))
+
+ret
+```
+
+Function to calculate rmse for us
+
+```{r}
+calc_rmse <- function(prediction_tbl) {
+    
+    rmse_calculation <- function(data) {
+        data %>%
+            spread(key = key, value = value) %>%
+            select(-index) %>%
+            filter(!is.na(predict)) %>%
+            rename(
+                truth    = actual,
+                estimate = predict
+            ) %>%
+            rmse(truth, estimate)
+    }
+    
+    safe_rmse <- possibly(rmse_calculation, otherwise = NA)
+    
+    safe_rmse(prediction_tbl)
+        
+}
+```
+
+which is:  
+
+```{r}
+calc_rmse(ret) 
+```
+
+Function that plots the errors...  
+
+```{r}
+# Setup single plot function
+plot_prediction <- function(data, id, alpha = 1, size = 2, base_size = 14) {
+    
+    rmse_val <- calc_rmse(data)
+    
+    g <- data %>%
+        ggplot(aes(index, value, color = key)) +
+        geom_point(alpha = alpha, size = size) + 
+        # geom_line(alpha = alpha, size = size)+
+        theme_tq(base_size = base_size) +
+        scale_color_tq() +
+        theme(legend.position = "none") +
+        labs(
+            title = glue("{id}, RMSE: {round(rmse_val, digits = 1)}"),
+            x = "", y = ""
+        )
+    
+    return(g)
+}
+```
+
+Let's see the performance:  
+
+```{r}
+ret %>% 
+    plot_prediction(id = split_id, alpha = 0.65) +
+    theme(legend.position = "bottom")
+```
+
+Awesome the LSTM model is ready to start making us some predictions!
+
+Now we need to back test the model on all the time slices now since we now have a method we can map over all of them simultaneously  
+
+### Back test LSTM model
+
+Let's create a function that will compile, fit and predict the LSTM network.
+
+Basically this function will do everything we just did for testing the single fold so we can map it accross all the folds
+
+```{r}
+predict_keras_lstm <- function(split, epochs = 300, lag_setting, batch_size, train_length,  tsteps, optimizer = 'adam',...) {
+    
+    lstm_prediction <- function(split, epochs, lag_setting, batch_size, train_length,  tsteps, optimizer, ...) {
+        
+        # 5.1.2 Data Setup
+        df_trn <- training(split)
+        df_tst <- testing(split)
+        
+        df <- bind_rows(
+            df_trn %>% add_column(key = "training"),
+            df_tst %>% add_column(key = "testing")
+        ) %>% 
+            as_tbl_time(index = index)
+        
+        # 5.1.3 Preprocessing
+        rec_obj <- recipe(value ~ ., df) %>%
+            step_sqrt(value) %>%
+            step_center(value) %>%
+            step_scale(value) %>%
+            prep()
+        
+        df_processed_tbl <- bake(rec_obj, df)
+        
+        center_history <- rec_obj$steps[[2]]$means["value"]
+        scale_history  <- rec_obj$steps[[3]]$sds["value"]
+        
+        # # 5.1.4 LSTM Plan
+        # lag_setting  <- 120 # = nrow(df_tst)
+        # batch_size   <- 40
+        # train_length <- 440
+        # tsteps       <- 1
+        # epochs       <- epochs
+        
+        # 5.1.5 Train/Test Setup
+        lag_train_tbl <- df_processed_tbl %>%
+            mutate(value_lag = lag(value, n = lag_setting)) %>%
+            filter(!is.na(value_lag)) %>%
+            filter(key == "training") %>%
+            tail(train_length)
+        
+        x_train_vec <- lag_train_tbl$value_lag
+        x_train_arr <- array(data = x_train_vec, dim = c(length(x_train_vec), 1, 1))
+        
+        y_train_vec <- lag_train_tbl$value
+        y_train_arr <- array(data = y_train_vec, dim = c(length(y_train_vec), 1))
+        
+        lag_test_tbl <- df_processed_tbl %>%
+            mutate(
+                value_lag = lag(value, n = lag_setting)
+            ) %>%
+            filter(!is.na(value_lag)) %>%
+            filter(key == "testing")
+        
+        x_test_vec <- lag_test_tbl$value_lag
+        x_test_arr <- array(data = x_test_vec, dim = c(length(x_test_vec), 1, 1))
+        
+        y_test_vec <- lag_test_tbl$value
+        y_test_arr <- array(data = y_test_vec, dim = c(length(y_test_vec), 1))
+                
+        # 5.1.6 LSTM Model
+        model <- keras_model_sequential()
+
+        model %>%
+            layer_lstm(units            = 10, 
+                       input_shape      = c(tsteps, 1), 
+                       batch_size       = batch_size,
+                       return_sequences = TRUE, 
+                       stateful         = TRUE) %>% 
+            layer_lstm(units            = 10, 
+                       return_sequences = FALSE, 
+                       stateful         = TRUE) %>% 
+            layer_dense(units = 1)
+        
+        model %>% 
+            compile(loss = 'mae', optimizer = optimizer)
+        
+        # 5.1.7 Fitting LSTM
+        for (i in 1:epochs) {
+            model %>% fit(x          = x_train_arr, 
+                          y          = y_train_arr, 
+                          batch_size = batch_size,
+                          epochs     = 1, 
+                          verbose    = 0, 
+                          shuffle    = FALSE)
+            
+            model %>% reset_states()
+            # cat("Epoch: ", i, '\n')
+            
+        }
+        
+        # 5.1.8 Predict and Return Tidy Data
+        # Make Predictions
+        pred_out <- model %>% 
+            predict(x_test_arr, batch_size = batch_size) %>%
+            .[,1] 
+        
+        # Retransform values
+        pred_tbl <- tibble(
+            index   = lag_test_tbl$index,
+            value   = (pred_out * scale_history + center_history)^2
+        ) 
+        
+        # Combine actual data with predictions
+        tbl_1 <- df_trn %>%
+            add_column(key = "actual")
+        
+        tbl_2 <- df_tst %>%
+            add_column(key = "actual")
+        
+        tbl_3 <- pred_tbl %>%
+            add_column(key = "predict")
+        
+        # Create time_bind_rows() to solve dplyr issue
+        time_bind_rows <- function(data_1, data_2, index) {
+            index_expr <- enquo(index)
+            bind_rows(data_1, data_2) %>%
+                as_tbl_time(index = !! index_expr)
+        }
+        
+        ret <- list(tbl_1, tbl_2, tbl_3) %>%
+            reduce(time_bind_rows, index = index) %>%
+            arrange(key, index) %>%
+            mutate(key = as_factor(key))
+
+        return(ret)
+        
+    }
+    
+    safe_lstm <- possibly(lstm_prediction, otherwise = NA)
+    
+    safe_lstm(split, epochs, lag_setting, batch_size, train_length,  tsteps, optimizer, ...)
+    
+}
+```
+
+Set our test parameters (remember that the training samples must be divisable by the batch size)
+
+```{r}
+lag_setting  <- 3 # = nrow(df_tst)
+batch_size   <- 3
+train_length <- 24 # nrow(df_trn)
+tsteps       <- 1
+epochs       <- 300
+```
+
+Now we map the LSTM model over all our times series folds to back test:  
+
+```{r,eval=FALSE}
+sample_predictions_lstm_tbl <- 
+rolling_origin_resamples %>%
+	mutate(predict = map(
+		splits,
+		predict_keras_lstm,
+		epochs = 300,
+		lag_setting = lag_setting,
+		batch_size = batch_size,
+		train_length = train_length ,
+		tsteps = tsteps ,
+		optimizer = 'adam'
+		))
+
+sample_predictions_lstm_tbl %>% head
+
+```
+
+We can reuse our rmse calculator to see our accuracy over each time slice:  
+
+```{r}
+sample_rmse_tbl <- sample_predictions_lstm_tbl %>%
+    mutate(rmse = map_dbl(predict, calc_rmse)) %>%
+    select(id, rmse)
+
+sample_rmse_tbl
+```
+
+We can plot the RMSE over the various folds:  
+
+```{r}
+sample_rmse_tbl %>%
+    ggplot(aes(rmse)) +
+    geom_histogram(aes(y = ..density..), fill = palette_light()[[1]], bins = 5) +
+    geom_density(fill = palette_light()[[1]], alpha = 0.5) +
+    theme_tq() +
+    ggtitle("Histogram of RMSE")
+```
+
+And the distribution is:  
+
+```{r}
+sample_rmse_tbl %>%
+    summarize(
+        mean_rmse = mean(rmse),
+        sd_rmse   = sd(rmse)
+    )
+```
+
+The same way we created a funtion to plot the test and training sets we can make one to plot the actuals and predicted values:  
+
+```{r}
+plot_predictions <- function(sampling_tbl, predictions_col, 
+                             ncol = 3, alpha = 1, size = 2, base_size = 14,
+                             title = "Backtested Predictions") {
+    
+    predictions_col_expr <- enquo(predictions_col)
+    
+    # Map plot_split() to sampling_tbl
+    sampling_tbl_with_plots <- sampling_tbl %>%
+        mutate(gg_plots = map2(!! predictions_col_expr, id, 
+                               .f        = plot_prediction, 
+                               alpha     = alpha, 
+                               size      = size, 
+                               base_size = base_size)) 
+    
+    # Make plots with cowplot
+    plot_list <- sampling_tbl_with_plots$gg_plots 
+    
+    p_temp <- plot_list[[1]] + theme(legend.position = "bottom")
+    legend <- get_legend(p_temp)
+    
+    p_body  <- plot_grid(plotlist = plot_list, ncol = ncol)
+    
+    
+    
+    p_title <- ggdraw() + 
+        draw_label(title, size = 18, fontface = "bold", colour = palette_light()[[1]])
+    
+    g <- plot_grid(p_title, p_body, legend, ncol = 1, rel_heights = c(0.05, 1, 0.05))
+    
+    return(g)
+    
+}
+```
+
+Let's see how our LSTM model did:  
+
+```{r}
+sample_predictions_lstm_tbl %>%
+    plot_predictions(predictions_col = predict, alpha = 0.5, size = 1, base_size = 10,
+                     title = "Keras Stateful LSTM: Backtested Predictions")
+
+```
+
+Seems to be working! Even though we had small correlations
+
+#### Test final model on full dataset
+
+Now we create our function that will test the LSTM model on all the data:  
+
+```{r}
+predict_keras_lstm_future <- function(data, epochs = 300,lag_setting, batch_size, train_length,  tsteps, optimizer = 'adam',...) {
+    
+    lstm_prediction <- function(data, epochs,lag_setting, batch_size, train_length,  tsteps, optimizer, ...) {
+        
+        # 5.1.2 Data Setup (MODIFIED)
+        df <- data
+        
+        # 5.1.3 Preprocessing
+        rec_obj <- recipe(value ~ ., df) %>%
+            step_sqrt(value) %>%
+            step_center(value) %>%
+            step_scale(value) %>%
+            prep()
+        
+        df_processed_tbl <- bake(rec_obj, df)
+        
+        center_history <- rec_obj$steps[[2]]$means["value"]
+        scale_history  <- rec_obj$steps[[3]]$sds["value"]
+        
+        # 5.1.5 Train Setup (MODIFIED)
+        lag_train_tbl <- df_processed_tbl %>%
+            mutate(value_lag = lag(value, n = lag_setting)) %>%
+            filter(!is.na(value_lag)) %>%
+            tail(train_length)
+        
+        x_train_vec <- lag_train_tbl$value_lag
+        x_train_arr <- array(data = x_train_vec, dim = c(length(x_train_vec), 1, 1))
+        
+        y_train_vec <- lag_train_tbl$value
+        y_train_arr <- array(data = y_train_vec, dim = c(length(y_train_vec), 1))
+        
+        x_test_vec <- y_train_vec %>% tail(lag_setting)
+        x_test_arr <- array(data = x_test_vec, dim = c(length(x_test_vec), 1, 1))
+                
+        # 5.1.6 LSTM Model
+        model <- keras_model_sequential()
+
+        model %>%
+            layer_lstm(units            = 10, 
+                       input_shape      = c(tsteps, 1), 
+                       batch_size       = batch_size,
+                       return_sequences = TRUE, 
+                       stateful         = TRUE) %>% 
+            layer_lstm(units            = 10, 
+                       return_sequences = FALSE, 
+                       stateful         = TRUE) %>% 
+            layer_dense(units = 1)
+        
+        model %>% 
+            compile(loss = 'mae', optimizer = optimizer)
+        
+        # 5.1.7 Fitting LSTM
+        for (i in 1:epochs) {
+            model %>% fit(x          = x_train_arr, 
+                          y          = y_train_arr, 
+                          batch_size = batch_size,
+                          epochs     = 1, 
+                          verbose    = 0, 
+                          shuffle    = FALSE)
+            
+            model %>% reset_states()
+            # cat("Epoch: ", i, '\n')
+            
+        }
+        
+        # 5.1.8 Predict and Return Tidy Data (MODIFIED)
+        # Make Predictions
+        pred_out <- model %>% 
+            predict(x_test_arr, batch_size = batch_size) %>%
+            .[,1] 
+        
+        # Make future index using tk_make_future_timeseries()
+        idx <- data %>%
+            tk_index() %>%
+            tk_make_future_timeseries(n_future = lag_setting)
+        
+        # Retransform values
+        pred_tbl <- tibble(
+            index   = idx,
+            value   = (pred_out * scale_history + center_history)^2
+        )
+        
+        # Combine actual data with predictions
+        tbl_1 <- df %>%
+            add_column(key = "actual")
+
+        tbl_3 <- pred_tbl %>%
+            add_column(key = "predict")
+
+        # Create time_bind_rows() to solve dplyr issue
+        time_bind_rows <- function(data_1, data_2, index) {
+            index_expr <- enquo(index)
+            bind_rows(data_1, data_2) %>%
+                as_tbl_time(index = !! index_expr)
+        }
+
+        ret <- list(tbl_1, tbl_3) %>%
+            reduce(time_bind_rows, index = index) %>%
+            arrange(key, index) %>%
+            mutate(key = as_factor(key))
+
+        return(ret)
+        
+    }
+    
+    safe_lstm <- possibly(lstm_prediction, otherwise = NA)
+    
+    safe_lstm(data, epochs, lag_setting, batch_size, train_length,  tsteps, optimizer, ...)
+    
+}
+```
+
+
+```{r}
+future_LSTM_tbl <- 
+predict_keras_lstm_future(LSTM_train,
+		epochs = 300,
+		lag_setting = lag_setting,
+		batch_size = batch_size,
+		train_length = train_length ,
+		tsteps = tsteps ,
+		optimizer = 'adam'
+)
+
+```
+
+```{r}
+future_LSTM_tbl %>%
+    # filter_time("2008" ~ "end") %>%
+    plot_prediction(id = NULL, alpha = 0.4, size = 1.5) +
+    theme(legend.position = "bottom") +
+    ggtitle("House prices: 3 Month Forecast using LSTM deep neural net", subtitle = "Using the full dataset")
+
+```
+
+### Combine LSTM and Inference networks into 1 deep neural network??
+
+I was tempted to combine these 2 networks together so that I could backpropegate them simultaneously. This would allow us to use the inference network using descriptive features together with the macro economic trends in the market of housing prices.  
+
+To stack different deep neural networks together we can use the keras API like this:  
+
+#### Define complete model
+
+```{r}
+# data.frame(factor = 1:100,res = 2324/1:100) %>% filter(res == trunc(res))
+# batch_size <- 28
+batch_size <- 83
+
+inference_input <- 
+layer_input( name = "inference_input",batch_shape = c(batch_size,265))
+
+encoded_inference_network <- 
+inference_input %>%
+layer_dense(units = 128, activation = 'relu') %>% # 1 axis and nr features = number columns
+layer_batch_normalization() %>%
+# layer_dropout(rate = 0.2) %>%
+layer_dense(units = 64, activation ='relu') %>% 
+layer_dense(units = 32, activation ='relu') 
+# layer_dense(units = 25, activation ='relu') %>%
+
+LSTM_input <- 
+layer_input(name = "LSTM_input",batch_shape = c(batch_size,1,1))
+
+encoded_LSTM_network <- 
+LSTM_input %>%
+            layer_lstm(units            = 100, 
+                       batch_size       = batch_size,
+                       return_sequences = TRUE, 
+                       stateful         = TRUE) %>% 
+            layer_lstm(units            = 100, 
+                       return_sequences = FALSE, 
+                       stateful         = TRUE) 
+
+concatenated <- 
+layer_concatenate(list(encoded_LSTM_network, encoded_inference_network))
+
+house_price <- concatenated %>%
+layer_dense(units = 5, activation = "relu") %>% 
+layer_dense(units = 1)
+
+model <- keras_model(list(LSTM_input, inference_input), house_price)
+model %>% compile(
+optimizer = "adam",
+loss='mse',
+metrics = c('mae')
+)
+
+```
+
+Create our LSTM input:  
+
+I realised very quickly that we have a small problem here... To backpropogate both networks simultaneously they would need to feed the same batch of inputs into both networks! But our LSTM model was trained on monthly data - this means I had a 1 to many relationship between the 2 models inputs.
+
+I tried to naively circumvent this by infering the lag of prices on a per house level. We could do this by simply using the average shift and applying it as a predicted lag index:  
+
+```{r}
+prepare_LSTM_input <- function(monthly_ts,sample_ts,lag_setting,train_length) {
+
+# 5.1.5 Train Setup (MODIFIED)
+lag_train_tbl <- monthly_ts %>%
+    mutate(value_lag_month = lag(value, n = lag_setting)) %>%
+    filter(!is.na(value_lag_month)) %>%
+    tail(train_length) %>% 
+rename(value_month = value)
+
+join_df <- 
+sample_ts %>% 
+left_join(lag_train_tbl, by = 'index') %>% 
+mutate(value_lag = value * value_lag_month/value_month) %>% 
+select(index,value,value_lag)
+
+rec_obj <- recipe(index ~ ., join_df) %>%
+    step_sqrt(all_predictors()) %>%
+    step_center(all_predictors()) %>%
+    step_scale(all_predictors()) %>%
+    prep()
+
+df_processed_tbl <- bake(rec_obj, join_df)
+
+center_history <- rec_obj$steps[[2]]$means["value"]
+scale_history  <- rec_obj$steps[[3]]$sds["value"]
+
+x_train_vec <- df_processed_tbl$value_lag
+x_train_arr <- array(data = x_train_vec, dim = c(length(x_train_vec), 1, 1))
+
+y_train_vec <- df_processed_tbl$value
+y_train_arr <- array(data = y_train_vec, dim = c(length(y_train_vec), 1))
+
+return(list(LSTM_input = x_train_arr, LSTM_target = y_train_arr, center_history = center_history, scale_history = scale_history))
+}
+
+return_original_scale <- function(pred_out, scale_history,center_history) {
+return((pred_out * scale_history + center_history)^2)
+}
+```
+
+```{r}
+sample_ts <- train %>%
+  select(SalePrice,Yr.Sold,Mo.Sold) %>%
+  tidyr::unite(col = index,Yr.Sold,Mo.Sold,sep="-") %>%
+  mutate(index = index %>% zoo::as.yearmon() %>% as_date()) %>%
+  rename(value = SalePrice) %>% as_tbl_time(index = index)
+	
+LSTM_input_full_model <- 
+prepare_LSTM_input(monthly_ts = LSTM_train,sample_ts = sample_ts,lag_setting = 3,train_length = 24)
+
+```
+
+So let's try to train the 2 deep neural networks simulteneously:  
+
+```{r, eval=FALSE}
+history <- model %>% fit(
+list(inference_input = inference_train_X,
+LSTM_input = LSTM_input_full_model$LSTM_input),
+LSTM_input_full_model$LSTM_target,
+epochs = 300, 
+batch_size = batch_size,
+shuffle = FALSE
+,verbose = 0
+)
+```
+
+<!-- The plot: -->
+
+<!-- ```{r} -->
+<!-- history %>% plot -->
+<!-- ``` -->
+
+The network can't back propogate properly! This is because the LSTM model needs the inputs to move consistently through time. Even though our inputs are correctly lagged we have inconsistent numbers of rows for each time index which ruins the 'memory' part of the model...  
+
+What we can do however is use the prediction of price movement as a feature in the inference model. We can train the inference model by adding the future average price of properties by month by region truncating that data that has no future observations.
+
+Then we train the LSTM and inference networks seperately - the LSTM then predicts that future movement for us so we can test the accuracy of our combined model feeding the LSTM into the inference network into a result
+
+## Future additions
+
+I will build this feed forward from LSTM to inference network soon and then update this post!! Watch this space!!

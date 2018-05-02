@@ -13,19 +13,21 @@ tags:
   - Time-series
   - Keras
 output:
-  blogdown::html_page:
-    toc: true
+  md_document:
+    variant: markdown_github
 ---
 
 ## Overview  
 
-In this notebook I try predicting house prices using deep neural nets.  
+In this notebook I fool around with some fast prototype models for predicting house prices using deep neural nets!  
 
-For a more complete work I first try a "naive" model where we assume the price of a property can be predicted using only descriptive features with no concept of time dependence or autocorrelations. I show how to do this by applying my own version of tidy crossvalidated deep neural networks.  
+![](../../static/Pictures/tenor.gif)
 
-Next I try to apply stacked deep neural nets on data where we also record the time interaction and correlations. We do this by simultaneously optimizing over 2 networks; a simple network much like the naive model and a LSTM network for forecasting the price over time. This way the naive model will naturally lose some accuracy due to concept drift since the data it is trying to predict is further into the future, but the LSTM model will naturally pick up the slack using this autocorrelation signal.
+First I will do some LSTM modelling for the house price movement using tidy backtested crossvalidation.
 
-Lastly I use the LSTM model to produce a 1 month forecast and feed this as a dimension to the inference model during predictions
+Next I use tidy crossvalidated dense feed forward networks to predict the price of a property based on the properties descriptions!
+
+Coming soon; I will use the LSTM model to produce a 1 month forecast and feed this as a dimension to the inference model during predictions of houses for which we believe we have the descriptive data now but we will only sell the property in a months time. I will compare the errors by holding out the last few months of data to test the combined accuracy accounting for price movement.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -58,7 +60,7 @@ library(keras)
 
 ## Naive model (no time index)
 
-The naive model is based on the same example in the book <deep learning in R> by François Chollet with J. J. Allaire  
+As a little introduction we can cover the example in the book <deep learning in R> by François Chollet with J. J. Allaire  
 
 For our first model we will be using the boston housing data from 1970. This data collected features of the sale but had no time index - probably because the data was only collected over 1970; possibly with some cencoring.  
 
@@ -161,8 +163,7 @@ return(list(predictions = predictions, loss = results$loss, mae = results$mean_a
 	
 ```
 
-In the example in the book they use a for loop to set up the different folds and then applyt the training and validation inside these loops. Since R has a lot of this already sovled in tidy packages I am just going to leverage them and stay inside of a tidy format so we can keep all the intermediate results and visualize the outputs all in one go
-
+In the example in the book they use a for loop to set up the different folds and then apply the training and validation inside these loops. Since R has a lot of this already solved in tidy packages I am just going to leverage them and stay inside of a tidy format so we can keep all the intermediate results and visualize the outputs all in one go
 
 #### Construct tidy cross-validation
 
@@ -196,13 +197,20 @@ select(everything(),model_output)
 tidy_cross_val
 ```
 
-From the example in the book <Deep Learning with R> the author managed a MAE of `2.54`  
+By mapping the deeplearning model over all these folds of data we store our results directly into this table. That means we can do interesting things like plot them altogether:
 
-From our tidy cross-validation output we may notice some extreme values for folds in terms of high mae or loss...
+```{r}
+tidy_cross_val %>% 
+  ggplot(aes(x=fold,y=mae, fill = fold))+
+  geom_bar(stat="identity")+
+  ggtitle("The k-fold accuracy of the deep neural net",subtitle = "Not yet scaled back...")
+```
 
-This could either be outliers or over-fitting or may be bad intialization of weights?  
+This gives us a good idea of our certainty in the model.
 
-Let's take a closer look at the max mae:  
+From our tidy cross-validation output we may notice some extreme values for folds in terms of high mae or loss... These should be treated appropriately
+
+Let's take a closer look at the max mae fold:  
 
 ```{r}
 tidy_cross_val %>% 
@@ -212,9 +220,9 @@ pull(plot_outp)
 
 We can look at some extreme folds to see if the validation and training loss diverges which should indicate over-fitting. In this case the model seems to fit great
 
-### Measuring over-fit using k-folds\ crossvalidation
+### Measuring over-fit using k-folds crossvalidation
 
-We can visualize this over-fitting more generally by looking in the `history` object we saved from the `keras::fit` function. By taking the mae at each epoch for all the folds we can get the average mae over the folds at each epoch and visualize how long we should train before we start making some spuriously accurate predictions:  
+We can visualize this over-fitting more generally by looking in the `history` object we saved from the `keras::fit` function. By taking the mae at each epoch for all the folds we can get the average mae over the folds at each epoch and visualize how long we should train before we start making some spurious predictions:  
 
 ```{r}
 
@@ -235,6 +243,7 @@ ggplot(aes(x = epoch, y = validation_mae, color = epoch))+
 	geom_smooth()
 ```
 
+The benefit of this is that you are plotting the mean behaviour of the training at each epoch over all folds
 
 ### Get results
 
@@ -286,7 +295,7 @@ output_data %>% head
 
 ### Benchmark vs Gradient boosting machines
 
-```{r, message = FALSE}
+```{r, message = FALSE, results='hide'}
 train <- 
 	train_data %>% 
 	as_tibble() %>% 
@@ -309,6 +318,8 @@ results
 
 So the gradient boosted machine using k-fold can get around 2.4-2.9 MAE and the GBM model is historically the best tabular learning paradigm in the average kaggle contest the last couple of years (around 2016). Our model learned the same ammount of accuracy also using cross-validation.
 
+![](../../static/Pictures/v5T.gif)
+
 ## Time series models using LSTM together with an inference network
 
 Besides a dense feedforward network we can also predict time series movements of house prices using a LSTM network. This will allow us to predict the average move in house prices over the next couple of months
@@ -317,11 +328,11 @@ Besides a dense feedforward network we can also predict time series movements of
 
 > All residential home sales in Ames, Iowa between 2006 and 2010
 
-```{r}
+```{r, eval=FALSE}
 # https://www.openintro.org/stat/data/ames.csv
 
 if(!file.exists("../../static/data/cencus_data.csv")){
-	download.file(url = 'https://www.openintro.org/stat/data/ames.csv',destfile = 'static/data/cencus_data.csv')
+	download.file(url = 'https://www.openintro.org/stat/data/ames.csv',destfile = '../../static/data/cencus_data.csv')
 }
 
 ```
@@ -552,6 +563,8 @@ So we have `r dim(inference_train_X)[2]` dimesnions on the tensor axis
 	
 So at this point we have nicely scaled and homogeneous inputs in a nice vectorized format for our tensors to learn with. The only data we have not vectorized is the time series data we will use in the LSTM model
 
+![](../../static/Pictures/1b6.gif)
+
 ### Design inference model
 
 Now that our data is processed we can try to build the skeleton of our inference model that we will train together with the LSTM model
@@ -621,7 +634,7 @@ model_outp$history$metrics$val_mean_absolute_error %>% last()
 
 This looks promising... If we calculate the MAE / average price: `r model_outp$history$metrics$val_mean_absolute_error %>% last() / inference_train_target %>% mean * 100` %  
 
-This is the expected % error before we optimize the model and combine the LSTM network. I have not yet tested and tuned the network here so with some revision to the network we could potensially improve this by a lot.
+This is the expected % error before we optimize the model and combine the LSTM network. I have not yet tested and tuned the network here so with some revision to the network we could potentially improve this by a lot.
 
 ### Design LSTM model
 
@@ -761,7 +774,7 @@ For us to validate the model we will use a method called backtesting. Backtestin
 # periods_test  <- 12 * 10
 # skip_span     <- 12 * 20
 
-periods_train <- 24
+periods_train <- 36
 periods_test  <- 3
 skip_span     <- 6
 
@@ -866,7 +879,7 @@ Let's visualize our backtesting folds:
 
 ```{r}
 rolling_origin_resamples %>%
-    plot_sampling_plan(expand_y_axis = FALSE, ncol = 2, alpha = 1, size = 1, base_size = 10, 
+    plot_sampling_plan(expand_y_axis = FALSE, ncol = 3, alpha = 1, size = 1, base_size = 10, 
                        title = "Backtesting Strategy: Rolling Origin Sampling Plan")
 
 ```
@@ -1111,6 +1124,10 @@ Awesome the LSTM model is ready to start making us some predictions!
 
 Now we need to back test the model on all the time slices now since we now have a method we can map over all of them simultaneously  
 
+
+### Everything set... time to get started!
+![](../../static/Pictures/Tony-Stark-Puts-On-The-Iron-Man-Suit-Gif.gif)
+
 ### Back test LSTM model
 
 Let's create a function that will compile, fit and predict the LSTM network.
@@ -1265,7 +1282,7 @@ epochs       <- 300
 
 Now we map the LSTM model over all our times series folds to back test:  
 
-```{r,eval=FALSE}
+```{r,results='hide', message=FALSE, warning=FALSE}
 sample_predictions_lstm_tbl <- 
 rolling_origin_resamples %>%
 	mutate(predict = map(
@@ -1281,37 +1298,6 @@ rolling_origin_resamples %>%
 
 sample_predictions_lstm_tbl %>% head
 
-```
-
-We can reuse our rmse calculator to see our accuracy over each time slice:  
-
-```{r}
-sample_rmse_tbl <- sample_predictions_lstm_tbl %>%
-    mutate(rmse = map_dbl(predict, calc_rmse)) %>%
-    select(id, rmse)
-
-sample_rmse_tbl
-```
-
-We can plot the RMSE over the various folds:  
-
-```{r}
-sample_rmse_tbl %>%
-    ggplot(aes(rmse)) +
-    geom_histogram(aes(y = ..density..), fill = palette_light()[[1]], bins = 5) +
-    geom_density(fill = palette_light()[[1]], alpha = 0.5) +
-    theme_tq() +
-    ggtitle("Histogram of RMSE")
-```
-
-And the distribution is:  
-
-```{r}
-sample_rmse_tbl %>%
-    summarize(
-        mean_rmse = mean(rmse),
-        sd_rmse   = sd(rmse)
-    )
 ```
 
 The same way we created a funtion to plot the test and training sets we can make one to plot the actuals and predicted values:  
@@ -1361,6 +1347,38 @@ sample_predictions_lstm_tbl %>%
 ```
 
 Seems to be working! Even though we had small correlations
+
+We can reuse our rmse calculator to see our accuracy over each time slice:  
+
+```{r}
+sample_rmse_tbl <- sample_predictions_lstm_tbl %>%
+    mutate(rmse = map_dbl(predict, calc_rmse)) %>%
+    select(id, rmse)
+
+sample_rmse_tbl
+```
+
+We can plot the RMSE over the various folds:  
+
+```{r}
+sample_rmse_tbl %>%
+    ggplot(aes(rmse)) +
+    geom_histogram(aes(y = ..density..), fill = palette_light()[[1]], bins = 5) +
+    geom_density(fill = palette_light()[[1]], alpha = 0.5) +
+    theme_tq() +
+    ggtitle("Histogram of RMSE")
+```
+
+And the distribution is:  
+
+```{r}
+sample_rmse_tbl %>%
+    summarize(
+        mean_rmse = mean(rmse),
+        sd_rmse   = sd(rmse)
+    )
+```
+
 
 #### Test final model on full dataset
 

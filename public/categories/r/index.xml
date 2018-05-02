@@ -6,10 +6,41 @@
     <description>Recent content in R on </description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
-    <lastBuildDate>Thu, 29 Mar 2018 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Sun, 22 Apr 2018 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="/categories/r/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Predict house prices - deep learning, keras</title>
+      <link>/posts/predict_house_prices_dnn/</link>
+      <pubDate>Sun, 22 Apr 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/posts/predict_house_prices_dnn/</guid>
+      <description>OverviewNaive model (no time index)Load the dataScale the variablesDefine the modelMeasuring over-fit using k-folds crossvalidationGet resultsBenchmark vs Gradient boosting machinesTime series models using LSTM together with an inference networkRead in the dataRead in the dataProcess dataDesign inference modelDesign LSTM modelTest a LSTM modelEverything set… time to get started!Back test LSTM modelCombine LSTM and Inference networks into 1 deep neural network?</description>
+    </item>
+    
+    <item>
+      <title>Let&#39;s play with autoencoders (Keras, R)</title>
+      <link>/posts/autoencoders_keras_r/</link>
+      <pubDate>Tue, 17 Apr 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/posts/autoencoders_keras_r/</guid>
+      <description>What are autoencoders?How do we build them?Build itStep 1 - load and prepare the dataStep 2 - define the encoder and decoderStep 3 - compile and train the autoencoderStep 4 - Extract the weights of the encoderStep 5 - Load up the weights into an ecoder model and predictConclusionlibrary(ggplot2)library(keras)library(tidyverse)## ── Attaching packages ──────────────────────────────────────────────────── tidyverse 1.</description>
+    </item>
+    
+    <item>
+      <title>Serving a machine learning model via API</title>
+      <link>/posts/testing_apis_in_r/</link>
+      <pubDate>Wed, 04 Apr 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/posts/testing_apis_in_r/</guid>
+      <description>About the Plumer packageIn oder to serve our API we will make use of the great Plumer package in R
+To read more about this package go to:
+https://www.rplumber.io/docs/
+SetupLoad in some packages.
+If you are going to host the api on a suse or redhat linux server make sure you have all the dependencies as well as the packages installed to follow through this example yourself.</description>
+    </item>
     
     <item>
       <title>How to add a blog to Blogdown</title>

@@ -186,11 +186,11 @@ tidy_cross_val</code></pre>
 <pre><code>## # A tibble: 5 x 8
 ##   fold  train     test     model_output   mae plot_outp  loss predictions 
 ##   &lt;chr&gt; &lt;list&gt;    &lt;list&gt;   &lt;list&gt;       &lt;dbl&gt; &lt;list&gt;    &lt;dbl&gt; &lt;list&gt;      
-## 1 1     &lt;S3: res~ &lt;S3: re~ &lt;list [6]&gt;    2.32 &lt;S3: gg&gt;   9.90 &lt;dbl [323 x~
-## 2 2     &lt;S3: res~ &lt;S3: re~ &lt;list [6]&gt;    2.64 &lt;S3: gg&gt;  13.3  &lt;dbl [323 x~
-## 3 3     &lt;S3: res~ &lt;S3: re~ &lt;list [6]&gt;    2.24 &lt;S3: gg&gt;   9.09 &lt;dbl [323 x~
-## 4 4     &lt;S3: res~ &lt;S3: re~ &lt;list [6]&gt;    2.50 &lt;S3: gg&gt;  10.5  &lt;dbl [323 x~
-## 5 5     &lt;S3: res~ &lt;S3: re~ &lt;list [6]&gt;    3.06 &lt;S3: gg&gt;  20.7  &lt;dbl [324 x~</code></pre>
+## 1 1     &lt;S3: res~ &lt;S3: re~ &lt;list [6]&gt;    2.41 &lt;S3: gg&gt;  10.5  &lt;dbl [323 x~
+## 2 2     &lt;S3: res~ &lt;S3: re~ &lt;list [6]&gt;    2.17 &lt;S3: gg&gt;  12.6  &lt;dbl [323 x~
+## 3 3     &lt;S3: res~ &lt;S3: re~ &lt;list [6]&gt;    2.24 &lt;S3: gg&gt;   8.56 &lt;dbl [323 x~
+## 4 4     &lt;S3: res~ &lt;S3: re~ &lt;list [6]&gt;    2.74 &lt;S3: gg&gt;  13.9  &lt;dbl [323 x~
+## 5 5     &lt;S3: res~ &lt;S3: re~ &lt;list [6]&gt;    2.55 &lt;S3: gg&gt;  10.9  &lt;dbl [324 x~</code></pre>
 <p>By mapping the deeplearning model over all these folds of data we store our results directly into this table. That means we can do interesting things like plot them altogether:</p>
 <pre class="r"><code>tidy_cross_val %&gt;% 
   ggplot(aes(x=fold,y=mae, fill = fold))+
@@ -239,14 +239,14 @@ mutate(train = train %&gt;% map(as_tibble)) %&gt;%
 unnest(.drop = TRUE) %&gt;% 
 head()</code></pre>
 <pre><code>## # A tibble: 6 x 15
-##   predictions      V1     V2     V3     V4     V5     V6    V7    V8
-##         &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
-## 1        45.0 -0.403   2.99  -1.33  -0.257 -1.21   1.89  -1.91  1.25
-## 2        53.0  0.125  -0.483  1.03  -0.257  0.628 -1.83   1.11 -1.19
-## 3        20.6 -0.401  -0.483 -0.868 -0.257 -0.361 -0.324 -1.24  1.11
-## 4        12.5  0.589  -0.483  1.03  -0.257  1.22  -1.03   1.11 -1.06
-## 5        15.2  0.0381 -0.483  1.24  -0.257  2.67  -1.13   1.11 -1.15
-## 6        15.7 -0.172  -0.483  1.24  -0.257  2.67  -0.900  1.11 -1.10
+##   predictions       V1     V2     V3     V4     V5     V6     V7     V8
+##         &lt;dbl&gt;    &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;
+## 1        16.7 -0.272   -0.483 -0.435 -0.257 -0.165 -0.176  0.812  0.117
+## 2        54.0  0.125   -0.483  1.03  -0.257  0.628 -1.83   1.11  -1.19 
+## 3        21.4 -0.401   -0.483 -0.868 -0.257 -0.361 -0.324 -1.24   1.11 
+## 4        18.6 -0.00563 -0.483  1.03  -0.257  1.33   0.153  0.694 -0.578
+## 5        18.8 -0.375   -0.483 -0.547 -0.257 -0.549 -0.788  0.189  0.483
+## 6        10.8  0.589   -0.483  1.03  -0.257  1.22  -1.03   1.11  -1.06 
 ## # ... with 6 more variables: V9 &lt;dbl&gt;, V10 &lt;dbl&gt;, V11 &lt;dbl&gt;, V12 &lt;dbl&gt;,
 ## #   V13 &lt;dbl&gt;, target &lt;dbl&gt;</code></pre>
 <p>But we have only predicted on the training data in our function and we used the model trained only on that fold… Instead it would make a lot more sense to train the model on all the data now that we have tested and tuned the model (possibly censor bad folds?)</p>
@@ -269,11 +269,11 @@ results &lt;-
 print(&#39;mae:&#39;)</code></pre>
 <pre><code>## [1] &quot;mae:&quot;</code></pre>
 <pre class="r"><code>results$mae</code></pre>
-<pre><code>## [1] 2.429137</code></pre>
+<pre><code>## [1] 2.429138</code></pre>
 <pre class="r"><code>print(&#39;loss:&#39;)</code></pre>
 <pre><code>## [1] &quot;loss:&quot;</code></pre>
 <pre class="r"><code>results$loss</code></pre>
-<pre><code>## [1] 14.56803</code></pre>
+<pre><code>## [1] 14.56804</code></pre>
 <pre class="r"><code>results$plot_outp</code></pre>
 <p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
 <p>Get predictions:</p>
@@ -292,6 +292,29 @@ output_data %&gt;% head</code></pre>
 ## 6        20.8   18.5 -0.375   -0.483 -0.547 -0.257 -0.549 -0.788  0.189
 ## # ... with 7 more variables: V8 &lt;dbl&gt;, V9 &lt;dbl&gt;, V10 &lt;dbl&gt;, V11 &lt;dbl&gt;,
 ## #   V12 &lt;dbl&gt;, V13 &lt;dbl&gt;, target1 &lt;dbl&gt;</code></pre>
+<p>Let’s visualize the accuracy of this model:</p>
+<pre class="r"><code>output_data %&gt;% 
+  arrange(target) %&gt;% 
+  mutate(perfect = seq(5,50,length.out = nrow(.))) %&gt;% 
+  mutate(estimate = ifelse(target &gt; predictions,&quot;underestimated&quot;,&quot;overestimated&quot;)) %&gt;% 
+  select(predictions,target,estimate,perfect) %&gt;% 
+  ggplot()+
+  geom_point(aes(x = predictions, y = target, color = estimate))+
+  geom_line(aes(x=perfect, y = perfect))+
+  ggtitle(&quot;Model accuracy&quot;)</code></pre>
+<p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+<p>What can we say about the bias of the model:</p>
+<pre class="r"><code>output_data %&gt;% 
+  arrange(target) %&gt;% 
+  mutate(perfect = seq(5,50,length.out = nrow(.))) %&gt;% 
+  mutate(estimate = ifelse(target &gt; predictions,&quot;underestimated&quot;,&quot;overestimated&quot;)) %&gt;% 
+  select(predictions,target,estimate,perfect) %&gt;% 
+  group_by(estimate) %&gt;% 
+  tally %&gt;% 
+  ggplot()+
+  geom_bar(aes(x= estimate, y=n, fill = estimate),stat=&quot;identity&quot;)+
+  ggtitle(&quot;Low model error but upward bias&quot;)</code></pre>
+<p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
 </div>
 </div>
 <div id="benchmark-vs-gradient-boosting-machines" class="section level3">
@@ -309,16 +332,85 @@ bind_cols(target = test_targets %&gt;% as.numeric() )
 tr_contrl &lt;- caret::trainControl(method = &#39;cv&#39;, number = 5)
 
 results &lt;- 
-caret::train(form = target~., data = train,method = &#39;gbm&#39;,trControl = tr_contrl)
-
-results %&gt;% summary</code></pre>
-<p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+caret::train(form = target~., data = train,method = &#39;gbm&#39;,trControl = tr_contrl)</code></pre>
+<pre class="r"><code>results %&gt;% summary</code></pre>
+<p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-17-1.png" width="672" /></p>
+<pre><code>##     var     rel.inf
+## V13 V13 45.00698622
+## V6   V6 29.45790750
+## V8   V8  6.97044377
+## V1   V1  5.42153107
+## V5   V5  4.70147030
+## V7   V7  2.23913360
+## V11 V11  1.66965671
+## V12 V12  1.46723050
+## V10 V10  1.28689723
+## V4   V4  0.87476817
+## V9   V9  0.42687149
+## V3   V3  0.37745176
+## V2   V2  0.09965169</code></pre>
 <pre class="r"><code>results</code></pre>
+<pre><code>## Stochastic Gradient Boosting 
+## 
+## 404 samples
+##  13 predictor
+## 
+## No pre-processing
+## Resampling: Cross-Validated (5 fold) 
+## Summary of sample sizes: 323, 323, 323, 323, 324 
+## Resampling results across tuning parameters:
+## 
+##   interaction.depth  n.trees  RMSE      Rsquared   MAE     
+##   1                   50      4.397289  0.7634246  2.947976
+##   1                  100      3.964773  0.8032464  2.700262
+##   1                  150      3.862273  0.8106288  2.670015
+##   2                   50      3.868630  0.8136770  2.621053
+##   2                  100      3.638292  0.8332715  2.537585
+##   2                  150      3.562024  0.8394754  2.497162
+##   3                   50      3.611696  0.8389383  2.463967
+##   3                  100      3.350380  0.8589171  2.345241
+##   3                  150      3.214416  0.8688836  2.286692
+## 
+## Tuning parameter &#39;shrinkage&#39; was held constant at a value of 0.1
+## 
+## Tuning parameter &#39;n.minobsinnode&#39; was held constant at a value of 10
+## RMSE was used to select the optimal model using the smallest value.
+## The final values used for the model were n.trees = 150,
+##  interaction.depth = 3, shrinkage = 0.1 and n.minobsinnode = 10.</code></pre>
 <p>So the gradient boosted machine using k-fold can get around 2.4-2.9 MAE and the GBM model is historically the best tabular learning paradigm in the average kaggle contest the last couple of years (around 2016). Our model learned the same ammount of accuracy also using cross-validation.</p>
 <div class="figure">
 <img src="/Pictures/v5T.gif" />
 
 </div>
+<p>Let’s visualize the accuracy of this model:</p>
+<pre class="r"><code>output_data &lt;- 
+  train %&gt;% 
+  as_tibble() %&gt;% 
+  mutate(predictions = results %&gt;% predict(newData=train %&gt;% select(-target))) %&gt;% 
+  select(target,predictions)
+
+output_data %&gt;% 
+  arrange(target) %&gt;% 
+  mutate(perfect = seq(5,50,length.out = nrow(.))) %&gt;% 
+  mutate(estimate = ifelse(target &gt; predictions,&quot;underestimated&quot;,&quot;overestimated&quot;)) %&gt;% 
+  select(predictions,target,estimate,perfect) %&gt;% 
+  ggplot()+
+  geom_point(aes(x = predictions, y = target, color = estimate))+
+  geom_line(aes(x=perfect, y = perfect))+
+  ggtitle(&quot;Model accuracy GBM&quot;)</code></pre>
+<p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-18-1.png" width="672" /></p>
+<p>What can we say about the bias of the model:</p>
+<pre class="r"><code>output_data %&gt;% 
+  arrange(target) %&gt;% 
+  mutate(perfect = seq(5,50,length.out = nrow(.))) %&gt;% 
+  mutate(estimate = ifelse(target &gt; predictions,&quot;underestimated&quot;,&quot;overestimated&quot;)) %&gt;% 
+  select(predictions,target,estimate,perfect) %&gt;% 
+  group_by(estimate) %&gt;% 
+  tally %&gt;% 
+  ggplot()+
+  geom_bar(aes(x= estimate, y=n, fill = estimate),stat=&quot;identity&quot;)+
+  ggtitle(&quot;GBM has low model error and less bias&quot;)</code></pre>
+<p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
 </div>
 </div>
 <div id="time-series-models-using-lstm-together-with-an-inference-network" class="section level2">
@@ -505,22 +597,22 @@ test &lt;-
 housing_time_series_cleaned[-split_data,]</code></pre>
 <p>It’s important that our time series does not have missing months since we will lag time vectors later on… If there were missing months the auto correlation of say n month lags will get mixed up with n+1 month lags. Let’s check this:</p>
 <pre class="r"><code>interaction(test$Yr.Sold,test$Mo.Sold) %&gt;% unique()</code></pre>
-<pre><code>##  [1] 2010.5  2010.4  2010.6  2010.1  2010.2  2010.3  2010.7  2009.11
-##  [9] 2009.10 2009.4  2009.7  2009.6  2009.8  2009.1  2009.9  2009.5 
-## [17] 2009.12 2009.3  2009.2  2008.4  2008.7  2008.9  2008.6  2008.3 
-## [25] 2008.5  2008.11 2008.8  2008.2  2008.12 2008.10 2008.1  2007.4 
-## [33] 2007.3  2007.8  2007.9  2007.11 2007.6  2007.7  2007.12 2007.5 
-## [41] 2007.10 2007.2  2007.1  2006.5  2006.8  2006.3  2006.11 2006.6 
-## [49] 2006.9  2006.12 2006.1  2006.10 2006.7  2006.4  2006.2 
+<pre><code>##  [1] 2010.5  2010.2  2010.1  2010.6  2010.4  2010.3  2010.7  2009.10
+##  [9] 2009.6  2009.5  2009.12 2009.7  2009.8  2009.3  2009.2  2009.9 
+## [17] 2009.11 2009.4  2009.1  2008.5  2008.8  2008.10 2008.7  2008.6 
+## [25] 2008.3  2008.11 2008.9  2008.2  2008.1  2008.4  2008.12 2007.5 
+## [33] 2007.8  2007.3  2007.7  2007.6  2007.10 2007.1  2007.9  2007.4 
+## [41] 2007.11 2007.12 2007.2  2006.8  2006.12 2006.9  2006.7  2006.1 
+## [49] 2006.3  2006.2  2006.6  2006.4  2006.11 2006.5  2006.10
 ## 60 Levels: 2006.1 2007.1 2008.1 2009.1 2010.1 2006.2 2007.2 ... 2010.12</code></pre>
 <pre class="r"><code>interaction(train$Yr.Sold,train$Mo.Sold) %&gt;% unique()</code></pre>
-<pre><code>##  [1] 2010.6  2010.4  2010.3  2010.1  2010.5  2010.2  2010.7  2009.10
-##  [9] 2009.6  2009.7  2009.8  2009.5  2009.9  2009.2  2009.12 2009.11
-## [17] 2009.3  2009.4  2009.1  2008.5  2008.6  2008.10 2008.7  2008.11
-## [25] 2008.8  2008.4  2008.9  2008.3  2008.12 2008.2  2008.1  2007.3 
-## [33] 2007.2  2007.10 2007.5  2007.7  2007.8  2007.6  2007.9  2007.11
-## [41] 2007.1  2007.4  2007.12 2006.6  2006.10 2006.5  2006.2  2006.7 
-## [49] 2006.3  2006.8  2006.1  2006.12 2006.9  2006.4  2006.11
+<pre><code>##  [1] 2010.5  2010.6  2010.4  2010.3  2010.1  2010.2  2010.7  2009.7 
+##  [9] 2009.8  2009.6  2009.10 2009.11 2009.9  2009.2  2009.12 2009.5 
+## [17] 2009.4  2009.3  2009.1  2008.5  2008.6  2008.4  2008.10 2008.7 
+## [25] 2008.11 2008.8  2008.9  2008.3  2008.12 2008.1  2008.2  2007.3 
+## [33] 2007.4  2007.2  2007.10 2007.7  2007.8  2007.6  2007.5  2007.9 
+## [41] 2007.11 2007.1  2007.12 2006.5  2006.6  2006.10 2006.3  2006.11
+## [49] 2006.2  2006.7  2006.1  2006.9  2006.8  2006.12 2006.4 
 ## 60 Levels: 2006.1 2007.1 2008.1 2009.1 2010.1 2006.2 2007.2 ... 2010.12</code></pre>
 <p>Since both sets have all 60 months we don’t have any problems here…</p>
 <p>For the LSTM model we need only the time index and the value:</p>
@@ -550,12 +642,12 @@ LSTM_train %&gt;% head</code></pre>
 ## # Index: index
 ##   index        value
 ##   &lt;date&gt;       &lt;dbl&gt;
-## 1 2006-01-01 203716.
-## 2 2006-02-01 192807.
-## 3 2006-03-01 185757.
-## 4 2006-04-01 158047.
-## 5 2006-05-01 163311.
-## 6 2006-06-01 170002.</code></pre>
+## 1 2006-01-01 212711.
+## 2 2006-02-01 182493.
+## 3 2006-03-01 180162.
+## 4 2006-04-01 170443.
+## 5 2006-05-01 170079.
+## 6 2006-06-01 178162.</code></pre>
 <p>Function that one_hot encodes classes for prediction</p>
 <pre class="r"><code>one_hot_categorical_inputs_fn &lt;- function(tibble_df) {
     
@@ -792,10 +884,10 @@ return(list(predictions = predictions, loss = results$loss, mae = results$mean_a
 define_compile_train_predict(train_X = inference_train_X, train_y = inference_train_target,test_X = inference_test_X, test_y = inference_test_target)
 
 model_outp$plot_outp</code></pre>
-<p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-27-1.png" width="672" /></p>
+<p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-32-1.png" width="672" /></p>
 <pre class="r"><code>model_outp$history$metrics$val_mean_absolute_error %&gt;% last()</code></pre>
-<pre><code>## [1] 15083.03</code></pre>
-<p>This looks promising… If we calculate the MAE / average price: 8.3843238 %</p>
+<pre><code>## [1] 14664.32</code></pre>
+<p>This looks promising… If we calculate the MAE / average price: 8.1628129 %</p>
 <p>This is the expected % error before we optimize the model and combine the LSTM network. I have not yet tested and tuned the network here so with some revision to the network we could potentially improve this by a lot.</p>
 </div>
 <div id="design-lstm-model" class="section level3">
@@ -807,12 +899,12 @@ model_outp$plot_outp</code></pre>
 ## # Index: index
 ##   index        value
 ##   &lt;date&gt;       &lt;dbl&gt;
-## 1 2006-01-01 203716.
-## 2 2006-02-01 192807.
-## 3 2006-03-01 185757.
-## 4 2006-04-01 158047.
-## 5 2006-05-01 163311.
-## 6 2006-06-01 170002.</code></pre>
+## 1 2006-01-01 212711.
+## 2 2006-02-01 182493.
+## 3 2006-03-01 180162.
+## 4 2006-04-01 170443.
+## 5 2006-05-01 170079.
+## 6 2006-06-01 178162.</code></pre>
 <p>Let’s visualize the average price</p>
 <pre class="r"><code>LSTM_train %&gt;%
     # filter_time(&quot;2008&quot; ~ &quot;end&quot;) %&gt;%
@@ -822,7 +914,7 @@ model_outp$plot_outp</code></pre>
     geom_smooth(method = &quot;loess&quot;, span = 0.2, se = FALSE) +
     theme_tq()+
 labs(title = &#39;All residential home sales in Ames, Iowa between 2006 and 2010&#39;)</code></pre>
-<p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-29-1.png" width="672" /></p>
+<p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-34-1.png" width="672" /></p>
 <p>So this timeseries actually looks surprisingly stationary with expected volatility around the 2009 market crash. We will have to see if a LSTM network can make some sense out of this.</p>
 <p>We define the handy tidy_acf function</p>
 <pre class="r"><code>tidy_acf &lt;- function(data, value, lags = 0:20) {
@@ -866,34 +958,34 @@ tidy_pacf &lt;- function(data, value, lags = 0:20) {
 LSTM_train %&gt;%
     tidy_acf(value, lags = 0:max_lag)</code></pre>
 <pre><code>## # A tibble: 55 x 2
-##      lag     acf
-##    &lt;dbl&gt;   &lt;dbl&gt;
-##  1    0.  1.00  
-##  2    1.  0.0982
-##  3    2.  0.221 
-##  4    3. -0.0859
-##  5    4. -0.0953
-##  6    5.  0.0295
-##  7    6. -0.0282
-##  8    7. -0.0271
-##  9    8. -0.108 
-## 10    9. -0.0615
+##      lag       acf
+##    &lt;dbl&gt;     &lt;dbl&gt;
+##  1    0.  1.00    
+##  2    1.  0.205   
+##  3    2.  0.148   
+##  4    3. -0.000328
+##  5    4. -0.0990  
+##  6    5.  0.0441  
+##  7    6. -0.0976  
+##  8    7.  0.0221  
+##  9    8. -0.0316  
+## 10    9. -0.124   
 ## # ... with 45 more rows</code></pre>
 <pre class="r"><code>LSTM_train %&gt;%
     tidy_pacf(value, lags = 0:max_lag)</code></pre>
 <pre><code>## # A tibble: 54 x 2
-##      lag      pacf
-##    &lt;dbl&gt;     &lt;dbl&gt;
-##  1    0.  0.0982  
-##  2    1.  0.214   
-##  3    2. -0.131   
-##  4    3. -0.132   
-##  5    4.  0.108   
-##  6    5.  0.00269 
-##  7    6. -0.0911  
-##  8    7. -0.101   
-##  9    8. -0.000781
-## 10    9. -0.00156 
+##      lag    pacf
+##    &lt;dbl&gt;   &lt;dbl&gt;
+##  1    0.  0.205 
+##  2    1.  0.111 
+##  3    2. -0.0529
+##  4    3. -0.112 
+##  5    4.  0.0965
+##  6    5. -0.101 
+##  7    6.  0.0382
+##  8    7. -0.0279
+##  9    8. -0.119 
+## 10    9.  0.0262
 ## # ... with 44 more rows</code></pre>
 <p>Visualize it:</p>
 <pre class="r"><code>LSTM_train %&gt;%
@@ -906,7 +998,7 @@ LSTM_train %&gt;%
              # color = palette_light()[[2]], size = 6, hjust = 0) +
     theme_tq() +
     labs(title = &quot;ACF: Ames, Iowa home sales&quot;,subtitle = &#39;Mostly white noise, possible 2 lag&#39;)</code></pre>
-<p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-32-1.png" width="672" /></p>
+<p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-37-1.png" width="672" /></p>
 <pre class="r"><code>LSTM_train %&gt;%
     tidy_pacf(value, lags = 0:max_lag) %&gt;%
     ggplot(aes(lag, pacf)) +
@@ -916,19 +1008,19 @@ LSTM_train %&gt;%
              # color = palette_light()[[2]], size = 6, hjust = 0) +
     theme_tq() +
     labs(title = &quot;PACF: Ames, Iowa home sales&quot;,subtitle = &#39;Mostly white noise, possible 2 lag&#39;)</code></pre>
-<p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-32-2.png" width="672" /></p>
+<p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-37-2.png" width="672" /></p>
 <p>To remain completely objective here we can consult the <code>forecast</code> package:</p>
 <pre class="r"><code>forecast::auto.arima(LSTM_train$value,max.q = 0)</code></pre>
 <pre><code>## Series: LSTM_train$value 
-## ARIMA(0,0,0) with non-zero mean 
+## ARIMA(1,0,0) with non-zero mean 
 ## 
 ## Coefficients:
-##             mean
-##       181312.751
-## s.e.    2336.657
+##          ar1        mean
+##       0.2717  179891.444
+## s.e.  0.1504    3282.577
 ## 
-## sigma^2 estimated as 305858185:  log likelihood=-614.85
-## AIC=1233.7   AICc=1233.93   BIC=1237.71</code></pre>
+## sigma^2 estimated as 3.3e+08:  log likelihood=-616.46
+## AIC=1238.92   AICc=1239.39   BIC=1244.94</code></pre>
 <p>For the sake of exploration we can try the ar 2 framework</p>
 <pre class="r"><code>LSTM_train %&gt;%
     tidy_acf(value, lags = 0:15) %&gt;%
@@ -943,7 +1035,7 @@ LSTM_train %&gt;%
     theme_tq() +
     labs(title = &quot;ACF: Iowa&quot;,
          subtitle = &quot;Zoomed in on Lags 1 to 15&quot;)</code></pre>
-<p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-34-1.png" width="672" /></p>
+<p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-39-1.png" width="672" /></p>
 <pre class="r"><code>optimal_lag_setting &lt;- 2</code></pre>
 <p>For us to validate the model we will use a method called backtesting. Backtesting is basically splitting the data into different splits of data and for each split leaving out a future horizon that you can predict and measure accuracy. By testing all the different folds we can feel more certain of model performance since it wasn’t just a one time lucky score.</p>
 <pre class="r"><code># periods_train &lt;- 12 * 50
@@ -1052,7 +1144,7 @@ plot_sampling_plan &lt;- function(sampling_tbl, expand_y_axis = TRUE,
 <pre class="r"><code>rolling_origin_resamples %&gt;%
     plot_sampling_plan(expand_y_axis = FALSE, ncol = 3, alpha = 1, size = 1, base_size = 10, 
                        title = &quot;Backtesting Strategy: Rolling Origin Sampling Plan&quot;)</code></pre>
-<p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-38-1.png" width="672" /></p>
+<p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-43-1.png" width="672" /></p>
 </div>
 <div id="test-a-lstm-model" class="section level3">
 <h3>Test a LSTM model</h3>
@@ -1063,7 +1155,7 @@ split_id &lt;- rolling_origin_resamples$id[[1]]
 plot_split(split, expand_y_axis = FALSE, size = 0.5) +
     theme(legend.position = &quot;bottom&quot;) +
     ggtitle(glue(&quot;Split: {split_id}&quot;))</code></pre>
-<p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-39-1.png" width="672" /></p>
+<p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-44-1.png" width="672" /></p>
 <div id="split-testtrain" class="section level4">
 <h4>Split test/train</h4>
 <pre class="r"><code>df_trn &lt;- training(split)
@@ -1080,16 +1172,16 @@ df</code></pre>
 ## # Index: index
 ##    index        value key     
 ##    &lt;date&gt;       &lt;dbl&gt; &lt;chr&gt;   
-##  1 2006-01-01 203716. training
-##  2 2006-02-01 192807. training
-##  3 2006-03-01 185757. training
-##  4 2006-04-01 158047. training
-##  5 2006-05-01 163311. training
-##  6 2006-06-01 170002. training
-##  7 2006-07-01 178360. training
-##  8 2006-08-01 197888. training
-##  9 2006-09-01 201605. training
-## 10 2006-10-01 160510. training
+##  1 2006-01-01 212711. training
+##  2 2006-02-01 182493. training
+##  3 2006-03-01 180162. training
+##  4 2006-04-01 170443. training
+##  5 2006-05-01 170079. training
+##  6 2006-06-01 178162. training
+##  7 2006-07-01 169873. training
+##  8 2006-08-01 210880. training
+##  9 2006-09-01 211548. training
+## 10 2006-10-01 171406. training
 ## # ... with 29 more rows</code></pre>
 </div>
 <div id="scale-and-center-the-data" class="section level4">
@@ -1107,16 +1199,16 @@ df_processed_tbl</code></pre>
 <pre><code>## # A tibble: 39 x 3
 ##    index        value key     
 ##    &lt;date&gt;       &lt;dbl&gt; &lt;fct&gt;   
-##  1 2006-01-01  1.09   training
-##  2 2006-02-01  0.484  training
-##  3 2006-03-01  0.0816 training
-##  4 2006-04-01 -1.58   training
-##  5 2006-05-01 -1.25   training
-##  6 2006-06-01 -0.846  training
-##  7 2006-07-01 -0.349  training
-##  8 2006-08-01  0.770  training
-##  9 2006-09-01  0.976  training
-## 10 2006-10-01 -1.43   training
+##  1 2006-01-01  1.62   training
+##  2 2006-02-01 -0.0515 training
+##  3 2006-03-01 -0.186  training
+##  4 2006-04-01 -0.757  training
+##  5 2006-05-01 -0.778  training
+##  6 2006-06-01 -0.302  training
+##  7 2006-07-01 -0.791  training
+##  8 2006-08-01  1.52   training
+##  9 2006-09-01  1.56   training
+## 10 2006-10-01 -0.699  training
 ## # ... with 29 more rows</code></pre>
 <p>We will need to save the scaling factors so that we can restore the scale at the end</p>
 <pre class="r"><code>center_history &lt;- rec_obj$steps[[2]]$means[&quot;value&quot;]
@@ -1124,7 +1216,7 @@ scale_history  &lt;- rec_obj$steps[[3]]$sds[&quot;value&quot;]
 
 c(&quot;center&quot; = center_history, &quot;scale&quot; = scale_history)</code></pre>
 <pre><code>## center.value  scale.value 
-##    429.35181     20.13542</code></pre>
+##    428.24106     20.34574</code></pre>
 <p>Let’s define our model inputs:</p>
 <pre class="r"><code># Model inputs
 lag_setting  &lt;- 3 # = nrow(df_tst)
@@ -1241,16 +1333,16 @@ ret</code></pre>
 ## # Index: index
 ##    index        value key   
 ##    &lt;date&gt;       &lt;dbl&gt; &lt;fct&gt; 
-##  1 2006-01-01 203716. actual
-##  2 2006-02-01 192807. actual
-##  3 2006-03-01 185757. actual
-##  4 2006-04-01 158047. actual
-##  5 2006-05-01 163311. actual
-##  6 2006-06-01 170002. actual
-##  7 2006-07-01 178360. actual
-##  8 2006-08-01 197888. actual
-##  9 2006-09-01 201605. actual
-## 10 2006-10-01 160510. actual
+##  1 2006-01-01 212711. actual
+##  2 2006-02-01 182493. actual
+##  3 2006-03-01 180162. actual
+##  4 2006-04-01 170443. actual
+##  5 2006-05-01 170079. actual
+##  6 2006-06-01 178162. actual
+##  7 2006-07-01 169873. actual
+##  8 2006-08-01 210880. actual
+##  9 2006-09-01 211548. actual
+## 10 2006-10-01 171406. actual
 ## # ... with 32 more rows</code></pre>
 <p>Function to calculate rmse for us</p>
 <pre class="r"><code>calc_rmse &lt;- function(prediction_tbl) {
@@ -1274,7 +1366,7 @@ ret</code></pre>
 }</code></pre>
 <p>which is:</p>
 <pre class="r"><code>calc_rmse(ret) </code></pre>
-<pre><code>## [1] 29654.05</code></pre>
+<pre><code>## [1] 32301.01</code></pre>
 <p>Function that plots the errors…</p>
 <pre class="r"><code># Setup single plot function
 plot_prediction &lt;- function(data, id, alpha = 1, size = 2, base_size = 14) {
@@ -1299,7 +1391,7 @@ plot_prediction &lt;- function(data, id, alpha = 1, size = 2, base_size = 14) {
 <pre class="r"><code>ret %&gt;% 
     plot_prediction(id = split_id, alpha = 0.65) +
     theme(legend.position = &quot;bottom&quot;)</code></pre>
-<p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-51-1.png" width="672" /></p>
+<p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-56-1.png" width="672" /></p>
 <p>Awesome the LSTM model is ready to start making us some predictions!</p>
 <p>Now we need to back test the model on all the time slices now since we now have a method we can map over all of them simultaneously</p>
 </div>
@@ -1506,7 +1598,7 @@ sample_predictions_lstm_tbl %&gt;% head</code></pre>
 <pre class="r"><code>sample_predictions_lstm_tbl %&gt;%
     plot_predictions(predictions_col = predict, alpha = 0.5, size = 1, base_size = 10,
                      title = &quot;Keras Stateful LSTM: Backtested Predictions&quot;)</code></pre>
-<p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-56-1.png" width="672" /></p>
+<p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-61-1.png" width="672" /></p>
 <p>Seems to be working! Even though we had small correlations</p>
 <p>We can reuse our rmse calculator to see our accuracy over each time slice:</p>
 <pre class="r"><code>sample_rmse_tbl &lt;- sample_predictions_lstm_tbl %&gt;%
@@ -1518,9 +1610,9 @@ sample_rmse_tbl</code></pre>
 ## # A tibble: 3 x 2
 ##   id       rmse
 ## * &lt;chr&gt;   &lt;dbl&gt;
-## 1 Slice1 29454.
-## 2 Slice2 17362.
-## 3 Slice3  7593.</code></pre>
+## 1 Slice1 37492.
+## 2 Slice2 20870.
+## 3 Slice3  8719.</code></pre>
 <p>We can plot the RMSE over the various folds:</p>
 <pre class="r"><code>sample_rmse_tbl %&gt;%
     ggplot(aes(rmse)) +
@@ -1528,7 +1620,7 @@ sample_rmse_tbl</code></pre>
     geom_density(fill = palette_light()[[1]], alpha = 0.5) +
     theme_tq() +
     ggtitle(&quot;Histogram of RMSE&quot;)</code></pre>
-<p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-58-1.png" width="672" /></p>
+<p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-63-1.png" width="672" /></p>
 <p>And the distribution is:</p>
 <pre class="r"><code>sample_rmse_tbl %&gt;%
     summarize(
@@ -1539,7 +1631,7 @@ sample_rmse_tbl</code></pre>
 ## # A tibble: 1 x 2
 ##   mean_rmse sd_rmse
 ##       &lt;dbl&gt;   &lt;dbl&gt;
-## 1    18137.  10951.</code></pre>
+## 1    22360.  14444.</code></pre>
 <div id="test-final-model-on-full-dataset" class="section level4">
 <h4>Test final model on full dataset</h4>
 <p>Now we create our function that will test the LSTM model on all the data:</p>
@@ -1667,7 +1759,7 @@ predict_keras_lstm_future(LSTM_train,
     plot_prediction(id = NULL, alpha = 0.4, size = 1.5) +
     theme(legend.position = &quot;bottom&quot;) +
     ggtitle(&quot;House prices: 3 Month Forecast using LSTM deep neural net&quot;, subtitle = &quot;Using the full dataset&quot;)</code></pre>
-<p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-62-1.png" width="672" /></p>
+<p><img src="/posts/Predicting_house_prices_keras_files/figure-html/unnamed-chunk-67-1.png" width="672" /></p>
 </div>
 </div>
 <div id="combine-lstm-and-inference-networks-into-1-deep-neural-network" class="section level3">

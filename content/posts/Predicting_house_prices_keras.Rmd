@@ -293,6 +293,37 @@ bind_cols(predictions = results$predictions,train["target"],train)
 output_data %>% head
 ```
 
+Let's visualize the accuracy of this model:  
+
+```{r}
+output_data %>% 
+  arrange(target) %>% 
+  mutate(perfect = seq(5,50,length.out = nrow(.))) %>% 
+  mutate(estimate = ifelse(target > predictions,"underestimated","overestimated")) %>% 
+  select(predictions,target,estimate,perfect) %>% 
+  ggplot()+
+  geom_point(aes(x = predictions, y = target, color = estimate))+
+  geom_line(aes(x=perfect, y = perfect))+
+  ggtitle("Model accuracy")
+  
+```
+
+What can we say about the bias of the model:  
+
+```{r}
+output_data %>% 
+  arrange(target) %>% 
+  mutate(perfect = seq(5,50,length.out = nrow(.))) %>% 
+  mutate(estimate = ifelse(target > predictions,"underestimated","overestimated")) %>% 
+  select(predictions,target,estimate,perfect) %>% 
+  group_by(estimate) %>% 
+  tally %>% 
+  ggplot()+
+  geom_bar(aes(x= estimate, y=n, fill = estimate),stat="identity")+
+  ggtitle("Low model error but upward bias")
+```
+
+
 ### Benchmark vs Gradient boosting machines
 
 ```{r, message = FALSE, results='hide'}
@@ -311,14 +342,54 @@ tr_contrl <- caret::trainControl(method = 'cv', number = 5)
 results <- 
 caret::train(form = target~., data = train,method = 'gbm',trControl = tr_contrl)
 
+	
+```
+
+```{r}
 results %>% summary
 results
-	
 ```
 
 So the gradient boosted machine using k-fold can get around 2.4-2.9 MAE and the GBM model is historically the best tabular learning paradigm in the average kaggle contest the last couple of years (around 2016). Our model learned the same ammount of accuracy also using cross-validation.
 
 ![](/Pictures/v5T.gif)
+
+Let's visualize the accuracy of this model:  
+
+```{r}
+output_data <- 
+  train %>% 
+  as_tibble() %>% 
+  mutate(predictions = results %>% predict(newData=train %>% select(-target))) %>% 
+  select(target,predictions)
+
+output_data %>% 
+  arrange(target) %>% 
+  mutate(perfect = seq(5,50,length.out = nrow(.))) %>% 
+  mutate(estimate = ifelse(target > predictions,"underestimated","overestimated")) %>% 
+  select(predictions,target,estimate,perfect) %>% 
+  ggplot()+
+  geom_point(aes(x = predictions, y = target, color = estimate))+
+  geom_line(aes(x=perfect, y = perfect))+
+  ggtitle("Model accuracy GBM")
+  
+```
+
+What can we say about the bias of the model:  
+
+```{r}
+output_data %>% 
+  arrange(target) %>% 
+  mutate(perfect = seq(5,50,length.out = nrow(.))) %>% 
+  mutate(estimate = ifelse(target > predictions,"underestimated","overestimated")) %>% 
+  select(predictions,target,estimate,perfect) %>% 
+  group_by(estimate) %>% 
+  tally %>% 
+  ggplot()+
+  geom_bar(aes(x= estimate, y=n, fill = estimate),stat="identity")+
+  ggtitle("GBM has low model error and less bias")
+```
+
 
 ## Time series models using LSTM together with an inference network
 

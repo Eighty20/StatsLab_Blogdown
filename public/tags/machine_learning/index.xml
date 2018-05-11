@@ -17,10 +17,10 @@
       <pubDate>Wed, 04 Apr 2018 00:00:00 +0000</pubDate>
       
       <guid>/posts/testing_apis_in_r/</guid>
-      <description>About the Plumer packageIn oder to serve our API we will make use of the great Plumer package in R
-To read more about this package go to:
+      <description>About the Plumer package In oder to serve our API we will make use of the great Plumer package in R
+ To read more about this package go to:
 https://www.rplumber.io/docs/
-SetupLoad in some packages.
+ Setup Load in some packages.
 If you are going to host the api on a suse or redhat linux server make sure you have all the dependencies as well as the packages installed to follow through this example yourself.</description>
     </item>
     
@@ -30,8 +30,8 @@ If you are going to host the api on a suse or redhat linux server make sure you 
       <pubDate>Wed, 15 Nov 2017 00:00:00 +0000</pubDate>
       
       <guid>/posts/benchmarking_in_parallel/</guid>
-      <description>OverviewHaving just started playing with deeplearning models in R, I wanted to visually compare them to other more traditional ML workflows. Of course, deeplearning is generally used where other models fail, but with no need for feature selection and rapidly increasing power and ease of use they may just evolve into a general learning paradigm.
-However, with tabular data and packages like caret the machine learning methods have become so streamlined that minimal user input is required at all.</description>
+      <description>Overview Having just started playing with deeplearning models in R, I wanted to visually compare them to other more traditional ML workflows. Of course, deeplearning is generally used where other models fail, but with no need for feature selection and rapidly increasing power and ease of use they may just evolve into a general learning paradigm.
+ However, with tabular data and packages like caret the machine learning methods have become so streamlined that minimal user input is required at all.</description>
     </item>
     
     <item>
@@ -40,7 +40,7 @@ If you are going to host the api on a suse or redhat linux server make sure you 
       <pubDate>Fri, 06 Jan 2017 00:00:00 +0000</pubDate>
       
       <guid>/posts/intro-machine-learning/</guid>
-      <description>Important machine learning librariesFuture additionsPart 1 - Data PreprocessingPart 2 - RegressionSimple Linear RegressionMultiple linear regressionPolynomial RegressionSupport vector machine regressionRegression TreesRandom forest regressionA more robust application of machine learning regressions (random forest)Part 3 - ClusteringK-meansPart 4 - Dimensionality ReductionCreate PCAPart 5 - Reinforced LearningMulti-Armed Bandit ProblemUpper Confidence Bound (UCB) methodImprove results using UCBVisualize the model add selectionPart 6 - Parameter Grid Search, Cross-validation and BoostingGrid Search and Parameter TuningXGBoostImportant machine learning librariesI created this document to serve as an easy introduction to basic machine learning methods.</description>
+      <description>Important machine learning libraries Future additions  Part 1 - Data Preprocessing Part 2 - Regression Simple Linear Regression Multiple linear regression Polynomial Regression Support vector machine regression Regression Trees Random forest regression A more robust application of machine learning regressions (random forest)  Part 3 - Clustering K-means  Part 4 - Dimensionality Reduction Create PCA  Part 5 - Reinforced Learning Multi-Armed Bandit Problem Upper Confidence Bound (UCB) method Improve results using UCB Visualize the model add selection  Part 6 - Parameter Grid Search, Cross-validation and Boosting Grid Search and Parameter Tuning XGBoost    Important machine learning libraries I created this document to serve as an easy introduction to basic machine learning methods.</description>
     </item>
     
   </channel>

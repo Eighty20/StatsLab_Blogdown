@@ -17,7 +17,7 @@
       <pubDate>Mon, 30 Apr 2018 00:00:00 +0000</pubDate>
       
       <guid>/posts/office_r/</guid>
-      <description>Prelude and set upPre-reqsStuff for the deckActual OfficeR{r titleslide, echo=FALSE, fig.cap=&amp;quot;Title Slide&amp;quot;, out.width = &#39;100%&#39;} # knitr::include_graphics(&amp;quot;../../static/data/Office_R/inputs/TitleSlide.PNG&amp;quot;) #Prelude and set upIn this markdown I will explain how to use OfficeR to generate powerpoint presentations.
+      <description>Prelude and set upPre-reqsStuff for the deckActual OfficeRPrelude and set upIn this markdown I will explain how to use OfficeR to generate powerpoint presentations.
 The rmsfuns package was useful just to use the ‘load_pkg’ function which makes it easier to load multiple packages. Firstly, you need the OfficeR package. I am also using the extrafont package in order to use Tahoma in the powerpoint, according to the Eighty20 template.</description>
     </item>
     

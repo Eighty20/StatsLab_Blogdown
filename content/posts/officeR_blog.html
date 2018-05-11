@@ -1,5 +1,21 @@
-<link href="officeR_blog_files/tabwid-1.0.0/tabwid.css" rel="stylesheet" />
-<script src="officeR_blog_files/tabwid-1.0.0/tabwid.js"></script>
+---
+title: "Office R Blog"
+author: "Kieron"
+date: 2018-04-30
+output:
+  blogdown::html_page:
+    toc: true
+slug: Office_R
+categories:
+  - R
+tags:
+  - Office_R
+  - Reporting
+  - Slides
+---
+
+<link href="/rmarkdown-libs/tabwid/tabwid.css" rel="stylesheet" />
+<script src="/rmarkdown-libs/tabwid/tabwid.js"></script>
 
 <div id="TOC">
 <ul>
@@ -7,7 +23,6 @@
 <li><a href="#pre-reqs">Pre-reqs</a></li>
 <li><a href="#stuff-for-the-deck">Stuff for the deck</a></li>
 <li><a href="#actual-officer">Actual OfficeR</a></li>
-<li><a href="#r-titleslide-echofalse-fig.captitle-slide-out.width-100-knitrinclude_graphics....staticdataoffice_rinputstitleslide.png"><code>{r titleslide, echo=FALSE, fig.cap=&quot;Title Slide&quot;, out.width = '100%'} # knitr::include_graphics(&quot;../../static/data/Office_R/inputs/TitleSlide.PNG&quot;) #</code></a></li>
 </ul>
 </div>
 
@@ -54,7 +69,7 @@ graph &lt;- ggplot(data = Boston) +
        title = &quot;Random Graph for Illustration&quot;)
 
 graph</code></pre>
-<p><img src="officeR_blog_files/figure-html/visuals-1.png" width="672" /></p>
+<p><img src="/posts/officeR_blog_files/figure-html/visuals-1.png" width="672" /></p>
 <p>OfficeR can also do tables, but requires use of the “flextable” package to make flextables. I created this function that will format any table I create into a good looking flextable. It gives the text different sizes and fonts and colours depending of if they’re in the body or the header, and it highlights every second row. The function bg changes the background colour, specified by the argument bg. I used codes that matched colours that match the Eighty20 template as much as I could. The border function allows you to adjust border thickness, colour, and style. The style argument deals with the text within the table.</p>
 <pre class="r"><code>## These define the text style for headers and body in tables
 headerstyle &lt;- fp_text(color = &quot;white&quot;, font.size = 14, bold = TRUE, italic = FALSE, underlined = FALSE, 
@@ -125,11 +140,11 @@ random_table</code></pre>
               pos = &quot;before&quot;, type = &quot;subTitle&quot;, 
               str = paste(day(Sys.Date()), &quot; &quot;, month(Sys.Date(), label = TRUE, abbr = FALSE), &quot;, &quot;, year(Sys.Date()), sep = &quot;&quot;))</code></pre>
 <p>This is what the title slide created above would look like:</p>
-</div>
-<div id="r-titleslide-echofalse-fig.captitle-slide-out.width-100-knitrinclude_graphics....staticdataoffice_rinputstitleslide.png" class="section level1">
-<h1><code>{r titleslide, echo=FALSE, fig.cap=&quot;Title Slide&quot;, out.width = '100%'} # knitr::include_graphics(&quot;../../static/data/Office_R/inputs/TitleSlide.PNG&quot;) #</code></h1>
+<!-- # ```{r titleslide, echo=FALSE, fig.cap="Title Slide", out.width = '100%'} -->
+<!-- # knitr::include_graphics("../../static/data/Office_R/inputs/TitleSlide.PNG") -->
+<!-- # ``` -->
 <div class="figure">
-<img src="../../static/data/Office_R/inputs/TitleSlide.PNG" />
+<img src="/data/Office_R/inputs/TitleSlide.PNG" />
 
 </div>
 <p>Next, we add a slide containing only text. For this I am going to want to choose a slide from the template and add it. I choose the Title and content slide from the template. the ph_with_text function adds text into an allocated space in the template. I struggled to get this to work properly, but found a really easy work around. Use it to add an empty string into the space, and then append your text to that empty string using ph_add_text. ph_add_par creates the second paragraph I referred to earlier.</p>
@@ -146,7 +161,7 @@ deck &lt;-
               style = fp_text(font.size = 18, font.family = &quot;Tahoma&quot;)) %&gt;% 
   ph_with_text(type = &quot;title&quot;, str = &quot;&quot;) %&gt;% 
   ph_add_text(type = &quot;title&quot;, str = &quot;Heading for Text Slide&quot;, style = fp_text(font.size = 24, font.family = &quot;Tahoma (Headings)&quot;))</code></pre>
-<p>This is what the text slide created above would look like: # <code>{r textslide, echo=FALSE, fig.cap=&quot;Text Slide&quot;, out.width = '100%'} # knitr::include_graphics(&quot;../../static/data/Office_R/inputs/TextSlide.PNG&quot;) #</code></p>
+<p>This is what the text slide created above would look like: <!-- # ```{r textslide, echo=FALSE, fig.cap="Text Slide", out.width = '100%'} --> <!-- # knitr::include_graphics("../../static/data/Office_R/inputs/TextSlide.PNG") --> <!-- # ``` --></p>
 <div class="figure">
 <img src="/data/Office_R/inputs/TextSlide.PNG" />
 
@@ -158,7 +173,7 @@ deck &lt;-
   ph_with_text(type = &quot;title&quot;, str = &quot;&quot;) %&gt;% 
   ph_add_text(type = &quot;title&quot;, str = &quot;This is the title for my graph slide. Very original&quot;) %&gt;% 
   ph_with_gg_at(value = graph, left = 1, top = 2, height = 5, width = 8)</code></pre>
-<p>This is what the graph slide created above would look like: # <code>{r graphslide, echo=FALSE, fig.cap=&quot;Graph Slide&quot;, out.width = '100%'} # knitr::include_graphics(&quot;../../static/data/Office_R/inputs/GraphSlide.PNG&quot;) #</code></p>
+<p>This is what the graph slide created above would look like: <!-- # ```{r graphslide, echo=FALSE, fig.cap="Graph Slide", out.width = '100%'} --> <!-- # knitr::include_graphics("../../static/data/Office_R/inputs/GraphSlide.PNG") --> <!-- # ``` --></p>
 <div class="figure">
 <img src="/data/Office_R/inputs/GraphSlide.PNG" />
 
@@ -171,7 +186,7 @@ deck &lt;-
   ph_add_text(type = &quot;title&quot;,
               str = &quot;This is the title of the slide that contains my table. Even more original&quot;) %&gt;%
   ph_with_flextable_at(value = random_table, left = 1, top = 2)</code></pre>
-<p>This is what the table slide created above would look like: # <code>{r tableslide, echo=FALSE, fig.cap=&quot;Table Slide&quot;, out.width = '100%'} # knitr::include_graphics(&quot;../../static/data/Office_R/inputs/TableSlide.PNG&quot;) #</code></p>
+<p>This is what the table slide created above would look like: <!-- # ```{r tableslide, echo=FALSE, fig.cap="Table Slide", out.width = '100%'} --> <!-- # knitr::include_graphics("../../static/data/Office_R/inputs/TableSlide.PNG") --> <!-- # ``` --></p>
 <div class="figure">
 <img src="/data/Office_R/inputs/TableSlide.PNG" />
 

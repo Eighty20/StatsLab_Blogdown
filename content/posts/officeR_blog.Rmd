@@ -157,11 +157,12 @@ deck <-
 
 This is what the title slide created above would look like:
 
-# ```{r titleslide, echo=FALSE, fig.cap="Title Slide", out.width = '100%'}
-# knitr::include_graphics("../../static/data/Office_R/inputs/TitleSlide.PNG")
-# ```
+<!-- # ```{r titleslide, echo=FALSE, fig.cap="Title Slide", out.width = '100%'} -->
+<!-- # knitr::include_graphics("../../static/data/Office_R/inputs/TitleSlide.PNG") -->
+<!-- # ``` -->
 
-![](/data/Office_R/inputs/TitleSlide.PNG)
+![](/data/Office_R/inputs/TitleSlide.PNG)   
+   
 
 Next, we add a slide containing only text. For this I am going to want to choose a slide from the template and add it. I choose the Title and content slide from the template. the ph_with_text function adds text into an allocated space in the template. I struggled to get this to work properly, but found a really easy work around. Use it to add an empty string into the space, and then append your text to that empty string using ph_add_text. ph_add_par creates the second paragraph I referred to earlier.
 ```{r Agenda}
@@ -182,9 +183,9 @@ deck <-
 ```
 
 This is what the text slide created above would look like:
-# ```{r textslide, echo=FALSE, fig.cap="Text Slide", out.width = '100%'}
-# knitr::include_graphics("../../static/data/Office_R/inputs/TextSlide.PNG")
-# ```
+<!-- # ```{r textslide, echo=FALSE, fig.cap="Text Slide", out.width = '100%'} -->
+<!-- # knitr::include_graphics("../../static/data/Office_R/inputs/TextSlide.PNG") -->
+<!-- # ``` -->
 
 ![](/data/Office_R/inputs/TextSlide.PNG)
 
@@ -199,9 +200,9 @@ deck <-
 ```
 
 This is what the graph slide created above would look like:
-# ```{r graphslide, echo=FALSE, fig.cap="Graph Slide", out.width = '100%'}
-# knitr::include_graphics("../../static/data/Office_R/inputs/GraphSlide.PNG")
-# ```
+<!-- # ```{r graphslide, echo=FALSE, fig.cap="Graph Slide", out.width = '100%'} -->
+<!-- # knitr::include_graphics("../../static/data/Office_R/inputs/GraphSlide.PNG") -->
+<!-- # ``` -->
 
 ![](/data/Office_R/inputs/GraphSlide.PNG)
 
@@ -217,9 +218,9 @@ deck <-
 ```
 
 This is what the table slide created above would look like:
-# ```{r tableslide, echo=FALSE, fig.cap="Table Slide", out.width = '100%'}
-# knitr::include_graphics("../../static/data/Office_R/inputs/TableSlide.PNG")
-# ```
+<!-- # ```{r tableslide, echo=FALSE, fig.cap="Table Slide", out.width = '100%'} -->
+<!-- # knitr::include_graphics("../../static/data/Office_R/inputs/TableSlide.PNG") -->
+<!-- # ``` -->
 
 ![](/data/Office_R/inputs/TableSlide.PNG)
 

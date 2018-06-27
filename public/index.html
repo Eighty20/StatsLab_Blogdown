@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
     
     	
-    <meta name="generator" content="Hugo 0.40.3" />
+    <meta name="generator" content="Hugo 0.42.1" />
     <title></title>
     <meta content="" property="og:title">
     <meta content="" property="og:description">    
@@ -88,6 +88,18 @@
         <div class="content container">
             <div class="posts">
   
+        <div class="post">
+        <h1 class="post-title"><a href="./posts/finding_geographical_points_of_interest_using_python/">Finding geographical points of interest using Python</a></h1>
+        <span class="post-date">Wed, Jun 27, 2018</span>
+        This blog will take a look at scraping the TomTom and Google Places APIs to get all the points of interest in an area. A recursive grid search algorithm is discussed that efficiently identifies all of the POIs in a large area where there is a limit on the number of results the API returns. 
+TomTom vs Google First, let&rsquo;s compare each API:
+    TomTom Google Places     Max free daily requests 2500 2500   Max results returned 100 20   Point search Yes Yes   Max point search radius none 50km   Rectangle search Yes No   Up-to-date No Yes    In each case, you need to register for your own API key which you include as a parameter in the search.
+        
+        <div class="read-more-link">
+            <a href="./posts/finding_geographical_points_of_interest_using_python/">Read More…</a>
+        </div>
+        
+        </div>
         <div class="post">
         <h1 class="post-title"><a href="./posts/office_r/">Office R Blog</a></h1>
         <span class="post-date">Mon, Apr 30, 2018</span>

@@ -6,10 +6,21 @@
     <description>Recent content on </description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
-    <lastBuildDate>Mon, 30 Apr 2018 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Wed, 27 Jun 2018 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Finding geographical points of interest using Python</title>
+      <link>/posts/finding_geographical_points_of_interest_using_python/</link>
+      <pubDate>Wed, 27 Jun 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/posts/finding_geographical_points_of_interest_using_python/</guid>
+      <description>This blog will take a look at scraping the TomTom and Google Places APIs to get all the points of interest in an area. A recursive grid search algorithm is discussed that efficiently identifies all of the POIs in a large area where there is a limit on the number of results the API returns. 
+TomTom vs Google First, let&amp;rsquo;s compare each API:
+    TomTom Google Places     Max free daily requests 2500 2500   Max results returned 100 20   Point search Yes Yes   Max point search radius none 50km   Rectangle search Yes No   Up-to-date No Yes    In each case, you need to register for your own API key which you include as a parameter in the search.</description>
+    </item>
     
     <item>
       <title>Office R Blog</title>

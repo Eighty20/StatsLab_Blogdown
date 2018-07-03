@@ -3,6 +3,16 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
+    <loc>/posts/finding_geographical_points_of_interest_using_python/</loc>
+    <lastmod>2018-06-27T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/posts/office_r/</loc>
+    <lastmod>2018-04-30T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
     <loc>/posts/predict_house_prices_dnn/</loc>
     <lastmod>2018-04-22T00:00:00+00:00</lastmod>
   </url>
@@ -64,13 +74,13 @@
   
   <url>
     <loc>/</loc>
-    <lastmod>2018-04-22T00:00:00+00:00</lastmod>
+    <lastmod>2018-06-27T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
     <loc>/tags/api/</loc>
-    <lastmod>2018-04-04T00:00:00+00:00</lastmod>
+    <lastmod>2018-06-27T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -134,6 +144,12 @@
   </url>
   
   <url>
+    <loc>/tags/google-places/</loc>
+    <lastmod>2018-06-27T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
     <loc>/tags/grid_search/</loc>
     <lastmod>2017-01-06T00:00:00+00:00</lastmod>
     <priority>0</priority>
@@ -158,6 +174,12 @@
   </url>
   
   <url>
+    <loc>/tags/office_r/</loc>
+    <lastmod>2018-04-30T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
     <loc>/tags/parallel/</loc>
     <lastmod>2017-11-15T00:00:00+00:00</lastmod>
     <priority>0</priority>
@@ -171,7 +193,7 @@
   
   <url>
     <loc>/posts/</loc>
-    <lastmod>2018-04-22T00:00:00+00:00</lastmod>
+    <lastmod>2018-06-27T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -183,19 +205,19 @@
   
   <url>
     <loc>/tags/python/</loc>
-    <lastmod>2018-03-30T00:00:00+00:00</lastmod>
+    <lastmod>2018-06-27T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
     <loc>/categories/python/</loc>
-    <lastmod>2018-03-30T00:00:00+00:00</lastmod>
+    <lastmod>2018-06-27T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
     <loc>/categories/r/</loc>
-    <lastmod>2018-04-22T00:00:00+00:00</lastmod>
+    <lastmod>2018-04-30T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -212,14 +234,26 @@
   </url>
   
   <url>
+    <loc>/tags/reporting/</loc>
+    <lastmod>2018-04-30T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
     <loc>/tags/rmarkdown/</loc>
     <lastmod>2018-03-29T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
+    <loc>/tags/slides/</loc>
+    <lastmod>2018-04-30T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
     <loc>/tags/</loc>
-    <lastmod>2018-04-04T00:00:00+00:00</lastmod>
+    <lastmod>2018-06-27T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -232,6 +266,12 @@
   <url>
     <loc>/tags/time-series/</loc>
     <lastmod>2018-04-22T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>/tags/tomtom/</loc>
+    <lastmod>2018-06-27T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   

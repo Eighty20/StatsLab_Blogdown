@@ -3,6 +3,11 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
+    <loc>/posts/cats_vs_dogs_classifier/</loc>
+    <lastmod>2018-07-03T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
     <loc>/posts/imdb_movie_classification/</loc>
     <lastmod>2018-07-03T00:00:00+00:00</lastmod>
   </url>
@@ -163,6 +168,12 @@
   <url>
     <loc>/tags/grid_search/</loc>
     <lastmod>2017-01-06T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>/tags/image_recognition/</loc>
+    <lastmod>2018-07-03T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   

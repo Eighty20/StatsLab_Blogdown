@@ -12,6 +12,17 @@
     
     
     <item>
+      <title>Cats vs Dogs classifier</title>
+      <link>/posts/cats_vs_dogs_classifier/</link>
+      <pubDate>Tue, 03 Jul 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/posts/cats_vs_dogs_classifier/</guid>
+      <description>OverviewDownload dataBuild networkData preprocessingImage data augmentationHow it worksCreate new networkTrain new network with augmentation generatorsFurther optimizationTransfer learning - VGG16OverviewDeep neural networks using convulotional layers are currently (2018) the best immage classification algorithms out there… Let’s build one to see what its all about.
+How about identifying cats and dogs?
+This post follows through the example in the book “Deep learning with R” by Francios Chollet with J.</description>
+    </item>
+    
+    <item>
       <title>IMDB movie classification</title>
       <link>/posts/imdb_movie_classification/</link>
       <pubDate>Tue, 03 Jul 2018 00:00:00 +0000</pubDate>

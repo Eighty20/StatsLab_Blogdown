@@ -28,10 +28,10 @@ TomTom vs Google First, let&amp;rsquo;s compare each API:
       <pubDate>Wed, 04 Apr 2018 00:00:00 +0000</pubDate>
       
       <guid>/posts/testing_apis_in_r/</guid>
-      <description>About the Plumer package In oder to serve our API we will make use of the great Plumer package in R
- To read more about this package go to:
+      <description>About the Plumer packageIn oder to serve our API we will make use of the great Plumer package in R
+To read more about this package go to:
 https://www.rplumber.io/docs/
- Setup Load in some packages.
+SetupLoad in some packages.
 If you are going to host the api on a suse or redhat linux server make sure you have all the dependencies as well as the packages installed to follow through this example yourself.</description>
     </item>
     
@@ -45,7 +45,7 @@ If you are going to host the api on a suse or redhat linux server make sure you 
 Especially if you want to keep your workspace nice and tidy with all your data in tables!
 With no actual experience trying to get at these nested tibbles can seem almost impossible:
 via GIPHY
---  Downloading data from an api created by Blizzard To illustrate how you would deal with nested data I found an api that let’s you download all kinds of data on the e-sport/game called Overwatch.</description>
+--Downloading data from an api created by BlizzardTo illustrate how you would deal with nested data I found an api that let’s you download all kinds of data on the e-sport/game called Overwatch.</description>
     </item>
     
   </channel>

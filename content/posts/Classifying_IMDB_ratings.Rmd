@@ -1,5 +1,5 @@
 ---
-title: "IMDB_movie_classification"
+title: "IMDB movie classification"
 author: "Stefan Fouche"
 date: 2018-07-03
 slug: IMDB_movie_classification
@@ -29,7 +29,7 @@ This post follows through the example in the book "Deep learning with R" by Fran
 
 **Can a machine predict a good or bad movie rating?**
 
-![](../../static/Pictures/IMDB_keras/header.jpeg)
+![](/Pictures/IMDB_keras/header.jpeg)
 
 ## Load the IMDB data
 

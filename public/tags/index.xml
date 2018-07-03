@@ -48,6 +48,15 @@
     </item>
     
     <item>
+      <title>Classification</title>
+      <link>/tags/classification/</link>
+      <pubDate>Tue, 03 Jul 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/classification/</guid>
+      <description></description>
+    </item>
+    
+    <item>
       <title>Clustering</title>
       <link>/tags/clustering/</link>
       <pubDate>Fri, 06 Jan 2017 00:00:00 +0000</pubDate>
@@ -77,7 +86,7 @@
     <item>
       <title>Deep_learning</title>
       <link>/tags/deep_learning/</link>
-      <pubDate>Sun, 22 Apr 2018 00:00:00 +0000</pubDate>
+      <pubDate>Tue, 03 Jul 2018 00:00:00 +0000</pubDate>
       
       <guid>/tags/deep_learning/</guid>
       <description></description>
@@ -122,7 +131,7 @@
     <item>
       <title>Keras</title>
       <link>/tags/keras/</link>
-      <pubDate>Sun, 22 Apr 2018 00:00:00 +0000</pubDate>
+      <pubDate>Tue, 03 Jul 2018 00:00:00 +0000</pubDate>
       
       <guid>/tags/keras/</guid>
       <description></description>

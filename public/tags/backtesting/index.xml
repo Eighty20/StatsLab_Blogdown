@@ -17,7 +17,7 @@
       <pubDate>Sun, 22 Apr 2018 00:00:00 +0000</pubDate>
       
       <guid>/posts/predict_house_prices_dnn/</guid>
-      <description>Overview Naive model (no time index) Load the data Scale the variables Define the model Measuring over-fit using k-folds crossvalidation Get results Benchmark vs Gradient boosting machines  Time series models using LSTM together with an inference network Read in the data Read in the data Process data Design inference model Design LSTM model Test a LSTM model Everything set… time to get started! Back test LSTM model Combine LSTM and Inference networks into 1 deep neural network?</description>
+      <description>OverviewNaive model (no time index)Load the dataScale the variablesDefine the modelMeasuring over-fit using k-folds crossvalidationGet resultsBenchmark vs Gradient boosting machinesTime series models using LSTM together with an inference networkRead in the dataRead in the dataProcess dataDesign inference modelDesign LSTM modelTest a LSTM modelEverything set… time to get started!Back test LSTM modelCombine LSTM and Inference networks into 1 deep neural network?</description>
     </item>
     
   </channel>

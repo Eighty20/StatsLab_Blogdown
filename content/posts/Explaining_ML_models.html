@@ -1,0 +1,195 @@
+---
+title: "Explaining machine learning models"
+author: "Stefan Fouche"
+date: 2018-07-05
+slug: dalex_explainers
+categories:
+  - R
+tags:
+  - DALEX
+  - machine_learning
+  - benchmarking
+  - modelDown
+output:
+  blogdown::html_page:
+    toc: true
+---
+
+
+<div id="TOC">
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#the-data">The data</a></li>
+<li><a href="#the-problem">The problem</a></li>
+<li><a href="#benchmark-many-models-with-caret">Benchmark many models with caret</a><ul>
+<li><a href="#set-crossvalidation-parameters">Set crossvalidation parameters</a></li>
+<li><a href="#build-model-data-framework">Build model data framework</a></li>
+<li><a href="#train-models">Train models</a></li>
+<li><a href="#visualize-the-residuals">Visualize the residuals</a></li>
+</ul></li>
+<li><a href="#introducing-dalex-explainers">Introducing DALEX explainers!</a><ul>
+<li><a href="#model-performance">Model performance</a></li>
+<li><a href="#variable-importance">Variable Importance</a></li>
+<li><a href="#variable-response">Variable response</a></li>
+<li><a href="#prediction-breakdown">Prediction breakdown</a></li>
+</ul></li>
+</ul>
+</div>
+
+<div id="packages" class="section level4">
+<h4>Packages</h4>
+<pre class="r"><code>library(tidyverse)
+library(caret)
+library(magrittr)
+library(DALEX)</code></pre>
+</div>
+<div id="overview" class="section level2">
+<h2>Overview</h2>
+<p>This blog will cover DALEX explainers. These are very useful when we need to validate a model or explain why a model made the prediction it made on an observation basis.</p>
+<div class="figure">
+<img src="/Pictures/Dalex_explainers/Explain.gif" />
+
+</div>
+</div>
+<div id="the-data" class="section level2">
+<h2>The data</h2>
+<p>To show our explainers in action we will use the apartments dataset that ships along with the dalex package:</p>
+<pre class="r"><code>test_data &lt;- DALEX::apartments
+
+test_data %&gt;% head</code></pre>
+<pre><code>##   m2.price construction.year surface floor no.rooms    district
+## 1     5897              1953      25     3        1 Srodmiescie
+## 2     1818              1992     143     9        5     Bielany
+## 3     3643              1937      56     1        2       Praga
+## 4     3517              1995      93     7        3      Ochota
+## 5     3013              1992     144     6        5     Mokotow
+## 6     5795              1926      61     6        2 Srodmiescie</code></pre>
+<pre class="r"><code>test_data %&gt;% dim</code></pre>
+<pre><code>## [1] 1000    6</code></pre>
+</div>
+<div id="the-problem" class="section level2">
+<h2>The problem</h2>
+<p>Say we want to predict the <code>m2.price</code> of the appartment, but this prediction needs to be validated for different sized properties. In this case it’s not good enough to measure only a global fit. If for example the model fails to predict properly the value of expensive properties due to sample size and variability it could mean a large amount of risk if the model was deployed in production.</p>
+</div>
+<div id="benchmark-many-models-with-caret" class="section level2">
+<h2>Benchmark many models with caret</h2>
+<p>To start off we want to throw a bunch of models at the problem to see what we are dealing with in terms of predictive power. Since DALEX is model agnostic we can simply leverage our caret package:</p>
+<div id="set-crossvalidation-parameters" class="section level3">
+<h3>Set crossvalidation parameters</h3>
+<pre class="r"><code>trControl &lt;- trainControl(method = &quot;cv&quot;,number = 4)</code></pre>
+</div>
+<div id="build-model-data-framework" class="section level3">
+<h3>Build model data framework</h3>
+<pre class="r"><code>train_data &lt;- 
+    tibble(model = c(&quot;rf&quot;,&quot;gbm&quot;,&quot;lm&quot;,&quot;glm&quot;,&quot;ridge&quot;),data = list(apartments))</code></pre>
+</div>
+<div id="train-models" class="section level3">
+<h3>Train models</h3>
+<pre class="r"><code>model_frame &lt;- train_data %&gt;%
+    mutate(caret_models = map2(.x = model,.y=data,~train(form = m2.price~., data = .y,method = .x,trControl = trControl)))</code></pre>
+<p>Let’s pull out the root mean squared error from the models:</p>
+<pre class="r"><code> model_frame %&lt;&gt;%
+    mutate(RMSE = caret_models %&gt;% map_dbl(~.x %&gt;% pluck(&quot;results&quot;,&quot;RMSE&quot;) %&gt;% min))
+
+model_frame</code></pre>
+<pre><code>## # A tibble: 5 x 4
+##   model data                     caret_models  RMSE
+##   &lt;chr&gt; &lt;list&gt;                   &lt;list&gt;       &lt;dbl&gt;
+## 1 rf    &lt;data.frame [1,000 x 6]&gt; &lt;S3: train&gt;  174. 
+## 2 gbm   &lt;data.frame [1,000 x 6]&gt; &lt;S3: train&gt;   85.8
+## 3 lm    &lt;data.frame [1,000 x 6]&gt; &lt;S3: train&gt;  283. 
+## 4 glm   &lt;data.frame [1,000 x 6]&gt; &lt;S3: train&gt;  284. 
+## 5 ridge &lt;data.frame [1,000 x 6]&gt; &lt;S3: train&gt;  284.</code></pre>
+<pre class="r"><code>model_frame %&gt;% 
+    ggplot()+
+    geom_bar(aes(x = model,y=RMSE,fill=model),stat=&quot;identity&quot;)</code></pre>
+<p><img src="/posts/Explaining_ML_models_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<p>We can see that the random forest and gradient boosted models perform much better out of the box as expected.</p>
+</div>
+<div id="visualize-the-residuals" class="section level3">
+<h3>Visualize the residuals</h3>
+<p>Before we throw our new explainers at the models let’s quickly look at these residuals.</p>
+<p>We can plot the distribution of residuals to get a better idea of what’s going on, but first we need to pull these out of the models:</p>
+<pre class="r"><code>model_frame %&lt;&gt;%
+    mutate(residuals = map2(data,caret_models,~predict(object = .y,.x)-.x %&gt;% pull(&quot;m2.price&quot;)))</code></pre>
+<p>Visualize the distribution:</p>
+<pre class="r"><code>model_frame %&gt;% 
+    unnest(residuals) %&gt;% 
+    ggplot()+
+    geom_histogram(aes(x=residuals,fill=model))+
+    facet_wrap(~model)+
+    ggtitle(&quot;Distribution of errors by model&quot;)</code></pre>
+<pre><code>## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.</code></pre>
+<p><img src="/posts/Explaining_ML_models_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<p>Let’s visualize the predicted vs. actuals:</p>
+<pre class="r"><code>model_frame %&lt;&gt;% 
+    mutate(predicted = map2(data,caret_models,~predict(object = .y,.x))) %&gt;% 
+    mutate(actuals = data %&gt;% map(~.x %&gt;% pull(&quot;m2.price&quot;)))</code></pre>
+<pre class="r"><code>model_frame %&gt;% 
+    unnest(predicted,actuals) %&gt;% 
+    ggplot(aes(x=actuals %&gt;% log,y=predicted %&gt;% log,col=model))+
+    geom_point()+
+    geom_abline(slope = 1,intercept = 0)+
+    facet_wrap(~model)+
+    ggtitle(&quot;Actuals vs predicted on log scale&quot;)</code></pre>
+<p><img src="/posts/Explaining_ML_models_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<p>We notice that the linear models tend to underestimate the value of the appartment more often than over estimating it.</p>
+</div>
+</div>
+<div id="introducing-dalex-explainers" class="section level2">
+<h2>Introducing DALEX explainers!</h2>
+<p>There’s a lot we can do with packages like <code>yardstick</code> and <code>broom</code> to pull out performance metrics and make plots. But this may still feel very very clumsy and amateurish. How can we quickly and easily produce more professional looking reports to show prospective clients and stakeholders?</p>
+<p>The answer might be either DALEX or LIME. A new package that works with DALEX explainers is modelDown. This package allows us to create a static webpage to show off the performance of our models and also crutinize them.</p>
+<p>So how does it work?</p>
+<p>The <code>DALEX::explainer</code> needs the following:<br />
+- a model object<br />
+- data<br />
+- actuals (to be predicted)<br />
+- function that can get the predicted values</p>
+<p>I quickly map over all my models to create an explainer for each of our models:</p>
+<pre class="r"><code>model_frame %&lt;&gt;% 
+    mutate(explainers = pmap(list(model,data,caret_models,actuals),~explain(model = ..3,data = ..2,y = ..4,label = ..1,predict_function = predict)))</code></pre>
+<p>Since we really only care about the good models I can filter the rest out:</p>
+<pre class="r"><code>good_models &lt;- 
+    model_frame %&gt;% 
+    filter(model %in% c(&quot;rf&quot;,&quot;gbm&quot;))</code></pre>
+<p>The <code>modelDown::modelDown()</code> function wants you to supply each explainer as an input in the dots(…) argument. To do this easily I just use the <code>purrr:invoke</code> function to pull them out of our table:</p>
+<pre class="r"><code>invoke(modelDown::modelDown,good_models$explainers)</code></pre>
+<p>This will produce the website with some explainers from the <code>DALEX</code> package.</p>
+<div id="model-performance" class="section level3">
+<h3>Model performance</h3>
+<div class="figure">
+<img src="/Pictures/Dalex_explainers/Model_performance.png" />
+
+</div>
+<p>The first tab produces our risidual distribution plots for all provided models. My only criticism here is that they only show positive errors. This might hide some information about bias.</p>
+</div>
+<div id="variable-importance" class="section level3">
+<h3>Variable Importance</h3>
+<div class="figure">
+<img src="/Pictures/Dalex_explainers/Variable_importance.png" />
+
+</div>
+<p>The next tab shows us how important certain variables in the data were to the model. This is very standard output that we would normally produce anyway. But it’s nice to have it in here so we don’t have to worry about doing that ourselves.</p>
+</div>
+<div id="variable-response" class="section level3">
+<h3>Variable response</h3>
+<div class="figure">
+<img src="/Pictures/Dalex_explainers/Variable_response.png" />
+
+</div>
+<p>This is where things get juicy!</p>
+<p>For each variable in the data the model will show us how the prediction function responds to changes in said variable.<br />
+This is fantastic since we can validate the assumptions made by the model. For example; is it reasonable that very old and very new houses should respond in this way?</p>
+<p>For factor level variables the explainer does something even more awesome! The explainer will try to figure out how each level affects the response of the model (for each model). In the screenshot we can see 3 distinct district groups that affect the price of the property. This gives us immediate insight in the data without having to explore these sub levels ourselves!</p>
+</div>
+<div id="prediction-breakdown" class="section level3">
+<h3>Prediction breakdown</h3>
+<div class="figure">
+<img src="/Pictures/Dalex_explainers/Prediction_breakdown.png" />
+
+</div>
+<p>This page uses the function <code>DALEX::prediction_breakdown()</code> on the observation with the largest residual. This is really cool because we can see which variable would have pushed the price up and which would have done the opposite. In this example we see that the specific district completely over emphasized the price of this appartment because the district generally has very expensive appartments.</p>
+<p>This DALEX funcion is very useful if we find observations that we need to explain. For example if we have trained and vetted a model that is currently running in production, we may deliver prediction to users via an app. These users may benefit from a breakdown to better sense check the predictions coming through.</p>
+</div>
+</div>

@@ -32,7 +32,7 @@
     <item>
       <title>Benchmarking</title>
       <link>/tags/benchmarking/</link>
-      <pubDate>Wed, 15 Nov 2017 00:00:00 +0000</pubDate>
+      <pubDate>Thu, 05 Jul 2018 00:00:00 +0000</pubDate>
       
       <guid>/tags/benchmarking/</guid>
       <description></description>
@@ -71,6 +71,15 @@
       <pubDate>Sun, 22 Apr 2018 00:00:00 +0000</pubDate>
       
       <guid>/tags/cross-validation/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Dalex</title>
+      <link>/tags/dalex/</link>
+      <pubDate>Thu, 05 Jul 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/dalex/</guid>
       <description></description>
     </item>
     
@@ -149,9 +158,18 @@
     <item>
       <title>Machine_learning</title>
       <link>/tags/machine_learning/</link>
-      <pubDate>Wed, 04 Apr 2018 00:00:00 +0000</pubDate>
+      <pubDate>Thu, 05 Jul 2018 00:00:00 +0000</pubDate>
       
       <guid>/tags/machine_learning/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Modeldown</title>
+      <link>/tags/modeldown/</link>
+      <pubDate>Thu, 05 Jul 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/modeldown/</guid>
       <description></description>
     </item>
     

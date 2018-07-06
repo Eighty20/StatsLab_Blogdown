@@ -3,6 +3,11 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
+    <loc>/posts/ai_sorting_hat/</loc>
+    <lastmod>2018-07-05T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
     <loc>/posts/dalex_explainers/</loc>
     <lastmod>2018-07-05T00:00:00+00:00</lastmod>
   </url>

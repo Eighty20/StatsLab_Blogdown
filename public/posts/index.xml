@@ -12,6 +12,15 @@
     
     
     <item>
+      <title>8020 Hogwarts Sorting Hat!</title>
+      <link>/posts/ai_sorting_hat/</link>
+      <pubDate>Thu, 05 Jul 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/posts/ai_sorting_hat/</guid>
+      <description>Back storyLoad up the dataSummarise dataAdd some useful labelsDistribution of affinity to each houseNumber of people in each houseCross tabulation of each person’s top house VS desired houseCross tabulation of each person’s top house VS expected houseExplorationCorrelations between houses predictedCorrelations between top house and desired houseCorrelations between top house and expected houseVisualize similarity of peopleArtificial intelligent sorting hat!</description>
+    </item>
+    
+    <item>
       <title>Explaining machine learning models</title>
       <link>/posts/dalex_explainers/</link>
       <pubDate>Thu, 05 Jul 2018 00:00:00 +0000</pubDate>

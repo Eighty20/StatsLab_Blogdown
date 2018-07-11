@@ -212,7 +212,7 @@
     <item>
       <title>Python</title>
       <link>/tags/python/</link>
-      <pubDate>Wed, 27 Jun 2018 00:00:00 +0000</pubDate>
+      <pubDate>Wed, 11 Jul 2018 00:00:00 +0000</pubDate>
       
       <guid>/tags/python/</guid>
       <description></description>
@@ -251,6 +251,15 @@
       <pubDate>Thu, 29 Mar 2018 00:00:00 +0000</pubDate>
       
       <guid>/tags/rmarkdown/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Scikit_learn</title>
+      <link>/tags/scikit_learn/</link>
+      <pubDate>Wed, 11 Jul 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/scikit_learn/</guid>
       <description></description>
     </item>
     

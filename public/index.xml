@@ -6,10 +6,21 @@
     <description>Recent content on </description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
-    <lastBuildDate>Thu, 05 Jul 2018 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Wed, 11 Jul 2018 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Test multiple sklearn models with LIME</title>
+      <link>/posts/test_multiple_sklearn_models_blog/</link>
+      <pubDate>Wed, 11 Jul 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/posts/test_multiple_sklearn_models_blog/</guid>
+      <description>In this blog I load the toy dataset for detecting breast cancer. Often before you can fine tune and productionize any model you will have to play with and test a wide range of models.
+Luckily we have frameworks like scikit_learn and caret to train many different models! Prepare yourself
+import numpy import pandas import matplotlib.pyplot as plt from sklearn import model_selection from sklearn.linear_model import LogisticRegression from sklearn.tree import DecisionTreeClassifier from sklearn.</description>
+    </item>
     
     <item>
       <title>8020 Hogwarts Sorting Hat!</title>

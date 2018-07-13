@@ -3,15 +3,49 @@ draft: yes
 title: "Condensed R For Data Science: Data Visualisation"
 author: "Louis Becker"
 date: 2018-07-13
-output: html_document
+slug: data-visualisation
 categories:
   - R
 tags:
-  - ggplot
-  - visualisation
+  - regression
+  - machine_learning
+  - clustering
+  - dimensionality_reduction
+  - reinforcement_learning
+  - Cross-validation
+  - Grid_search
+output:
+  blogdown::html_page:
+    toc: true
 ---
 
 
+<div id="TOC">
+<ul>
+<li><a href="#data-visualisation-chapter">Data Visualisation Chapter</a><ul>
+<li><a href="#aesthetic-mapping-exercises">Aesthetic mapping Exercises</a></li>
+<li><a href="#facets">Facets</a></li>
+<li><a href="#geoms">Geoms</a></li>
+<li><a href="#geom-exercises">Geom Exercises</a></li>
+<li><a href="#statistical-transformations">Statistical Transformations</a></li>
+<li><a href="#transformation-exercises">Transformation Exercises</a></li>
+<li><a href="#position-adjustments">Position Adjustments</a><ul>
+<li><a href="#position-identity">position = identity</a></li>
+<li><a href="#position-fill">position = fill</a></li>
+<li><a href="#position-dodge">position = dodge</a></li>
+<li><a href="#something-interesting-position-jitter">Something interesting: position = jitter</a></li>
+</ul></li>
+<li><a href="#position-adjustment-exercises">Position Adjustment exercises</a></li>
+<li><a href="#coordinate-systems">Coordinate Systems</a><ul>
+<li><a href="#coord_flip">Coord_flip()</a></li>
+<li><a href="#coord_quickmap">Coord_quickmap()</a></li>
+<li><a href="#coord_polar">Coord_polar()</a></li>
+</ul></li>
+<li><a href="#coordinate-systems-exercises">Coordinate Systems Exercises</a></li>
+<li><a href="#layered-grammar-of-graphics">Layered Grammar of Graphics</a></li>
+</ul></li>
+</ul>
+</div>
 
 <p>This piece is part of a series that serves as a condensed help guide that I use to explore R and the <em>tidyverse</em> packages as I work through <strong>R for Data Science</strong> available <a href="http://r4ds.had.co.nz/index.html">here</a></p>
 <p>First, we install/load the relevant packages by installing the <em>tidyverse</em>. This “package” effectively contains all packages developed by the Hadley Wickham:</p>

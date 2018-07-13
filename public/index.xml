@@ -13,13 +13,11 @@
     
     <item>
       <title>Condensed R For Data Science: Data Visualisation</title>
-      <link>/posts/data_visualisation/</link>
+      <link>/posts/data-visualisation/</link>
       <pubDate>Fri, 13 Jul 2018 00:00:00 +0000</pubDate>
       
-      <guid>/posts/data_visualisation/</guid>
-      <description>This piece is part of a series that serves as a condensed help guide that I use to explore R and the tidyverse packages as I work through R for Data Science available here
-First, we install/load the relevant packages by installing the tidyverse. This “package” effectively contains all packages developed by the Hadley Wickham:
-library(&amp;quot;tidyverse&amp;quot;)## -- Attaching packages -------------------------------------------------------------------------------------------------------------------------- tidyverse 1.2.1 --## v ggplot2 2.2.1 v purrr 0.</description>
+      <guid>/posts/data-visualisation/</guid>
+      <description>Data Visualisation ChapterAesthetic mapping ExercisesFacetsGeomsGeom ExercisesStatistical TransformationsTransformation ExercisesPosition Adjustmentsposition = identityposition = fillposition = dodgeSomething interesting: position = jitterPosition Adjustment exercisesCoordinate SystemsCoord_flip()Coord_quickmap()Coord_polar()Coordinate Systems ExercisesLayered Grammar of GraphicsThis piece is part of a series that serves as a condensed help guide that I use to explore R and the tidyverse packages as I work through R for Data Science available here</description>
     </item>
     
     <item>

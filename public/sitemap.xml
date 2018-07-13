@@ -3,7 +3,7 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
-    <loc>/posts/data_visualisation/</loc>
+    <loc>/posts/data-visualisation/</loc>
     <lastmod>2018-07-13T00:00:00+00:00</lastmod>
   </url>
   
@@ -145,13 +145,13 @@
   
   <url>
     <loc>/tags/clustering/</loc>
-    <lastmod>2017-01-06T00:00:00+00:00</lastmod>
+    <lastmod>2018-07-13T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
     <loc>/tags/cross-validation/</loc>
-    <lastmod>2018-04-22T00:00:00+00:00</lastmod>
+    <lastmod>2018-07-13T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -175,19 +175,13 @@
   
   <url>
     <loc>/tags/dimensionality_reduction/</loc>
-    <lastmod>2018-04-17T00:00:00+00:00</lastmod>
+    <lastmod>2018-07-13T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
     <loc>/categories/general/</loc>
     <lastmod>2018-03-26T00:00:00+00:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>/tags/ggplot/</loc>
-    <lastmod>2018-07-13T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -199,7 +193,7 @@
   
   <url>
     <loc>/tags/grid_search/</loc>
-    <lastmod>2017-01-06T00:00:00+00:00</lastmod>
+    <lastmod>2018-07-13T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -223,7 +217,7 @@
   
   <url>
     <loc>/tags/machine_learning/</loc>
-    <lastmod>2018-07-05T00:00:00+00:00</lastmod>
+    <lastmod>2018-07-13T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -283,13 +277,13 @@
   
   <url>
     <loc>/tags/regression/</loc>
-    <lastmod>2018-04-22T00:00:00+00:00</lastmod>
+    <lastmod>2018-07-13T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
     <loc>/tags/reinforcement_learning/</loc>
-    <lastmod>2017-01-06T00:00:00+00:00</lastmod>
+    <lastmod>2018-07-13T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -344,12 +338,6 @@
   <url>
     <loc>/tags/transfer_learning/</loc>
     <lastmod>2018-04-17T00:00:00+00:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>/tags/visualisation/</loc>
-    <lastmod>2018-07-13T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   

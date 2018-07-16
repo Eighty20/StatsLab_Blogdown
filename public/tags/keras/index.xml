@@ -6,10 +6,22 @@
     <description>Recent content in Keras on </description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
-    <lastBuildDate>Tue, 03 Jul 2018 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Mon, 16 Jul 2018 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="/tags/keras/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Predicting cloud movements</title>
+      <link>/posts/predicting_cloud_movements/</link>
+      <pubDate>Mon, 16 Jul 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/posts/predicting_cloud_movements/</guid>
+      <description>In this notebook we will attempt to predict or forecast the movement of rain/clouds over the area of North America!
+Of course the weather is a known chaotic system, therefore we will try to create an initial benchmark by throwing a deep learning model at the problem.
+The images can be downloaded from AWS S3 using the following link https://s3-eu-west-1.amazonaws.com/data-problems/precipitation_data.zip
+Import some libraries import os from os import listdir from PIL import Image as PImage import matplotlib.</description>
+    </item>
     
     <item>
       <title>Cats vs Dogs classifier</title>

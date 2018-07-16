@@ -66,6 +66,15 @@
     </item>
     
     <item>
+      <title>Cnn</title>
+      <link>/tags/cnn/</link>
+      <pubDate>Mon, 16 Jul 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/cnn/</guid>
+      <description></description>
+    </item>
+    
+    <item>
       <title>Cross Validation</title>
       <link>/tags/cross-validation/</link>
       <pubDate>Fri, 13 Jul 2018 00:00:00 +0000</pubDate>
@@ -95,7 +104,7 @@
     <item>
       <title>Deep_learning</title>
       <link>/tags/deep_learning/</link>
-      <pubDate>Tue, 03 Jul 2018 00:00:00 +0000</pubDate>
+      <pubDate>Mon, 16 Jul 2018 00:00:00 +0000</pubDate>
       
       <guid>/tags/deep_learning/</guid>
       <description></description>
@@ -149,9 +158,18 @@
     <item>
       <title>Keras</title>
       <link>/tags/keras/</link>
-      <pubDate>Tue, 03 Jul 2018 00:00:00 +0000</pubDate>
+      <pubDate>Mon, 16 Jul 2018 00:00:00 +0000</pubDate>
       
       <guid>/tags/keras/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Lstm</title>
+      <link>/tags/lstm/</link>
+      <pubDate>Mon, 16 Jul 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/lstm/</guid>
       <description></description>
     </item>
     
@@ -212,7 +230,7 @@
     <item>
       <title>Python</title>
       <link>/tags/python/</link>
-      <pubDate>Wed, 11 Jul 2018 00:00:00 +0000</pubDate>
+      <pubDate>Mon, 16 Jul 2018 00:00:00 +0000</pubDate>
       
       <guid>/tags/python/</guid>
       <description></description>
@@ -284,7 +302,7 @@
     <item>
       <title>Time Series</title>
       <link>/tags/time-series/</link>
-      <pubDate>Sun, 22 Apr 2018 00:00:00 +0000</pubDate>
+      <pubDate>Mon, 16 Jul 2018 00:00:00 +0000</pubDate>
       
       <guid>/tags/time-series/</guid>
       <description></description>

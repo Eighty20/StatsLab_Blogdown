@@ -2,6 +2,9 @@
 title: "Condensed R For Data Science: Data Visualisation"
 author: "Louis Becker"
 date: 2018-07-13
+output:
+  blogdown::html_page:
+    toc: true
 slug: data-visualisation
 categories:
   - R
@@ -13,9 +16,6 @@ tags:
   - reinforcement_learning
   - Cross-validation
   - Grid_search
-output:
-  blogdown::html_page:
-    toc: true
 ---
 
 This piece is part of a series that serves as a condensed help guide that I use to explore R and the *tidyverse* packages as I work through **R for Data Science** available [here](http://r4ds.had.co.nz/index.html)

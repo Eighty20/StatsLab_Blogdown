@@ -17,14 +17,14 @@
       <pubDate>Mon, 26 Mar 2018 00:00:00 +0000</pubDate>
       
       <guid>/posts/data-science-workflow/</guid>
-      <description>Why it mattersWhen working with recurring clients and projects together with tight deadlines it is easy to cut corners or forget good practice.
+      <description>Why it matters When working with recurring clients and projects together with tight deadlines it is easy to cut corners or forget good practice.
 Here are the top reasons why a data science workflow is vital:
-Work is well documented
-Folders and files logically are structured
-Projects remain version controlled
-Data output is tracked
-Logical seperation of scripts make productizing easy
-Good naming conventions make tracking of the project flow easy</description>
+ Work is well documented
+ Folders and files logically are structured
+ Projects remain version controlled
+ Data output is tracked
+ Logical seperation of scripts make productizing easy
+ Good naming conventions make tracking of the project flow easy</description>
     </item>
     
   </channel>

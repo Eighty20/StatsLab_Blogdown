@@ -6,10 +6,19 @@
     <description>Recent content on </description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
-    <lastBuildDate>Mon, 16 Jul 2018 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Thu, 19 Jul 2018 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Condensed R For Data Science: Data Visualisation</title>
+      <link>/posts/condensed-r-for-data-science-data-visualisation/</link>
+      <pubDate>Thu, 19 Jul 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/posts/condensed-r-for-data-science-data-visualisation/</guid>
+      <description>Data Visualisation Chapter Aesthetic mapping Exercises Facets Geoms Geom Exercises Statistical Transformations Transformation Exercises Position Adjustments position = identity position = fill position = dodge Something interesting: position = jitter  Position Adjustment exercises Coordinate Systems Coord_flip() Coord_quickmap() Coord_polar()  Coordinate Systems Exercises Layered Grammar of Graphics    This piece is part of a series that serves as a condensed help guide that I use to explore R and the tidyverse packages as I work through R for Data Science available here</description>
+    </item>
     
     <item>
       <title>Predicting cloud movements</title>
@@ -21,15 +30,6 @@
 Of course the weather is a known chaotic system, therefore we will try to create an initial benchmark by throwing a deep learning model at the problem.
 The images can be downloaded from AWS S3 using the following link https://s3-eu-west-1.amazonaws.com/data-problems/precipitation_data.zip
 Import some libraries import os from os import listdir from PIL import Image as PImage import matplotlib.</description>
-    </item>
-    
-    <item>
-      <title>Condensed R For Data Science: Data Visualisation</title>
-      <link>/posts/data-visualisation/</link>
-      <pubDate>Fri, 13 Jul 2018 00:00:00 +0000</pubDate>
-      
-      <guid>/posts/data-visualisation/</guid>
-      <description>Data Visualisation Chapter Aesthetic mapping Exercises Facets Geoms Geom Exercises Statistical Transformations Transformation Exercises Position Adjustments position = identity position = fill position = dodge Something interesting: position = jitter  Position Adjustment exercises Coordinate Systems Coord_flip() Coord_quickmap() Coord_polar()  Coordinate Systems Exercises Layered Grammar of Graphics    This piece is part of a series that serves as a condensed help guide that I use to explore R and the tidyverse packages as I work through R for Data Science available here</description>
     </item>
     
     <item>

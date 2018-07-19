@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Image_recognition on </title>
+    <link>/tags/image_recognition/</link>
+    <description>Recent content in Image_recognition on </description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Tue, 03 Jul 2018 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="/tags/image_recognition/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Cats vs Dogs classifier</title>
+      <link>/posts/cats_vs_dogs_classifier/</link>
+      <pubDate>Tue, 03 Jul 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/posts/cats_vs_dogs_classifier/</guid>
+      <description>Overview Download data Build network Data preprocessing Image data augmentation How it works Create new network Train new network with augmentation generators  Further optimization Transfer learning - VGG16     Overview Deep neural networks using convulotional layers are currently (2018) the best immage classification algorithms out there… Let’s build one to see what its all about.
+How about identifying cats and dogs?
+ This post follows through the example in the book “Deep learning with R” by Francios Chollet with J.</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Classification on </title>
+    <link>/tags/classification/</link>
+    <description>Recent content in Classification on </description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Thu, 19 Jul 2018 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="/tags/classification/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>New Post</title>
+      <link>/posts/new-post/</link>
+      <pubDate>Thu, 19 Jul 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/posts/new-post/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Cats vs Dogs classifier</title>
+      <link>/posts/cats_vs_dogs_classifier/</link>
+      <pubDate>Tue, 03 Jul 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/posts/cats_vs_dogs_classifier/</guid>
+      <description>Overview Download data Build network Data preprocessing Image data augmentation How it works Create new network Train new network with augmentation generators  Further optimization Transfer learning - VGG16     Overview Deep neural networks using convulotional layers are currently (2018) the best immage classification algorithms out there… Let’s build one to see what its all about.
+How about identifying cats and dogs?
+ This post follows through the example in the book “Deep learning with R” by Francios Chollet with J.</description>
+    </item>
+    
+    <item>
+      <title>IMDB movie classification</title>
+      <link>/posts/imdb_movie_classification/</link>
+      <pubDate>Tue, 03 Jul 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/posts/imdb_movie_classification/</guid>
+      <description>Overview Load the IMDB data View data Link the original data  Prepare data as tensors One-hot encode Set outcome data types  Build network Split test/train Train If we train for only 4 epochs If we use dropout  Investigate the best predicted movie    Overview This post follows through the example in the book “Deep learning with R” by Francios Chollet with J. J. Alaire.</description>
+    </item>
+    
+  </channel>
+</rss>

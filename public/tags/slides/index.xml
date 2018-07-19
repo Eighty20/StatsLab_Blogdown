@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Slides on </title>
+    <link>/tags/slides/</link>
+    <description>Recent content in Slides on </description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Mon, 30 Apr 2018 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="/tags/slides/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Office R Blog</title>
+      <link>/posts/office_r/</link>
+      <pubDate>Mon, 30 Apr 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/posts/office_r/</guid>
+      <description>Prelude and set upPre-reqsStuff for the deckActual OfficeRPrelude and set upIn this markdown I will explain how to use OfficeR to generate powerpoint presentations.
+The rmsfuns package was useful just to use the ‘load_pkg’ function which makes it easier to load multiple packages. Firstly, you need the OfficeR package. I am also using the extrafont package in order to use Tahoma in the powerpoint, according to the Eighty20 template.</description>
+    </item>
+    
+  </channel>
+</rss>

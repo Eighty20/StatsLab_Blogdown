@@ -3,13 +3,13 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
-    <loc>/posts/predicting_cloud_movements/</loc>
-    <lastmod>2018-07-16T00:00:00+00:00</lastmod>
+    <loc>/posts/condensed-r-for-data-science-data-visualisation/</loc>
+    <lastmod>2018-07-19T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>/posts/data-visualisation/</loc>
-    <lastmod>2018-07-13T00:00:00+00:00</lastmod>
+    <loc>/posts/predicting_cloud_movements/</loc>
+    <lastmod>2018-07-16T00:00:00+00:00</lastmod>
   </url>
   
   <url>
@@ -109,7 +109,7 @@
   
   <url>
     <loc>/</loc>
-    <lastmod>2018-07-16T00:00:00+00:00</lastmod>
+    <lastmod>2018-07-19T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -150,7 +150,7 @@
   
   <url>
     <loc>/tags/clustering/</loc>
-    <lastmod>2018-07-13T00:00:00+00:00</lastmod>
+    <lastmod>2018-07-19T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -162,7 +162,7 @@
   
   <url>
     <loc>/tags/cross-validation/</loc>
-    <lastmod>2018-07-13T00:00:00+00:00</lastmod>
+    <lastmod>2018-07-19T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -186,7 +186,7 @@
   
   <url>
     <loc>/tags/dimensionality_reduction/</loc>
-    <lastmod>2018-07-13T00:00:00+00:00</lastmod>
+    <lastmod>2018-07-19T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -204,7 +204,7 @@
   
   <url>
     <loc>/tags/grid_search/</loc>
-    <lastmod>2018-07-13T00:00:00+00:00</lastmod>
+    <lastmod>2018-07-19T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -234,7 +234,7 @@
   
   <url>
     <loc>/tags/machine_learning/</loc>
-    <lastmod>2018-07-13T00:00:00+00:00</lastmod>
+    <lastmod>2018-07-19T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -264,7 +264,7 @@
   
   <url>
     <loc>/posts/</loc>
-    <lastmod>2018-07-16T00:00:00+00:00</lastmod>
+    <lastmod>2018-07-19T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -288,19 +288,19 @@
   
   <url>
     <loc>/categories/r/</loc>
-    <lastmod>2018-07-13T00:00:00+00:00</lastmod>
+    <lastmod>2018-07-19T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
     <loc>/tags/regression/</loc>
-    <lastmod>2018-07-13T00:00:00+00:00</lastmod>
+    <lastmod>2018-07-19T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
     <loc>/tags/reinforcement_learning/</loc>
-    <lastmod>2018-07-13T00:00:00+00:00</lastmod>
+    <lastmod>2018-07-19T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   

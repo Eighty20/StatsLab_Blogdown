@@ -41,3 +41,8 @@ disqusShortname = "StatsLab"
     identifier = "tags"
     weight = 200
     url = "/tags/"
+[[menu.main]]
+    name = "Search by category"
+    identifier = "categories"
+    weight = 200
+    url = "/categories/"

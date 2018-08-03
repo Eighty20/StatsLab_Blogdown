@@ -1,0 +1,45 @@
+---
+title: SatRday and visual inference of vine copulas
+author: Hanjo Odendaal
+date: 2017-02-19
+slug: satrday-and-visual-inference-of-vine-copulas
+categories:
+  - R
+tags:
+  - dplyr
+  - Shiny
+---
+
+
+
+<div id="satrday" class="section level1">
+<h1>SatRday</h1>
+<p>From the 16th to the 18th of February, satRday was held in the City of Cape Town in South Africa. The programme kicked off with two days of workshops and then the conference on Saturday. The workshops were divided up into three large sections:</p>
+<ul>
+<li>R and Git (<a href="https://github.com/jennybc">Jennifer Bryan</a>)</li>
+<li>Shiny, flexdashboard and Shinyapps.io (<a href="http://juliasilge.com/">Julia Silge</a>)</li>
+<li>Building and validating logistic regression models (<a href="https://itsalocke.com/">Steph Locke</a>)</li>
+</ul>
+<p><strong>R and Git</strong></p>
+<p>Easy integration of version control through git and Rstudio has never been this easy. If you are not already following this principle of <code>Pull</code>, <code>Commit</code> and <code>Push</code> in your workflow, I recommend you vist the website <a href="http://happygitwithr.com/" class="uri">http://happygitwithr.com/</a> which will help you to correct your current workflow indiscretions!</p>
+<p>If you are however an avid user of github and regularly push your commits with correct messages, here is a gem of a website that made my day - <a href="http://starlogs.net/">starlogs</a></p>
+<p><strong>Shiny</strong></p>
+<p>The Shiny workshop was an amazing exhibition on what can be done in an afternoon with the power of shiny and Rstudio! We got to build an interactive dashboard investigating disease data from South Africa using the new <code>flexdashboard</code>.</p>
+<p><strong>Training Models</strong></p>
+<p>Once a again I realised how powerful the <code>caret</code> package can be in training and testing a wide range of models in a modular way without too much hassle or fuss. I am really keen to start playing with the <code>h20</code> package after a brief overview was shown on the ensemble capabilities of the package.</p>
+<div id="the-conference" class="section level2">
+<h2>The Conference</h2>
+<p>The saturday saw a multitude of speakers take the stage to discuss some of the most interesting topics and application of R that I have seen in a very long time. The full programme can be viewed on the <a href="http://capetown2017.satrdays.org/#programme">website</a>. I also had the opportunity to talk about how we can combine <code>Shiny</code> and the <code>visNetworks</code> html widget as a way to conduct analysis of high-dimensional Vine Copulas.</p>
+<p>R, as an open source software with a large following provides quick and easy access to complex models and methods that are used and applied widely within academics, but more importantly, in practice. This increase in complexity both theoretically and mathematically, has resulted in an obligation from practitioners to break down walls of jargon and mathematical hyperbole into easy digestable actions and insight.</p>
+<p>My attempt at addressing this philosophical idea was to create a small package called <code>VineVizR</code>. The package can be viewed and downloaded <a href="https://github.com/HanjoStudy/VineVizR">here</a>. I used this package and its function to build a shiny App where one can explore the interlinkages between 23 of South Africa’s largest companies by market cap using Vine Copulas.</p>
+<p>Vine copulas allow us to model complex linkages among assets, but currently the visual illustration of Vine copulae from the VineCopula package offers a bland plotting output that is hard to interpret. Combining the visNetwork html-widget along with the VineCopula RVM output, offers an interactive and visually appealing way to understand to interpret your output.</p>
+<p>The app can be found on my <a href="https://hanjo.shinyapps.io/VineVizR/">ShinyApp page</a>. I hope you enjoy this small app and the meta data that has been integrated into it. If you feel that you still want to play a bit more, go download the package and play with the <code>VizVineR</code> function where you can play and create your own groups!! But be aware, I don’t see myself as a developer - so when you peek under the hood and see any improvements that can be made - let me know.</p>
+<div id="view-of-the-dashboard" class="section level3">
+<h3>View of the dashboard</h3>
+<div class="figure">
+<img src="/Pictures/vineVizR/dashboard.png" alt="dashboard" />
+<p class="caption">dashboard</p>
+</div>
+</div>
+</div>
+</div>

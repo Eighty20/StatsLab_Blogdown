@@ -1,0 +1,881 @@
+---
+title: Gotta catch them all
+author: Hanjo Odendaal
+date: 2016-02-18
+slug: gotta-catch-them-all
+categories:
+  - R
+tags:
+  - Clustering
+---
+
+
+
+<div id="introduction" class="section level1">
+<h1>Introduction</h1>
+<p>When data becomes high-dimensional, the inherent relational structure between the variables can sometimes become unclear or indistinct. One, might want to find clusters for numerous amounts of reasons - me, I want to use it to better understand my childhood. To be more specific, I will be using clustering to highlight different groupings of pokemon. The results of this analysis can then retrospectively be applied to a younger me having to choose which pokemon I catch and keep, or perhaps which I must rather use in battle to gain experience points. The clusters should help me identify groupings of pokemons that assimilate with my style of play, be it catching pokemon who are <em>specialist</em> of their type, <em>strong attackers</em>, <em>survivalist</em> who have good defensive capabilities or pokemon who have the potential to become great as soon as they evolve.</p>
+<p>This train of thought (aka hypothesis) will carry through to the analysis when number of cluster and inference needs to be conducted.</p>
+</div>
+<div id="about-clustering-techniques" class="section level1">
+<h1>About clustering techniques</h1>
+<p>Within the CRM field, a common practice is to segment client data in order to identify certain clusters of customers, users or products. The first question that I asked myself when I first encountered this technique was: “How usefull can this really be when there is no quantitative measure which dictates the number of clusters”. The answer to this question became quite clear to me when I encountered a dataset of 8000 variables.</p>
+<p>Clustering lies within the field of data-reduction, and has the intention to uncover cohesive subgroups of observations within a very large dataset where inference aren’t always clear from face value - i.e an Excel pivot table isn’t going to cut it. Clustering is not only used within marketing, but is applied in biology, behavioural sciences, economics and medical research. The application of cluster analysis in the medical sciences interest me, as they use this technique to help catalog gene-expression patters which were obtained from DNA microarray data. Very cool application of this statistical technique. Without clustering, this task would become almost impossible due to the large amount of information.</p>
+<p>Clustering can primarily be divided up in two techniques:</p>
+<ul>
+<li>Hierarchical Agglomerative methods</li>
+<li>Partitioning clustering</li>
+</ul>
+<p>Hierarchical agglomerative clustering works from a bottom up approach where at the beginning, each observation is in its own cluster. From this clusters are combined into larger clusters, 2 at a time, until all the cluster have essentially been merged into one big cluster. With partitioning, one will specify <strong>K</strong> cluster which are sought after. Then the algorithm will essentially start by picking randomly dividing observations into clusters, assessing similarity, reshuffle, asses again and keep doing this until cohesive clusters are formed.</p>
+<p>There is a lot of different techniques, but for the rest of this exploration into the topic, I will be using hierarchical agglomerative clustering (hclust) as my choice of clustering algorithm.</p>
+<p>Now, the question is: “How are the observations linked to form these clusters?”. In hclust the most popular techniques are:</p>
+<ul>
+<li>Single linkage: Shortest distance between a point in one cluster and a point in the other cluster.</li>
+<li>Complete linkage: Longest distance between a point in one cluster and a point in the other cluster.</li>
+<li>Average linkage: Average distance between each point in one cluster and each point in the other cluster (also called UPGMA [unweighted pair group mean averaging])</li>
+<li>Centroid: Distance between the centroids (vector of variable means) of the two clusters. For a single observation, the centroid is the variable’s values.</li>
+<li>Ward’s Method: The ANOVA sum of squares between the two clusters added up over all the variables.</li>
+</ul>
+<p>You are probably asking - what distance are you talking about here? We will use the <code>dist()</code> function in R to calculate the euclidean distance:</p>
+<div class="figure">
+<img src="/Pictures/Pokemon_fig/euclidean.JPG" alt="Euclidean dit" />
+<p class="caption">Euclidean dit</p>
+</div>
+<p>where <strong>q</strong> and <strong>p</strong> are the observations and <strong>N</strong> is the number of variables. Easy enough right? I will be using <em>ward</em>’s method to cluster my objects as it is the default setting for <em>Hierarchical agglomerative clustering</em> for the <code>HCPC</code> function in <code>library(FactoMineR)</code></p>
+</div>
+<div id="lets-go-catch-our-pokemon" class="section level1">
+<h1>Lets go catch our pokemon</h1>
+<p>To collect the data on all the first generation pokemon, I employ Hadley Wickam’s <a href="https://cran.r-project.org/web/packages/rvest/index.html">rvest</a> package. I find it very intuitive and can handle all of my needs in collecting and extracting the data from a pokemon <a href="http://bulbapedia.bulbagarden.net/wiki/Main_Page">wiki</a>. I will grab all the Pokemon up until to Gen II, which constitutes 251 individuals. I did find the website structure a bit of a pain as each pokemon had very different looking web pages. But, with some manual hacking, I eventually got the data in a nice format.</p>
+<p>The cleaned data looks as follows:</p>
+<pre class="r"><code>library(ggplot2)
+library(FactoMineR)
+all_pokemon &lt;- download.file(&quot;https://raw.githubusercontent.com/Eighty20/eighty20.github.io/master/_rmd/Post_data/All_pokemon.csv&quot;, destfile = &quot;/tmp/Pokemon.csv&quot;, method = &quot;curl&quot;)
+all_pokemon &lt;- read.csv(&quot;/tmp/Pokemon.csv&quot;, stringsAsFactors = F)
+cat(&quot;Dimensions for pokemon data is :&quot;,dim(all_pokemon))</code></pre>
+<pre><code>## Dimensions for pokemon data is : 251 15</code></pre>
+<pre class="r"><code>head(all_pokemon)</code></pre>
+<pre><code>##   Nat    Pokemon HP Atk Def  SA  SD Spd Total Type.I Type.II    Gender
+## 1   1  Bulbasaur 45  49  49  65  65  45   318  Grass  Poison M (87.5%)
+## 2   2    Ivysaur 60  62  63  80  80  60   405  Grass  Poison M (87.5%)
+## 3   3   Venusaur 80  82  83 100 100  80   525  Grass  Poison M (87.5%)
+## 4   4 Charmander 39  52  43  60  50  65   309   Fire         M (87.5%)
+## 5   5 Charmeleon 58  64  58  80  65  80   405   Fire         M (87.5%)
+## 6   6  Charizard 78  84  78 109  85 100   534   Fire  Flying M (87.5%)
+##   Evolves.From lvl_up Evolves.Into
+## 1           -- Lv. 16      Ivysaur
+## 2    Bulbasaur Lv. 32     Venusaur
+## 3      Ivysaur     --           --
+## 4           -- Lv. 16   Charmeleon
+## 5   Charmander Lv. 36    Charizard
+## 6   Charmeleon     --           --</code></pre>
+<p>For those of you who know pokemon well, will also know that certain pokemon have only one evolution stage. We remove them in order to not intervere with our clustering at a later stage.</p>
+<pre class="r"><code>Evo_none &lt;- all_pokemon[which(all_pokemon$Evolves.From == &quot;--&quot; &amp; all_pokemon$Evolves.Into==&quot;--&quot;), ]</code></pre>
+<p>The following pokemon were removed from the dataset: Farfetch’d, Kangaskhan, Pinsir, Tauros, Lapras, Ditto, Aerodactyl, Articuno, Zapdos, Moltres, Mewtwo, Mew, Unown, Girafarig, Dunsparce, Qwilfish, Shuckle, Heracross, Corsola, Delibird, Skarmory, Stantler, Smeargle, Miltank, Raikou, Entei, Suicune, Lugia, Ho-oh, Celebi</p>
+<p>The next step was to aggregate all the stage 2 statistics for the stage 1 evolution pokemon. This results in a nice wide dataset of variables we are able to use in our clustering. I am hoping to extract some sense of strenghts in pokemon, not only by their stage 1 statistics, but also perhaps their potential to become awesome assets later. One hopeful example of this would be everyone’s favourite: magikarp.</p>
+<pre class="r"><code>Evo_1 &lt;- all_pokemon[which(all_pokemon$Evolves.From==&quot;--&quot; &amp; all_pokemon$Evolves.Into!=&quot;--&quot;), ]
+Evo_2 &lt;- all_pokemon[which(all_pokemon$Evolves.From!=&quot;--&quot;), ]
+##### Housekeeping - organise data into cluster format #####
+Matched_pokemon &lt;- merge(Evo_1,
+                         Evo_2[,!names(Evo_2) %in% c(&#39;Evolves.Into&#39;)], 
+                         by.x = &quot;Evolves.Into&quot;,
+                         by.y = &quot;Pokemon&quot;,
+                         all.x = T,
+                         suffixes = c(&quot;.lv1&quot;,&quot;.lv2&quot;))
+
+#Create level of evolution variable 
+Matched_pokemon$lvl_up.lv1 &lt;- as.integer(gsub(&quot;[^0-9]+&quot;,&quot;&quot;, Matched_pokemon$lvl_up.lv1))
+
+#Finalize complete set of pokemon
+Matched_pokemon &lt;- Matched_pokemon[complete.cases(Matched_pokemon), ]
+pokemon &lt;- Matched_pokemon$Pokemon
+
+#Correct for Nidoran
+pokemon[grep(&quot;Nido&quot;,pokemon)] &lt;- c(&quot;Nidoran(F)&quot;,&quot;Nidoran(M)&quot;)
+
+selected_var&lt;-c(&quot;HP.lv1&quot;,&quot;HP.lv2&quot;,
+                &quot;Atk.lv1&quot;,&quot;Atk.lv2&quot;,
+                &quot;Def.lv1&quot;,&quot;Def.lv2&quot;,
+                &quot;SA.lv1&quot;,&quot;SA.lv2&quot;,
+                &quot;SD.lv1&quot;,&quot;SD.lv2&quot;,
+                &quot;Spd.lv1&quot;,&quot;Spd.lv2&quot;,
+                &quot;Total.lv1&quot;,&quot;Total.lv2&quot;,
+                &quot;Type.I.lv1&quot;,&quot;lvl_up.lv1&quot;)
+
+Matched_pokemon &lt;- Matched_pokemon[ ,names(Matched_pokemon)%in%selected_var]
+row.names(Matched_pokemon) &lt;- pokemon</code></pre>
+<p>The data has been constructed to capture characteristics of a specific pokemon at both the first and second level of evolution. It is these variables that we will be using in our clustering. The <code>total</code> column acts as a general indicator of pokemon’s attributes:</p>
+<table>
+<caption>Table continues below</caption>
+<thead>
+<tr class="header">
+<th align="center"> </th>
+<th align="center">HP.lv1</th>
+<th align="center">Atk.lv1</th>
+<th align="center">Def.lv1</th>
+<th align="center">SA.lv1</th>
+<th align="center">SD.lv1</th>
+<th align="center">Spd.lv1</th>
+<th align="center">Total.lv1</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center"><strong>Ekans</strong></td>
+<td align="center">30</td>
+<td align="center">60</td>
+<td align="center">44</td>
+<td align="center">40</td>
+<td align="center">54</td>
+<td align="center">55</td>
+<td align="center">283</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>Spinarak</strong></td>
+<td align="center">40</td>
+<td align="center">60</td>
+<td align="center">40</td>
+<td align="center">40</td>
+<td align="center">40</td>
+<td align="center">30</td>
+<td align="center">250</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>Chikorita</strong></td>
+<td align="center">45</td>
+<td align="center">49</td>
+<td align="center">65</td>
+<td align="center">49</td>
+<td align="center">65</td>
+<td align="center">45</td>
+<td align="center">318</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>Charmander</strong></td>
+<td align="center">39</td>
+<td align="center">52</td>
+<td align="center">43</td>
+<td align="center">60</td>
+<td align="center">50</td>
+<td align="center">65</td>
+<td align="center">309</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>Totodile</strong></td>
+<td align="center">50</td>
+<td align="center">65</td>
+<td align="center">64</td>
+<td align="center">44</td>
+<td align="center">48</td>
+<td align="center">43</td>
+<td align="center">314</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>Seel</strong></td>
+<td align="center">65</td>
+<td align="center">45</td>
+<td align="center">55</td>
+<td align="center">45</td>
+<td align="center">70</td>
+<td align="center">45</td>
+<td align="center">325</td>
+</tr>
+</tbody>
+</table>
+<table>
+<caption>Table continues below</caption>
+<thead>
+<tr class="header">
+<th align="center"> </th>
+<th align="center">Type.I.lv1</th>
+<th align="center">lvl_up.lv1</th>
+<th align="center">HP.lv2</th>
+<th align="center">Atk.lv2</th>
+<th align="center">Def.lv2</th>
+<th align="center">SA.lv2</th>
+<th align="center">SD.lv2</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center"><strong>Ekans</strong></td>
+<td align="center">Poison</td>
+<td align="center">22</td>
+<td align="center">60</td>
+<td align="center">85</td>
+<td align="center">69</td>
+<td align="center">65</td>
+<td align="center">79</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>Spinarak</strong></td>
+<td align="center">Bug</td>
+<td align="center">22</td>
+<td align="center">70</td>
+<td align="center">90</td>
+<td align="center">70</td>
+<td align="center">60</td>
+<td align="center">60</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>Chikorita</strong></td>
+<td align="center">Grass</td>
+<td align="center">16</td>
+<td align="center">60</td>
+<td align="center">62</td>
+<td align="center">80</td>
+<td align="center">63</td>
+<td align="center">80</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>Charmander</strong></td>
+<td align="center">Fire</td>
+<td align="center">16</td>
+<td align="center">58</td>
+<td align="center">64</td>
+<td align="center">58</td>
+<td align="center">80</td>
+<td align="center">65</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>Totodile</strong></td>
+<td align="center">Water</td>
+<td align="center">18</td>
+<td align="center">65</td>
+<td align="center">80</td>
+<td align="center">80</td>
+<td align="center">59</td>
+<td align="center">63</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>Seel</strong></td>
+<td align="center">Water</td>
+<td align="center">34</td>
+<td align="center">90</td>
+<td align="center">70</td>
+<td align="center">80</td>
+<td align="center">70</td>
+<td align="center">95</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr class="header">
+<th align="center"> </th>
+<th align="center">Spd.lv2</th>
+<th align="center">Total.lv2</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center"><strong>Ekans</strong></td>
+<td align="center">80</td>
+<td align="center">438</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>Spinarak</strong></td>
+<td align="center">40</td>
+<td align="center">390</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>Chikorita</strong></td>
+<td align="center">69</td>
+<td align="center">414</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>Charmander</strong></td>
+<td align="center">80</td>
+<td align="center">405</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>Totodile</strong></td>
+<td align="center">58</td>
+<td align="center">405</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>Seel</strong></td>
+<td align="center">70</td>
+<td align="center">475</td>
+</tr>
+</tbody>
+</table>
+<p>For those curious to see the pokemon which ended up in our dataset. Here they are:</p>
+<pre><code>##  [1] &quot;Ekans&quot;      &quot;Spinarak&quot;   &quot;Chikorita&quot;  &quot;Charmander&quot; &quot;Totodile&quot;  
+##  [6] &quot;Seel&quot;       &quot;Doduo&quot;      &quot;Phanpy&quot;     &quot;Dratini&quot;    &quot;Diglett&quot;   
+## [11] &quot;Voltorb&quot;    &quot;Spearow&quot;    &quot;Pineco&quot;     &quot;Sentret&quot;    &quot;Oddish&quot;    
+## [16] &quot;Zubat&quot;      &quot;Psyduck&quot;    &quot;Snubbull&quot;   &quot;Magikarp&quot;   &quot;Gastly&quot;    
+## [21] &quot;Houndour&quot;   &quot;Drowzee&quot;    &quot;Bulbasaur&quot;  &quot;Smoochum&quot;   &quot;Kabuto&quot;    
+## [26] &quot;Abra&quot;       &quot;Weedle&quot;     &quot;Krabby&quot;     &quot;Chinchou&quot;   &quot;Ledyba&quot;    
+## [31] &quot;Machop&quot;     &quot;Slugma&quot;     &quot;Magnemite&quot;  &quot;Cubone&quot;     &quot;Caterpie&quot;  
+## [36] &quot;Grimer&quot;     &quot;Nidoran(F)&quot; &quot;Nidoran(M)&quot; &quot;Hoothoot&quot;   &quot;Remoraid&quot;  
+## [41] &quot;Omanyte&quot;    &quot;Paras&quot;      &quot;Meowth&quot;     &quot;Pidgey&quot;     &quot;Swinub&quot;    
+## [46] &quot;Poliwag&quot;    &quot;Mankey&quot;     &quot;Larvitar&quot;   &quot;Wooper&quot;     &quot;Cyndaquil&quot; 
+## [51] &quot;Ponyta&quot;     &quot;Rhyhorn&quot;    &quot;Sandshrew&quot;  &quot;Horsea&quot;     &quot;Goldeen&quot;   
+## [56] &quot;Hoppip&quot;     &quot;Slowpoke&quot;   &quot;Tentacool&quot;  &quot;Teddiursa&quot;  &quot;Squirtle&quot;  
+## [61] &quot;Bellsprout&quot; &quot;Koffing&quot;    &quot;Natu&quot;</code></pre>
+<p>One of the interesting variables that forms part of the data is the crucial question every trainer asks himself when catching pokemon - which types are the strongest? For each of my ~60 pokemon I use a boxplot to evaluate the relative strenght of a type. The data was normalized per level of evolution to ease plotting and interpretation. <img src="/posts/Pokemon_clustering_files/figure-html/unnamed-chunk-7-1.png" width="1600" style="display: block; margin: auto;" /> Good old bug pokemons don’t catch a break, with the median <code>total</code> points being the lowest in both stages of evolution. For Normal, Poison and Water types, there seems to be a definite advantage to evolve in order to ‘up’ the overall statistics. An interesting type to evaluate is the Fire type pokemon. In the first stage of evolution this type of pokemon seems to have an overall advantage, but once the pokemon starts evolving, the advantage dissipates.</p>
+<p>One of the concerns I had was the class imbalance that might be present in the pokemon type. <img src="/posts/Pokemon_clustering_files/figure-html/unnamed-chunk-8-1.png" width="2000" style="display: block; margin: auto;" /> The graph clearly points this out, so instead of adding the pokemon types into the analysis, they will be included as supplementary variable.</p>
+</div>
+<div id="going-prof-elm-and-analysing-pokemon" class="section level1">
+<h1>Going Prof Elm and analysing pokemon</h1>
+<p>If you don’t know who Prof Elm is, this <a href="http://bulbapedia.bulbagarden.net/wiki/Professor_Elm">link</a> should help. To start our exploration into the pokemon dataset, we will conduct a <em>multiple factor analysis</em>. I find the flexibility of this function being able to conduct <code>MCA</code> and <code>PCA</code> in one go very helpful. It also has incredible plotting functions that helps to visually analyse your data.</p>
+<pre class="r"><code>Matched_pokemon$Type.I.lv1 &lt;- as.factor(Matched_pokemon$Type.I.lv1)
+
+res &lt;- MFA(Matched_pokemon,group = c(6,1,1,7,1),type=c(rep(&quot;s&quot;,2),&quot;n&quot;,rep(&quot;s&quot;,2)),
+           ncp=5,name.group = c(&quot;Lvl1&quot;,&quot;ToT1&quot;,&quot;Type&quot;,&quot;Lvl2&quot;,&quot;ToT2&quot;),
+           num.group.sup = c(2,3,5),graph = F)
+
+plot(res,choix = &quot;var&quot;, habillage = &quot;group&quot;, cex=0.8, shadow = T)</code></pre>
+<p><img src="/posts/Pokemon_clustering_files/figure-html/unnamed-chunk-9-1.png" width="2000" style="display: block; margin: auto;" /> Here we see that there is a definite inverse relationship between the speed of a Pokemon and its attack statistics. I find the relationship between special attack and normal attack interesting. It would seem that you either specialise or defualt to having a strong overall attack.</p>
+<p>The first thing to look at is the dispersion of the pokemon types to see how correlation all the pokemons are given their type. <img src="/posts/Pokemon_clustering_files/figure-html/unnamed-chunk-10-1.png" width="2000" style="display: block; margin: auto;" /> It would seem that Ghost, Psyhic and Electric pokemon have different characteristics than those of Ground, Fighting and Bug for instance.</p>
+<p>Given these factor groups, next it would be interesting to see which of the pokemon had the highest contribution to the construction dimension (Contribution 10). I also want to see the highest quality of representation (cos2&gt;0.6). The <em>cos squared</em>, indicates the contribution of a component to the squared distance of the observation to the origin. i.e <em>cos squared</em> is an important contributor to find the components that are important to interpret both active and supplementary observations, <a href="https://www.utdallas.edu/~herve/abdi-awPCA2010.pdf">Abdi H, 2010</a>. <img src="/posts/Pokemon_clustering_files/figure-html/unnamed-chunk-11-1.png" width="2000" style="display: block; margin: auto;" /></p>
+<p>Now that we have a clearer understanding of the data, its finally time to conduct the exciting cluster analysis on the data. With the <code>MFA</code> function, this is easily done by plugging the results directly into a hierarchical clustering algorithm. I decided to cut the tree to get 4 clusters in the end. Felt that these represented the different facets of pokemon quite well.</p>
+<pre class="r"><code>res.hcpc &lt;- HCPC(res, nb.clust=4, consol=TRUE, iter.max=10, min=3,
+                 max=NULL, metric=&quot;euclidean&quot;, method=&quot;ward&quot;, order=TRUE,
+                 graph.scale=&quot;inertia&quot;, nb.par=5, graph=F, proba=0.05, 
+                 cluster.CA=&quot;rows&quot;,kk=Inf)</code></pre>
+<p>Here we can see a 3D representation of the tree that was build: <img src="/posts/Pokemon_clustering_files/figure-html/unnamed-chunk-13-1.png" width="2000" style="display: block; margin: auto;" /></p>
+<p>I wanted to see the type dispersion among the clusters, perhaps hoping to see a coherent split of types among the clusters…</p>
+<table>
+<thead>
+<tr class="header">
+<th align="center"> </th>
+<th align="center">1</th>
+<th align="center">2</th>
+<th align="center">3</th>
+<th align="center">4</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center"><strong>Bug</strong></td>
+<td align="center">0</td>
+<td align="center">1</td>
+<td align="center">3</td>
+<td align="center">2</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>Dark</strong></td>
+<td align="center">1</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>Dragon</strong></td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">1</td>
+<td align="center">0</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>Electric</strong></td>
+<td align="center">2</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>Fighting</strong></td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">1</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>Fire</strong></td>
+<td align="center">2</td>
+<td align="center">0</td>
+<td align="center">2</td>
+<td align="center">0</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>Ghost</strong></td>
+<td align="center">1</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>Grass</strong></td>
+<td align="center">2</td>
+<td align="center">0</td>
+<td align="center">3</td>
+<td align="center">0</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>Ground</strong></td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">1</td>
+<td align="center">4</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>Ice</strong></td>
+<td align="center">1</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>Normal</strong></td>
+<td align="center">0</td>
+<td align="center">1</td>
+<td align="center">5</td>
+<td align="center">2</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>Poison</strong></td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">4</td>
+<td align="center">2</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>Psychic</strong></td>
+<td align="center">2</td>
+<td align="center">1</td>
+<td align="center">0</td>
+<td align="center">0</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>Rock</strong></td>
+<td align="center">1</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">2</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>Water</strong></td>
+<td align="center">3</td>
+<td align="center">3</td>
+<td align="center">4</td>
+<td align="center">4</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>Sum</strong></td>
+<td align="center">15</td>
+<td align="center">6</td>
+<td align="center">24</td>
+<td align="center">18</td>
+</tr>
+</tbody>
+</table>
+<p>Now comes the interesting bit, dissecting the data to see which pokemon clustered together and why they were thrown into the same cluster.</p>
+<div id="cluster-1" class="section level2">
+<h2>Cluster 1</h2>
+<p>Ok, so the pokemon that ended up in cluster 1 was: Voltorb, Oddish, Psyduck, Gastly, Houndour, Bulbasaur, Smoochum, Abra, Slugma, Magnemite, Remoraid, Omanyte, Ponyta, Horsea, Natu. This is quite an odd bunch if you know pokemon well. So, what was it that made them cluster together?</p>
+<table>
+<thead>
+<tr class="header">
+<th align="center">Stat</th>
+<th align="center">v.test</th>
+<th align="center">Mean.in.category</th>
+<th align="center">Overall.mean</th>
+<th align="center">p.value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">SA.lv1</td>
+<td align="center">6.2</td>
+<td align="center">77</td>
+<td align="center">49</td>
+<td align="center">0</td>
+</tr>
+<tr class="even">
+<td align="center">SA.lv2</td>
+<td align="center">5.9</td>
+<td align="center">99</td>
+<td align="center">71</td>
+<td align="center">0</td>
+</tr>
+<tr class="odd">
+<td align="center">Total.lv1</td>
+<td align="center">2.5</td>
+<td align="center">320</td>
+<td align="center">297</td>
+<td align="center">0.01</td>
+</tr>
+<tr class="even">
+<td align="center">Spd.lv1</td>
+<td align="center">2</td>
+<td align="center">61</td>
+<td align="center">52</td>
+<td align="center">0.05</td>
+</tr>
+<tr class="odd">
+<td align="center">HP.lv1</td>
+<td align="center">-2</td>
+<td align="center">39</td>
+<td align="center">46</td>
+<td align="center">0.04</td>
+</tr>
+<tr class="even">
+<td align="center">Atk.lv1</td>
+<td align="center">-2.1</td>
+<td align="center">45</td>
+<td align="center">54</td>
+<td align="center">0.04</td>
+</tr>
+<tr class="odd">
+<td align="center">Atk.lv2</td>
+<td align="center">-2.1</td>
+<td align="center">67</td>
+<td align="center">79</td>
+<td align="center">0.03</td>
+</tr>
+<tr class="even">
+<td align="center">HP.lv2</td>
+<td align="center">-2.3</td>
+<td align="center">61</td>
+<td align="center">70</td>
+<td align="center">0.02</td>
+</tr>
+</tbody>
+</table>
+<p>These Pokemon are specialist in special attacking moves. With the mean attack stat being almost 1/4 higher than the mean of all the other pokemon. These pokemon should be used when there is a type advantage!</p>
+</div>
+<div id="cluster-2" class="section level2">
+<h2>Cluster 2</h2>
+<p>Moving onto cluster 2: Seel, Drowzee, Chinchou, Ledyba, Hoothoot, Tentacool.</p>
+<table>
+<thead>
+<tr class="header">
+<th align="center">Stat</th>
+<th align="center">v.test</th>
+<th align="center">Mean.in.category</th>
+<th align="center">Overall.mean</th>
+<th align="center">p.value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">SD.lv1</td>
+<td align="center">4.8</td>
+<td align="center">75</td>
+<td align="center">46</td>
+<td align="center">0</td>
+</tr>
+<tr class="even">
+<td align="center">SD.lv2</td>
+<td align="center">4.5</td>
+<td align="center">102</td>
+<td align="center">70</td>
+<td align="center">0</td>
+</tr>
+<tr class="odd">
+<td align="center">HP.lv2</td>
+<td align="center">2.8</td>
+<td align="center">89</td>
+<td align="center">70</td>
+<td align="center">0</td>
+</tr>
+<tr class="even">
+<td align="center">Atk.lv2</td>
+<td align="center">-2</td>
+<td align="center">59</td>
+<td align="center">79</td>
+<td align="center">0.05</td>
+</tr>
+<tr class="odd">
+<td align="center">Atk.lv1</td>
+<td align="center">-2.4</td>
+<td align="center">37</td>
+<td align="center">54</td>
+<td align="center">0.02</td>
+</tr>
+</tbody>
+</table>
+<p>Although these pokemon have defensive capabilities, these capabilities are more pronounced than what we saw in cluster 1 where the individuals had a small significant advantage in a specialized situation.</p>
+</div>
+<div id="cluster-3" class="section level2">
+<h2>Cluster 3</h2>
+<p>This cluster was the biggest with 24 Pokemon ending up in this category. The pokemon that forms part of this cluster is: Ekans, Spinarak, Chikorita, Charmander, Totodile, Doduo, Dratini, Diglett, Spearow, Sentret, Zubat, Magikarp, Weedle, Caterpie, Nidoran(F), Nidoran(M), Meowth, Pidgey, Poliwag, Mankey, Cyndaquil, Hoppip, Squirtle, Bellsprout.</p>
+<table>
+<thead>
+<tr class="header">
+<th align="center">Stat</th>
+<th align="center">v.test</th>
+<th align="center">Mean.in.category</th>
+<th align="center">Overall.mean</th>
+<th align="center">p.value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">SD.lv1</td>
+<td align="center">-2.1</td>
+<td align="center">41</td>
+<td align="center">46</td>
+<td align="center">0.04</td>
+</tr>
+<tr class="even">
+<td align="center">Def.lv1</td>
+<td align="center">-2.5</td>
+<td align="center">42</td>
+<td align="center">50</td>
+<td align="center">0.01</td>
+</tr>
+<tr class="odd">
+<td align="center">HP.lv2</td>
+<td align="center">-2.5</td>
+<td align="center">63</td>
+<td align="center">70</td>
+<td align="center">0.01</td>
+</tr>
+<tr class="even">
+<td align="center">HP.lv1</td>
+<td align="center">-2.6</td>
+<td align="center">39</td>
+<td align="center">46</td>
+<td align="center">0.01</td>
+</tr>
+<tr class="odd">
+<td align="center">SA.lv1</td>
+<td align="center">-2.7</td>
+<td align="center">40</td>
+<td align="center">49</td>
+<td align="center">0.01</td>
+</tr>
+<tr class="even">
+<td align="center">SD.lv2</td>
+<td align="center">-2.8</td>
+<td align="center">62</td>
+<td align="center">70</td>
+<td align="center">0</td>
+</tr>
+<tr class="odd">
+<td align="center">Def.lv2</td>
+<td align="center">-3</td>
+<td align="center">64</td>
+<td align="center">75</td>
+<td align="center">0</td>
+</tr>
+<tr class="even">
+<td align="center">SA.lv2</td>
+<td align="center">-3.5</td>
+<td align="center">58</td>
+<td align="center">71</td>
+<td align="center">0</td>
+</tr>
+<tr class="odd">
+<td align="center">Total.lv1</td>
+<td align="center">-3.8</td>
+<td align="center">272</td>
+<td align="center">297</td>
+<td align="center">0</td>
+</tr>
+<tr class="even">
+<td align="center">Total.lv2</td>
+<td align="center">-3.9</td>
+<td align="center">396</td>
+<td align="center">434</td>
+<td align="center">0</td>
+</tr>
+<tr class="odd">
+<td align="center">lvl_up.lv1</td>
+<td align="center">-4.5</td>
+<td align="center">20</td>
+<td align="center">25</td>
+<td align="center">0</td>
+</tr>
+</tbody>
+</table>
+<p>It would seem that these pokemon underscore on all statistics and should probably we avoided as strategic investments in your lineup.</p>
+</div>
+<div id="cluster-4" class="section level2">
+<h2>Cluster 4</h2>
+<p>The last group that was identified were Pokemon that are all-rounders. Phanpy, Pineco, Snubbull, Kabuto, Krabby, Machop, Cubone, Grimer, Paras, Swinub, Larvitar, Wooper, Rhyhorn, Sandshrew, Goldeen, Slowpoke, Teddiursa, Koffing - have overall statistics which are higher than average, but does not specialize in any of the type specific advantages that exist in the Pokemon games.</p>
+<table>
+<thead>
+<tr class="header">
+<th align="center">Stat</th>
+<th align="center">v.test</th>
+<th align="center">Mean.in.category</th>
+<th align="center">Overall.mean</th>
+<th align="center">p.value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">Atk.lv2</td>
+<td align="center">4.6</td>
+<td align="center">102</td>
+<td align="center">79</td>
+<td align="center">0</td>
+</tr>
+<tr class="even">
+<td align="center">Def.lv2</td>
+<td align="center">4.5</td>
+<td align="center">96</td>
+<td align="center">75</td>
+<td align="center">0</td>
+</tr>
+<tr class="odd">
+<td align="center">Atk.lv1</td>
+<td align="center">4.3</td>
+<td align="center">70</td>
+<td align="center">54</td>
+<td align="center">0</td>
+</tr>
+<tr class="even">
+<td align="center">Def.lv1</td>
+<td align="center">4.3</td>
+<td align="center">68</td>
+<td align="center">50</td>
+<td align="center">0</td>
+</tr>
+<tr class="odd">
+<td align="center">HP.lv1</td>
+<td align="center">3.5</td>
+<td align="center">56</td>
+<td align="center">46</td>
+<td align="center">0</td>
+</tr>
+<tr class="even">
+<td align="center">lvl_up.lv1</td>
+<td align="center">3.1</td>
+<td align="center">30</td>
+<td align="center">25</td>
+<td align="center">0</td>
+</tr>
+<tr class="odd">
+<td align="center">HP.lv2</td>
+<td align="center">3</td>
+<td align="center">81</td>
+<td align="center">70</td>
+<td align="center">0</td>
+</tr>
+<tr class="even">
+<td align="center">Total.lv2</td>
+<td align="center">2.1</td>
+<td align="center">460</td>
+<td align="center">434</td>
+<td align="center">0.03</td>
+</tr>
+<tr class="odd">
+<td align="center">SD.lv1</td>
+<td align="center">-2</td>
+<td align="center">40</td>
+<td align="center">46</td>
+<td align="center">0.05</td>
+</tr>
+<tr class="even">
+<td align="center">SA.lv1</td>
+<td align="center">-2.6</td>
+<td align="center">38</td>
+<td align="center">49</td>
+<td align="center">0.01</td>
+</tr>
+<tr class="odd">
+<td align="center">Spd.lv2</td>
+<td align="center">-3.8</td>
+<td align="center">51</td>
+<td align="center">70</td>
+<td align="center">0</td>
+</tr>
+<tr class="even">
+<td align="center">Spd.lv1</td>
+<td align="center">-4</td>
+<td align="center">35</td>
+<td align="center">52</td>
+<td align="center">0</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="paragons-of-the-clusters" class="section level2">
+<h2>Paragons of the clusters</h2>
+<p>One of the nicest outputs of <code>HCPC</code> is the listed paragons per group. These paragons can be seen as the poster-child representative of each cluster as they lie closest to the center of the cluster:</p>
+<p>Cluster 1:</p>
+<table>
+<thead>
+<tr class="header">
+<th align="center">Natu</th>
+<th align="center">Psyduck</th>
+<th align="center">Houndour</th>
+<th align="center">Remoraid</th>
+<th align="center">Bulbasaur</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">0.67</td>
+<td align="center">1.2</td>
+<td align="center">1.3</td>
+<td align="center">1.3</td>
+<td align="center">1.4</td>
+</tr>
+</tbody>
+</table>
+<p>Cluster 2:</p>
+<table>
+<thead>
+<tr class="header">
+<th align="center">Drowzee</th>
+<th align="center">Hoothoot</th>
+<th align="center">Seel</th>
+<th align="center">Tentacool</th>
+<th align="center">Chinchou</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">0.88</td>
+<td align="center">1.1</td>
+<td align="center">1.2</td>
+<td align="center">1.7</td>
+<td align="center">1.7</td>
+</tr>
+</tbody>
+</table>
+<p>Cluster 3:</p>
+<table>
+<thead>
+<tr class="header">
+<th align="center">Nidoran(M)</th>
+<th align="center">Zubat</th>
+<th align="center">Pidgey</th>
+<th align="center">Poliwag</th>
+<th align="center">Sentret</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">0.57</td>
+<td align="center">0.65</td>
+<td align="center">0.71</td>
+<td align="center">0.83</td>
+<td align="center">0.89</td>
+</tr>
+</tbody>
+</table>
+<p>Cluster 4:</p>
+<table>
+<thead>
+<tr class="header">
+<th align="center">Snubbull</th>
+<th align="center">Phanpy</th>
+<th align="center">Machop</th>
+<th align="center">Larvitar</th>
+<th align="center">Swinub</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">1.1</td>
+<td align="center">1.1</td>
+<td align="center">1.1</td>
+<td align="center">1.2</td>
+</tr>
+</tbody>
+</table>
+<p>The output of the <code>HCPC</code> also allows us to see the individuals which are the most distance from all the other cluster. For brevity, ill leave this table out of this post. These most distant individuals are usually outliers which end up in the group to which it relates (relatively) the closest.</p>
+</div>
+</div>
+<div id="conclusion" class="section level1">
+<h1>Conclusion</h1>
+<p>This post explored cluster analysis, or formally put, a tool in which a multivariate dataset can be explored and eventually be divided into subgroups of similar data based on some kind of proximity estimate. I used Pokemon data as I found it to be an interesting dataset to apply this kind of technique. I must say, that the <code>FactoMineR</code> library helps a lot in facilitating the clustering process once your dataset is in proper format. It takes you through a natural progression of clustering application with a lot of flexibility available to the user to tune the analysis to his/hers needs. I especially like the <code>MFA</code> function where both <code>PCA</code> and <code>MCA</code> can be integrated into a concise function.</p>
+<p>In terms of the results, I think it would be interesting to further delve into type combinations within the group in order to have the strongest Pokemon along with a type advantage. But we will leave this for another day…</p>
+</div>

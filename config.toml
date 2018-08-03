@@ -12,7 +12,7 @@ disqusShortname = "StatsLab"
 
 ## Site Settings
 [params]
-    author = "Stefan"
+    author = "Eighty20"
     title = "StatsLab"
     dateformat = "Jan 1, 2006"
     # description = "..."
@@ -24,6 +24,11 @@ disqusShortname = "StatsLab"
 
 ## Social Accounts
 [params.social]
+    linkedin = "eighty20"
+    github = "Eighty20"
+    facebook = "Eighty20coza"
+    twitter = "Eighty20coza"
+    email = "info@eighty20.co.za"
 
 ## Main Menu
 [[menu.main]]
@@ -41,3 +46,8 @@ disqusShortname = "StatsLab"
     identifier = "tags"
     weight = 200
     url = "/tags/"
+[[menu.main]]
+    name = "Search by category"
+    identifier = "categories"
+    weight = 200
+    url = "/categories/"

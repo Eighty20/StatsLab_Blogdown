@@ -3,6 +3,10 @@
   {{ if ne .Params.showpagemeta false }}
   <div class="col-sm-12 col-md-12">
     <span class="text-left post-date meta">
+      <!-- author -->
+      {{ if isset .Params "categories" }}
+        <i class="fas fa-user" aria-hidden="true"></i> {{ .Params.author }}<br/>
+      {{ end }}
       <!-- published date -->      
       {{ if not .Date.IsZero }} <i class="fa fa-calendar" aria-hidden="true"></i> {{ .Date.Format .Site.Params.dateformat }} {{end}}
       <!-- categories -->

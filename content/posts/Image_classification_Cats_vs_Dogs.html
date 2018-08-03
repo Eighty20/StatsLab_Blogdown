@@ -1,0 +1,506 @@
+---
+title: "Cats vs Dogs classifier"
+author: "Stefan Fouche"
+date: 2018-07-03
+slug: Cats_vs_dogs_classifier
+categories:
+  - R
+tags:
+  - Classification
+  - Deep_learning
+  - Keras
+  - image_recognition
+output:
+  blogdown::html_page:
+    toc: true
+---
+
+
+<div id="TOC">
+<ul>
+<li><a href="#overview">Overview</a><ul>
+<li><a href="#download-data">Download data</a></li>
+<li><a href="#build-network">Build network</a></li>
+<li><a href="#data-preprocessing">Data preprocessing</a></li>
+<li><a href="#image-data-augmentation">Image data augmentation</a><ul>
+<li><a href="#how-it-works">How it works</a></li>
+<li><a href="#create-new-network">Create new network</a></li>
+<li><a href="#train-new-network-with-augmentation-generators">Train new network with augmentation generators</a></li>
+</ul></li>
+<li><a href="#further-optimization">Further optimization</a><ul>
+<li><a href="#transfer-learning---vgg16">Transfer learning - VGG16</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+
+<div id="overview" class="section level1">
+<h1>Overview</h1>
+<p>Deep neural networks using convulotional layers are currently (2018) the best immage classification algorithms out there… Let’s build one to see what its all about.</p>
+<p>How about identifying cats and dogs?</p>
+<div class="figure">
+<img src="/Pictures/Cats_vs_dogs/Intro_cat_dog.gif" />
+
+</div>
+<p><em>This post follows through the example in the book “Deep learning with R” by Francios Chollet with J. J. Alaire.</em></p>
+<div id="download-data" class="section level2">
+<h2>Download data</h2>
+<p>The data can be downloaded from <a href="https://www.kaggle.com/c/dogs-vs-cats/data" class="uri">https://www.kaggle.com/c/dogs-vs-cats/data</a> after logging in and accepting the rules.</p>
+<p>Now we create a small subset to train on:</p>
+<p>From the kaggle dataset we get a train and test folder with a range of images of all shapes and sizes. To construct our set I will pull some immages from the train folder</p>
+<pre class="r"><code>original_dataset_dir &lt;- &quot;static/data/all/train/&quot;
+base_dir &lt;- &quot;static/data/selected_small_sample&quot;
+dir.create(base_dir)
+train_dir &lt;- file.path(base_dir, &quot;train&quot;)
+dir.create(train_dir)
+validation_dir &lt;- file.path(base_dir, &quot;validation&quot;)
+dir.create(validation_dir)
+test_dir &lt;- file.path(base_dir, &quot;test&quot;)
+dir.create(test_dir)
+train_cats_dir &lt;- file.path(train_dir, &quot;cats&quot;)
+dir.create(train_cats_dir)
+train_dogs_dir &lt;- file.path(train_dir, &quot;dogs&quot;)
+dir.create(train_dogs_dir)
+validation_cats_dir &lt;- file.path(validation_dir, &quot;cats&quot;)
+dir.create(validation_cats_dir)
+validation_dogs_dir &lt;- file.path(validation_dir, &quot;dogs&quot;)
+dir.create(validation_dogs_dir)
+test_cats_dir &lt;- file.path(test_dir, &quot;cats&quot;)
+dir.create(test_cats_dir)
+test_dogs_dir &lt;- file.path(test_dir, &quot;dogs&quot;)
+dir.create(test_dogs_dir)
+fnames &lt;- paste0(&quot;cat.&quot;, 1:1000, &quot;.jpg&quot;)
+file.copy(file.path(original_dataset_dir, fnames),
+          file.path(train_cats_dir))
+fnames &lt;- paste0(&quot;cat.&quot;, 1001:1500, &quot;.jpg&quot;)
+file.copy(file.path(original_dataset_dir, fnames),
+          file.path(validation_cats_dir))
+fnames &lt;- paste0(&quot;cat.&quot;, 1501:2000, &quot;.jpg&quot;)
+file.copy(file.path(original_dataset_dir, fnames),
+          file.path(test_cats_dir))
+fnames &lt;- paste0(&quot;dog.&quot;, 1:1000, &quot;.jpg&quot;)
+file.copy(file.path(original_dataset_dir, fnames),
+          file.path(train_dogs_dir))
+fnames &lt;- paste0(&quot;dog.&quot;, 1001:1500, &quot;.jpg&quot;)
+file.copy(file.path(original_dataset_dir, fnames),
+          file.path(validation_dogs_dir))
+fnames &lt;- paste0(&quot;dog.&quot;, 1501:2000, &quot;.jpg&quot;)
+file.copy(file.path(original_dataset_dir, fnames),
+          file.path(test_dogs_dir))</code></pre>
+<p>Count prepared files:</p>
+<pre class="r"><code>cat(&quot;total training cat images:&quot;, length(list.files(train_cats_dir)), &quot;\n&quot;)
+
+cat(&quot;total training dog images:&quot;, length(list.files(train_dogs_dir)), &quot;\n&quot;)
+
+cat(&quot;total validation cat images:&quot;,
+length(list.files(validation_cats_dir)), &quot;\n&quot;)
+
+cat(&quot;total validation dog images:&quot;,
+length(list.files(validation_dogs_dir)), &quot;\n&quot;)
+
+cat(&quot;total test cat images:&quot;, length(list.files(test_cats_dir)), &quot;\n&quot;)
+
+cat(&quot;total test dog images:&quot;, length(list.files(test_dogs_dir)), &quot;\n&quot;)</code></pre>
+<p><code>total training cat images: 1000</code><br />
+<code>total training dog images: 1000</code><br />
+<code>total validation cat images: 500</code><br />
+<code>total validation dog images: 500</code><br />
+<code>total test cat images: 500</code><br />
+<code>total test dog images: 500</code></p>
+<p>Everthing looks good!</p>
+</div>
+<div id="build-network" class="section level2">
+<h2>Build network</h2>
+<p>We first try building a network using conv_layers that take window samples size 3x3. Each of these layers try to identify local features in the data that are predictive. This is quite different from the fully connected networks that try to learn global rules that are predictive:</p>
+<pre class="r"><code>model &lt;- keras_model_sequential() %&gt;%
+  layer_conv_2d(filters = 32, kernel_size = c(3, 3), activation = &quot;relu&quot;,
+                input_shape = c(150, 150, 3)) %&gt;%
+  layer_max_pooling_2d(pool_size = c(2, 2)) %&gt;%
+  layer_conv_2d(filters = 64, kernel_size = c(3, 3), activation = &quot;relu&quot;) %&gt;%
+ layer_max_pooling_2d(pool_size = c(2, 2)) %&gt;%
+  layer_conv_2d(filters = 128, kernel_size = c(3, 3), activation = &quot;relu&quot;) %&gt;%
+  layer_max_pooling_2d(pool_size = c(2, 2)) %&gt;%
+  layer_conv_2d(filters = 128, kernel_size = c(3, 3), activation = &quot;relu&quot;) %&gt;%
+  layer_max_pooling_2d(pool_size = c(2, 2)) %&gt;%
+  layer_flatten() %&gt;%
+  layer_dense(units = 512, activation = &quot;relu&quot;) %&gt;%
+  layer_dense(units = 1, activation = &quot;sigmoid&quot;)
+
+summary(model)</code></pre>
+<pre><code>## ___________________________________________________________________________
+## Layer (type)                     Output Shape                  Param #     
+## ===========================================================================
+## conv2d_1 (Conv2D)                (None, 148, 148, 32)          896         
+## ___________________________________________________________________________
+## max_pooling2d_1 (MaxPooling2D)   (None, 74, 74, 32)            0           
+## ___________________________________________________________________________
+## conv2d_2 (Conv2D)                (None, 72, 72, 64)            18496       
+## ___________________________________________________________________________
+## max_pooling2d_2 (MaxPooling2D)   (None, 36, 36, 64)            0           
+## ___________________________________________________________________________
+## conv2d_3 (Conv2D)                (None, 34, 34, 128)           73856       
+## ___________________________________________________________________________
+## max_pooling2d_3 (MaxPooling2D)   (None, 17, 17, 128)           0           
+## ___________________________________________________________________________
+## conv2d_4 (Conv2D)                (None, 15, 15, 128)           147584      
+## ___________________________________________________________________________
+## max_pooling2d_4 (MaxPooling2D)   (None, 7, 7, 128)             0           
+## ___________________________________________________________________________
+## flatten_1 (Flatten)              (None, 6272)                  0           
+## ___________________________________________________________________________
+## dense_1 (Dense)                  (None, 512)                   3211776     
+## ___________________________________________________________________________
+## dense_2 (Dense)                  (None, 1)                     513         
+## ===========================================================================
+## Total params: 3,453,121
+## Trainable params: 3,453,121
+## Non-trainable params: 0
+## ___________________________________________________________________________</code></pre>
+<p>The max pooling layers here basically take the maximum output from smaller 2x2 windows. This teaches the network to compine local features and also reduces the exploding number of parameters in the model.</p>
+<p>And compile the network:</p>
+<pre class="r"><code>model %&gt;% compile(
+  loss = &quot;binary_crossentropy&quot;,
+  optimizer = optimizer_rmsprop(lr = 1e-4),
+  metrics = c(&quot;acc&quot;)
+)</code></pre>
+</div>
+<div id="data-preprocessing" class="section level2">
+<h2>Data preprocessing</h2>
+<p>Keras has awesome built in functions to import and process image data. We call these functions generators. A generator will “flow” through all the images in a folder and produce batches on which the network can train.</p>
+<p>Here we define a image data generator and then use it to flow all the images from the directories we created into a batches to train on:</p>
+<pre class="r"><code>train_datagen &lt;- image_data_generator(rescale = 1/255)
+validation_datagen &lt;- image_data_generator(rescale = 1/255)
+
+train_generator &lt;- flow_images_from_directory(
+  train_dir,
+  train_datagen,
+  target_size = c(150, 150),
+  batch_size = 20,
+  class_mode = &quot;binary&quot;
+)
+
+validation_generator &lt;- flow_images_from_directory(
+  validation_dir,
+  validation_datagen,
+  target_size = c(150, 150),
+  batch_size = 20,
+  class_mode = &quot;binary&quot;
+)</code></pre>
+<p>We can use generator_next to see what data will flow into the network on each iteration.</p>
+<pre class="r"><code>batch &lt;- generator_next(train_generator)
+str(batch)</code></pre>
+<p>Having the generator produce batches endlessly means we need to define how many batches make up an epoch:<br />
+Notice that instead of using the fit() function we use the fit_generator function.</p>
+<pre class="r"><code>history &lt;- model %&gt;% fit_generator(
+  train_generator,
+  steps_per_epoch = 100,
+  epochs = 30,
+  validation_data = validation_generator,
+  validation_steps = 50
+)
+
+history %&gt;% plot()
+
+ggsave(&quot;Pictures/model_1_train.jpeg&quot;)
+model %&gt;% save_model_hdf5(&quot;static/models/cats_and_dogs_small_1.h5&quot;)</code></pre>
+<div class="figure">
+<img src="/Pictures/Cats_vs_dogs/model_1_train.jpeg" />
+
+</div>
+<p>Using our conv_net we get pretty good out of box accuracy on the data…</p>
+<p>We see however that the small sample size of our data does not generalize quite well enough to classify all our validation data. We will need to address this overfitting.</p>
+</div>
+<div id="image-data-augmentation" class="section level2">
+<h2>Image data augmentation</h2>
+<div id="how-it-works" class="section level3">
+<h3>How it works</h3>
+<p>Even though conv_nets can learn local features from images and find these anywhere in an image it may still miss strange, unseen versions of these configurations.</p>
+<p>When we have smaller sample sizes of images to train on the model may overfit or fail to generalize. To help the model generalize better to the out of sample test set we can apply some transformations to the data so that the model can learn new representations of images:</p>
+<pre class="r"><code>datagen &lt;- image_data_generator(
+  rescale = 1/255,
+  rotation_range = 40,
+  width_shift_range = 0.2,
+  height_shift_range = 0.2,
+  shear_range = 0.2,
+  zoom_range = 0.2,
+  horizontal_flip = TRUE,
+  fill_mode = &quot;nearest&quot;
+)</code></pre>
+<p><strong>Remember we only want to alter training images! NOT validation images!</strong></p>
+<p>Let’s view the transformation by supplying it one of the cat images in our training set:</p>
+<pre class="r"><code>fnames &lt;- list.files(train_cats_dir, full.names = TRUE)
+img_path &lt;- &quot;static/data/selected_small_sample/train/cats/cat.762.jpg&quot;
+
+img &lt;- image_load(img_path, target_size = c(150, 150))
+img_array &lt;- image_to_array(img)
+img_array &lt;- array_reshape(img_array, c(1, 150, 150, 3)) # 1 sample, 150 by 150 pixels with 3 channels for RGB
+
+test_case_generator &lt;- flow_images_from_data(
+  img_array,
+  generator = train_datagen,
+  batch_size = 1
+)
+
+  test_case &lt;- generator_next(test_case_generator)
+  plot(as.raster(test_case[1,,,]))</code></pre>
+<div class="figure">
+<img src="/Pictures/Cats_vs_dogs/Cat_augmentation_example.png" />
+
+</div>
+<p>By using this image we can produce more transformed images for the model to learn from:</p>
+<pre class="r"><code>augmentation_generator &lt;- flow_images_from_data(
+  img_array,
+  generator = datagen,
+  batch_size = 1
+)
+
+op &lt;- par(mfrow = c(2, 2), pty = &quot;s&quot;, mar = c(1, 0, 1, 0))
+for (i in 1:4) {
+  batch &lt;- generator_next(augmentation_generator)
+  plot(as.raster(batch[1,,,]))
+}
+par(op)</code></pre>
+<div class="figure">
+<img src="/Pictures/Cats_vs_dogs/Cat_augmentation_raster.png" />
+
+</div>
+<p>Now the model not only benefits from identifying local features anywhere in the image, but also has learned how they can occur from different angles or points of view.</p>
+</div>
+<div id="create-new-network" class="section level3">
+<h3>Create new network</h3>
+<p>Now that we are augmenting images we can also add some dropout to the network to help with the overfitting:</p>
+<pre class="r"><code>model &lt;- keras_model_sequential() %&gt;%
+  layer_conv_2d(filters = 32, kernel_size = c(3, 3), activation = &quot;relu&quot;,
+                input_shape = c(150, 150, 3)) %&gt;%
+  layer_max_pooling_2d(pool_size = c(2, 2)) %&gt;%
+  layer_conv_2d(filters = 64, kernel_size = c(3, 3), activation = &quot;relu&quot;) %&gt;%
+  layer_max_pooling_2d(pool_size = c(2, 2)) %&gt;%
+  layer_conv_2d(filters = 128, kernel_size = c(3, 3), activation = &quot;relu&quot;) %&gt;%
+  layer_max_pooling_2d(pool_size = c(2, 2)) %&gt;%
+  layer_conv_2d(filters = 128, kernel_size = c(3, 3), activation = &quot;relu&quot;) %&gt;%
+  layer_max_pooling_2d(pool_size = c(2, 2)) %&gt;%
+  layer_flatten() %&gt;%
+  layer_dropout(rate = 0.5) %&gt;%
+  layer_dense(units = 512, activation = &quot;relu&quot;) %&gt;%
+  layer_dense(units = 1, activation = &quot;sigmoid&quot;)
+model %&gt;% compile(
+  loss = &quot;binary_crossentropy&quot;,
+  optimizer = optimizer_rmsprop(lr = 1e-4),
+  metrics = c(&quot;acc&quot;)
+)
+
+model %&gt;% summary</code></pre>
+<pre><code>## ___________________________________________________________________________
+## Layer (type)                     Output Shape                  Param #     
+## ===========================================================================
+## conv2d_5 (Conv2D)                (None, 148, 148, 32)          896         
+## ___________________________________________________________________________
+## max_pooling2d_5 (MaxPooling2D)   (None, 74, 74, 32)            0           
+## ___________________________________________________________________________
+## conv2d_6 (Conv2D)                (None, 72, 72, 64)            18496       
+## ___________________________________________________________________________
+## max_pooling2d_6 (MaxPooling2D)   (None, 36, 36, 64)            0           
+## ___________________________________________________________________________
+## conv2d_7 (Conv2D)                (None, 34, 34, 128)           73856       
+## ___________________________________________________________________________
+## max_pooling2d_7 (MaxPooling2D)   (None, 17, 17, 128)           0           
+## ___________________________________________________________________________
+## conv2d_8 (Conv2D)                (None, 15, 15, 128)           147584      
+## ___________________________________________________________________________
+## max_pooling2d_8 (MaxPooling2D)   (None, 7, 7, 128)             0           
+## ___________________________________________________________________________
+## flatten_2 (Flatten)              (None, 6272)                  0           
+## ___________________________________________________________________________
+## dropout_1 (Dropout)              (None, 6272)                  0           
+## ___________________________________________________________________________
+## dense_3 (Dense)                  (None, 512)                   3211776     
+## ___________________________________________________________________________
+## dense_4 (Dense)                  (None, 1)                     513         
+## ===========================================================================
+## Total params: 3,453,121
+## Trainable params: 3,453,121
+## Non-trainable params: 0
+## ___________________________________________________________________________</code></pre>
+<p>The dropout is one way of regularizing the network so it doesn’t overfit the trainig data too easily.</p>
+</div>
+<div id="train-new-network-with-augmentation-generators" class="section level3">
+<h3>Train new network with augmentation generators</h3>
+<p>Here are the final generators for the network:</p>
+<pre class="r"><code>datagen &lt;- image_data_generator(
+  rescale = 1/255,
+  rotation_range = 40,
+  width_shift_range = 0.2,
+  height_shift_range = 0.2,
+  shear_range = 0.2,
+  zoom_range = 0.2,
+  horizontal_flip = TRUE
+)
+test_datagen &lt;- image_data_generator(rescale = 1/255)
+train_generator &lt;- flow_images_from_directory(
+  train_dir,
+  datagen,
+  target_size = c(150, 150),
+  batch_size = 32,
+  class_mode = &quot;binary&quot;
+)
+validation_generator &lt;- flow_images_from_directory(
+  validation_dir,
+  test_datagen,
+  target_size = c(150, 150),
+  batch_size = 32,
+  class_mode = &quot;binary&quot;
+)</code></pre>
+<p>Let’s see how well the new deep learning model learns:</p>
+<p><em>Careful; even on my GTX1070 this took over 15 min</em></p>
+<pre class="r"><code>history &lt;- model %&gt;% fit_generator(
+  train_generator,
+  steps_per_epoch = 100,
+  epochs = 100,
+  validation_data = validation_generator,
+  validation_steps = 50
+)
+
+history %&gt;% plot()
+
+ggsave(&quot;Pictures/model_2_augmented_train.jpeg&quot;)
+model %&gt;% save_model_hdf5(&quot;static/models/cats_and_dogs_small_2.h5&quot;)</code></pre>
+<div class="figure">
+<img src="/Pictures/Cats_vs_dogs/model_2_augmented_train.jpeg" />
+
+</div>
+<p>This is quite a substantial improvement! But can we do better than just rotating and zooming some images?</p>
+</div>
+</div>
+<div id="further-optimization" class="section level2">
+<h2>Further optimization</h2>
+<p>A simple way to improve this model is to leverage transfer learning.</p>
+<p>By tapping into already trained networks we can use their weights and layers as a good starting point for our network.</p>
+<div id="transfer-learning---vgg16" class="section level3">
+<h3>Transfer learning - VGG16</h3>
+<p>There are 2 ways to use transfer learning in our models:<br />
+1) Feature extraction<br />
+2) Fine-tuning</p>
+<p>Feature extraction is executed by extracting the convolution layers of the pre-trained network. Using this network we can predict the feature maps produced by the pre-trained model. With this output we can then create the classifier network to predict the outcome classes. This way we only back propogate through the classifier network.</p>
+<p>Fine tuning is a lot more expensive in comparison… Using this conv_net base and stacking a new dense layer for your classifier you can back propogate your data through the entire network to teach the model how to update all the layer weights that learn from the features extracted by the pre-trained convolutional network base layers.</p>
+<pre class="r"><code>conv_base &lt;- application_vgg16(
+ weights = &quot;imagenet&quot;,
+  include_top = FALSE,
+  input_shape = c(150, 150, 3)
+)
+
+conv_base</code></pre>
+<p>This base has about 15 million parameters. It would be quite expensive to update the entire network using our data…</p>
+<div id="fine-tuning-model---vgg16-frozen" class="section level4">
+<h4>Fine tuning model - vgg16 frozen</h4>
+<pre class="r"><code>model &lt;- keras_model_sequential() %&gt;%
+  conv_base %&gt;%
+    layer_flatten() %&gt;%
+  layer_dense(units = 256, activation = &quot;relu&quot;) %&gt;%
+  layer_dense(units = 1, activation = &quot;sigmoid&quot;)
+
+model</code></pre>
+<p>Now we are on 17 million params… Don’t try this on a CPU (omegaLUL?)</p>
+<p>Before we start our training we need to freeze the weights in the base layers. If we did not do this the new random weights of the top layers would destroy important weights in the base:</p>
+<pre class="r"><code>cat(&quot;This is the number of trainable weights before freezing&quot;,
+      &quot;the conv base:&quot;, length(model$trainable_weights), &quot;\n&quot;)
+
+freeze_weights(conv_base)
+
+cat(&quot;This is the number of trainable weights after freezing&quot;,
+      &quot;the conv base:&quot;, length(model$trainable_weights), &quot;\n&quot;)</code></pre>
+<p>Define our generators</p>
+<pre class="r"><code>train_datagen = image_data_generator(
+  rescale = 1/255,
+  rotation_range = 40,
+  width_shift_range = 0.2,
+  height_shift_range = 0.2,
+  shear_range = 0.2,
+  zoom_range = 0.2,
+  horizontal_flip = TRUE,
+  fill_mode = &quot;nearest&quot;
+)
+test_datagen &lt;- image_data_generator(rescale = 1/255)
+train_generator &lt;- flow_images_from_directory(
+  train_dir,
+  train_datagen,
+  target_size = c(150, 150),
+  batch_size = 20,
+  class_mode = &quot;binary&quot;
+)
+validation_generator &lt;- flow_images_from_directory(
+  validation_dir,
+  test_datagen,
+  target_size = c(150, 150),
+  batch_size = 20,
+  class_mode = &quot;binary&quot;
+)</code></pre>
+<p>Train the model</p>
+<p><em>Dont’t do this without a GPU! This took about 15 min on a GTX1070</em></p>
+<pre class="r"><code>model %&gt;% compile(
+  loss = &quot;binary_crossentropy&quot;,
+  optimizer = optimizer_rmsprop(lr = 2e-5),
+  metrics = c(&quot;accuracy&quot;)
+)
+
+history &lt;- model %&gt;% fit_generator(
+  train_generator,
+  steps_per_epoch = 100,
+  epochs = 30,
+  validation_data = validation_generator,
+  validation_steps = 50
+)
+
+history %&gt;% plot()
+
+ggsave(&quot;Pictures/model_3_vgg16_frozen.jpeg&quot;)
+model %&gt;% save_model_hdf5(&quot;static/models/cats_and_dogs_small_3_vgg16_frozen.h5&quot;)</code></pre>
+<div class="figure">
+<img src="/Pictures/Cats_vs_dogs/model_3_vgg16_frozen.jpeg" />
+
+</div>
+</div>
+<div id="fine-tuning-model---unfreeze-some-conv_layers" class="section level4">
+<h4>Fine tuning model - unfreeze some conv_layers</h4>
+<p>We can use the <code>unfreeze_weights</code> function to unfreeze weights. In this case we don’t want to unfreeze all the weights since we believe the first layers are summarizing very general features. Instead we want to update the later convolutional layers that are interpreting base feature maps.</p>
+<pre class="r"><code>conv_base</code></pre>
+<p>So if we unfreeze from <code>block3_conv1</code> we will still have the first 2 segments of conv_layers and max pooling frozen:</p>
+<pre class="r"><code>unfreeze_weights(conv_base, from = &quot;block3_conv1&quot;)</code></pre>
+<p><strong>Remember to recompile the model after unfreezing weights!</strong></p>
+<pre class="r"><code>model %&gt;% compile(
+  loss = &quot;binary_crossentropy&quot;,
+  optimizer = optimizer_rmsprop(lr = 1e-5),
+  metrics = c(&quot;accuracy&quot;)
+)</code></pre>
+<p>And we train again:</p>
+<pre class="r"><code>history &lt;- model %&gt;% fit_generator(
+  train_generator,
+  steps_per_epoch = 100,
+  epochs = 100,
+  validation_data = validation_generator,
+  validation_steps = 50
+)
+
+
+history %&gt;% plot()
+
+ggsave(&quot;Pictures/model_4_vgg16__half_frozen.jpeg&quot;)
+model %&gt;% save_model_hdf5(&quot;static/models/cats_and_dogs_small_4_vgg16_half_frozen.h5&quot;)</code></pre>
+<div class="figure">
+<img src="/Pictures/Cats_vs_dogs/model_4_vgg16__half_frozen.jpeg" />
+
+</div>
+<p>Our final tuned and optimized network performs like this:</p>
+<pre class="r"><code>model %&gt;% evaluate_generator(validation_generator, steps = 50)</code></pre>
+<p><code>$loss</code><br />
+<code>[1] 0.2387689</code><br />
+<code>$acc</code><br />
+<code>[1] 0.979</code></p>
+<p>98% accuracy? Not bad!</p>
+<div class="figure">
+<img src="/Pictures/Cats_vs_dogs/Clap.gif" />
+
+</div>
+</div>
+</div>
+</div>
+</div>

@@ -1,0 +1,251 @@
+---
+title: "IMDB movie classification"
+author: "Stefan Fouche"
+date: 2018-07-03
+slug: IMDB_movie_classification
+categories:
+  - R
+tags:
+  - Classification
+  - Deep_learning
+  - Keras
+output:
+  blogdown::html_page:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# install.packages("tidyverse")
+# install.packages("keras")
+library(tidyverse)
+library(keras)
+library(magrittr)
+```
+
+# Overview
+
+This post follows through the example in the book "Deep learning with R" by Francios Chollet with J. J. Alaire.  
+
+**Can a machine predict a good or bad movie rating?**
+
+![](/Pictures/IMDB_keras/header.jpeg)
+
+## Load the IMDB data
+
+```{r}
+imdb <- dataset_imdb(num_words = 10000)
+c(c(train_data, train_labels), c(test_data, test_labels)) %<-% imdb
+```
+
+### View data
+
+```{r}
+train_data[[1]]
+```
+
+Here we can see the feature engineered dataset ready for the model. Each word from the original review corpus has been encoded and given a number. So each number represents a word.  
+
+There are different approaches we could've taken, for example building a word dictionary and counting the number of occurences of each word in the dictionary within each review. Here we simply encode all the words in the reviews to numbers.  
+
+Using word counts and shallow learning tecniques like non-negative matrix factorization can work but you end up dealing with very sparse data and increasingly large matrices. By encoding the words as numbers we can use deep neural networks to embed the information into more succinct dimensional space to train on without having to deal with the size and sparsity.  
+
+```{r}
+train_labels %>% head
+```
+
+And as our labels we have the binary good/bad outcome...  
+
+### Link the original data
+
+We can link back the original words using the following data:  
+
+```{r}
+word_index <- dataset_imdb_word_index()
+reverse_word_index <- names(word_index)
+names(reverse_word_index) <- word_index
+decoded_review <- sapply(train_data[[1]], function(index) {
+  word <- if (index >= 3) reverse_word_index[[as.character(index - 3)]]
+  if (!is.null(word)) word else "?"
+})
+```
+
+Or we can make a function that will decode the input for us:  
+
+```{r}
+decode_words <- function(word_counts){
+	
+	sapply(word_counts, function(index) {
+  word <- if (index >= 3) reverse_word_index[[as.character(index - 3)]]
+  if (!is.null(word)) word else "?"
+	})
+}
+```
+
+Let's try:  
+
+```{r}
+train_data[[1]] %>% 
+	decode_words %>% 
+	head
+```
+
+## Prepare data as tensors
+
+For this text data we could simply have a 2D tensor where the first axis is our batches/movies and the second axis is each one of the possible words. In this case we restricted it to the top 10000 words in the corpus so we will have 10000 columns in this 2D tensor.  
+
+Currently however all our reviews have different lengths because they do not all have every possible word in them:  
+
+```{r}
+train_data %>%
+	map_int(length) %>%
+	head
+```
+
+In order for us to create a 2D tensor we can either pad each of these elements or one-hot encode them to 1/0 so that we have [samples, 10000]  
+
+### One-hot encode
+
+We can use the built in keras function:  
+
+```{r, eval=FALSE}
+train_data %<>%
+		map(~.x %>% keras::k_one_hot(num_classes = 10000))
+```
+
+Or if we did it manually:  
+
+```{r}
+vectorize_sequences <- function(sequences, dimension = 10000) {
+  results <- matrix(0, nrow = length(sequences), ncol = dimension)
+  for (i in 1:length(sequences))
+    results[i, sequences[[i]]] <- 1
+  results
+}
+
+x_train <- vectorize_sequences(train_data)
+x_test <- vectorize_sequences(test_data)
+
+x_train[1:10,1:10]
+
+```
+
+### Set outcome data types
+
+Currently the outcomes are integers but we want them as numeric R types:  
+
+```{r}
+y_train <- as.numeric(train_labels)
+y_test <- as.numeric(test_labels)
+```
+
+## Build network
+
+```{r}
+model <- keras_model_sequential() %>%
+  layer_dense(units = 16, activation = "relu", input_shape = c(10000)) %>%
+  layer_dense(units = 16, activation = "relu") %>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+model %>% compile(
+  optimizer = optimizer_rmsprop(lr = 0.001),
+  loss = loss_binary_crossentropy,
+  metrics = metric_binary_accuracy
+)
+```
+
+## Split test/train
+
+```{r}
+val_indices <- 1:10000
+
+x_val <- x_train[val_indices,]
+partial_x_train <- x_train[-val_indices,]
+y_val <- y_train[val_indices]
+partial_y_train <- y_train[-val_indices]
+```
+
+## Train
+
+```{r}
+history <- model %>% fit(
+  partial_x_train,
+  partial_y_train,
+  epochs = 20,
+  batch_size = 512,
+  # batch_size = 512,
+  validation_data = list(x_val, y_val)
+)
+
+history %>% plot
+```
+
+This shows a very interesting inverse trend between the training and the validation accuracy. This is better known as over-fitting.
+
+### If we train for only 4 epochs
+
+```{r}
+model <- keras_model_sequential() %>%
+  layer_dense(units = 16, activation = "relu", input_shape = c(10000)) %>%
+  layer_dense(units = 16, activation = "relu") %>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+model %>% fit(x_train, y_train, epochs = 4, batch_size = 512)
+results <- model %>% evaluate(x_test, y_test)
+
+results %>% head
+```
+
+### If we use dropout
+
+```{r}
+model <- keras_model_sequential() %>%
+  layer_dense(units = 16, activation = "relu", input_shape = c(10000)) %>%
+  layer_dense(units = 16, activation = "relu") %>%
+	layer_dropout(rate = 0.3) %>% 
+  layer_dense(units = 1, activation = "sigmoid")
+
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+history <- model %>% fit(x_train, y_train, epochs = 40, batch_size = 256,validation_data = list(x_val, y_val))
+
+history %>% plot
+
+results <- model %>% evaluate(x_test, y_test)
+
+results %>% head
+```
+
+We can see that using things like dropout can correct the overfitting problem.
+
+## Investigate the best predicted movie
+
+So according to the model we can see the ratings by predicting the outcome:  
+
+```{r}
+options(scipen = 999)
+predictions <- 
+	model %>% predict(x_test) 
+
+predictions %>% head
+```
+
+We see movie 3 in the test set recieved a perfect review from our super objective model here...  
+
+Let's see what the model learned from other people to arrive at this rating:  
+
+```{r}
+test_data[[3]] %>% decode_words
+```
+
+Well, that's one loooooong review...

@@ -1,0 +1,165 @@
+---
+title: Rewiring replyr with dplyr
+author: Hanjo Odendaal
+date: 2017-02-14
+slug: rewiring-replyr-with-dplyr
+categories:
+  - R
+tags:
+  - dplyr
+---
+
+
+
+<div id="introduction-of-parameterized-dplyr-expression" class="section level2">
+<h2>Introduction of Parameterized dplyr expression</h2>
+<p>The usefullness of any small function you write will eventually be judged upon its ability to be generically applied across any arbitrary data. As I explored a blog post from <a href="http://www.win-vector.com/blog/2016/12/using-replyrlet-to-parameterize-dplyr-expressions/">Dec 2016</a>, I became a lot more interested in writing dynamic code with dplyr functions that form part of the data wrangling silo in my analytical flow. This ability came with the new <code>replyr</code> package - No longer will I have the need to break up my data processing when columns have to be changed as my code depends on certain column names in my dataset that is currently in use.</p>
+<blockquote>
+<p>‘replyr allows you to encapsulate complex dplyr expressions without the use of the lazyeval package, which is the currently recommended way to manage dplyr‘s use of non-standard evaluation’</p>
+</blockquote>
+<p>The example <code>replyr</code> provides works out summary statistics of an arbitrary column, with the ability to group by another column. Imagine you had a quick and easy function which could pump out summary statistics without too much fuss. Lets take a look at the <code>replyr</code> construct of such a function provided by the package maintainers <a href="http://www.win-vector.com/blog/">Win-Vector</a>:</p>
+<pre class="r"><code># to install replyr: 
+# devtools::install_github(&#39;WinVector/replyr&#39;)
+
+suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(replyr))
+
+#
+# calculate mean +/- sd intervals and
+#           median +/- 1/2 IQR intervals
+#           for arbitrary data frame column, with optional grouping
+#
+
+dist_intervals &lt;- function(dframe, colname, groupcolname=NULL) {
+  mapping = list(col=colname)
+  if(!is.null(groupcolname)) {
+    dframe %&gt;% group_by_(groupcolname) -&gt; dframe
+  }
+  let(alias=mapping,
+      expr={
+        dframe %&gt;% summarize(sdlower = mean(col)-sd(col),
+                             mean = mean(col),
+                             sdupper = mean(col) + sd(col),
+                             iqrlower = median(col)-0.5*IQR(col),
+                             median = median(col),
+                             iqrupper = median(col)+0.5*IQR(col))
+      })
+}</code></pre>
+<p>For my analysis I will be using the <code>snail</code> dataset. This dataset contains data on the probability of a snail surviving given certain stimuli such as:</p>
+<ul>
+<li>exposure in weeks</li>
+<li>relative humidity (4 levels)</li>
+<li>temperature, in degrees Celsius (3 levels)</li>
+<li>deaths</li>
+</ul>
+<pre class="r"><code>Snails &lt;-  read.csv(&quot;https://vincentarelbundock.github.io/Rdatasets/csv/MASS/snails.csv&quot;)
+
+Snails %&gt;% glimpse</code></pre>
+<pre><code>## Observations: 96
+## Variables: 7
+## $ X        &lt;int&gt; 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16...
+## $ Species  &lt;fctr&gt; A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A...
+## $ Exposure &lt;int&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2,...
+## $ Rel.Hum  &lt;dbl&gt; 60.0, 60.0, 60.0, 65.8, 65.8, 65.8, 70.5, 70.5, 70.5,...
+## $ Temp     &lt;int&gt; 10, 15, 20, 10, 15, 20, 10, 15, 20, 10, 15, 20, 10, 1...
+## $ Deaths   &lt;int&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0,...
+## $ N        &lt;int&gt; 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 2...</code></pre>
+<p>Lets now see how the function outputs with a simple example using the <code>snail</code> dataset.</p>
+<pre class="r"><code>Snails %&gt;% dist_intervals(&quot;Deaths&quot;)</code></pre>
+<pre><code>##      sdlower     mean  sdupper iqrlower median iqrupper
+## 1 -0.8984496 2.864583 6.627616   -1.125      1    3.125</code></pre>
+<p>As you can see, the summary statistics for the death column was worked out. For those who noticed the negtive <code>sdlower</code> - no, snails did not wake up, its purely for example purposes.</p>
+<p>Expanding this idea of by includeing a grouping variable, we can get the summary statistics per specie:</p>
+<pre class="r"><code>Snails %&gt;% dist_intervals(&quot;Deaths&quot;, &quot;Species&quot;)</code></pre>
+<pre><code>## # A tibble: 2 x 7
+##   Species    sdlower     mean  sdupper iqrlower median iqrupper
+##    &lt;fctr&gt;      &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;  &lt;dbl&gt;    &lt;dbl&gt;
+## 1       A -0.5320915 1.708333 3.948758     -1.0    0.5      2.0
+## 2       B -0.5477438 4.020833 8.589410     -1.5    2.0      5.5</code></pre>
+<p>So, we can see the function works well in the sense that you can now write dynamic loops which could apply <code>dplyr</code> functions to an arbitrary column and grouping variable of your choice based on string inputs…</p>
+</div>
+<div id="but-that-was-not-the-end" class="section level2">
+<h2>But that was not the end</h2>
+<p>In one part of the <a href="http://www.win-vector.com/blog/2016/12/using-replyrlet-to-parameterize-dplyr-expressions/">Win-Vector blog</a> they have the following challenge:</p>
+<blockquote>
+<p>To write such a function in dplyr can get quite hairy, quite quickly. Try it yourself, and see</p>
+</blockquote>
+<p>So, with this in mind I have, with some fighting I might add, developed a similar function that has some added benefits beyond that of the <code>replyr</code> function using the <code>dplyr</code> package.</p>
+<pre class="r"><code>dist_intervals_dplyr &lt;- function(dframe, col, group) {
+  
+  if(missing(group))
+  {
+  df &lt;- 
+    dframe %&gt;% 
+      select(., one_of(col)) 
+  } else {
+  df &lt;- 
+    dframe  %&gt;% 
+    group_by_(group) %&gt;%  
+    select(., one_of(c(group, col))) 
+  }
+  
+  df %&gt;% 
+    summarise_each(funs(sdlower = mean(.) - sd(.),
+                       mean = mean(.),
+                       sdupper = mean(.) + sd(.),
+                       iqrlower = median(.)-0.5*IQR(.),
+                       median = median(.),
+                       iqrupper = median(.)+0.5*IQR(.)))
+}</code></pre>
+<p>By combining the <code>one_of</code> and the standard standard evaluation of the <code>dplyr</code> functions we have recreated the results of the <code>replyr</code> function:</p>
+<pre class="r"><code>Snails %&gt;% dist_intervals_dplyr(col = &quot;Deaths&quot;)</code></pre>
+<pre><code>## `summarise_each()` is deprecated.
+## Use `summarise_all()`, `summarise_at()` or `summarise_if()` instead.
+## To map `funs` over all variables, use `summarise_all()`</code></pre>
+<pre><code>##      sdlower     mean  sdupper iqrlower median iqrupper
+## 1 -0.8984496 2.864583 6.627616   -1.125      1    3.125</code></pre>
+<pre class="r"><code>Snails %&gt;% dist_intervals_dplyr(&quot;Deaths&quot;, group = &quot;Species&quot;)</code></pre>
+<pre><code>## `summarise_each()` is deprecated.
+## Use `summarise_all()`, `summarise_at()` or `summarise_if()` instead.
+## To map `funs` over all variables, use `summarise_all()`</code></pre>
+<pre><code>## # A tibble: 2 x 7
+##   Species    sdlower     mean  sdupper iqrlower median iqrupper
+##    &lt;fctr&gt;      &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;  &lt;dbl&gt;    &lt;dbl&gt;
+## 1       A -0.5320915 1.708333 3.948758     -1.0    0.5      2.0
+## 2       B -0.5477438 4.020833 8.589410     -1.5    2.0      5.5</code></pre>
+<p>The added benefit of using the dplyr notation is the ability to include <em>mutliple</em> columns in the function that you want to summarise: The <code>replyr</code> approach will not be able to handle this and will you give an error such as:</p>
+<pre class="r"><code>Snails %&gt;% dist_intervals(c(&quot;Deaths&quot;, &quot;Exposure&quot;), group = &quot;Species&quot;)
+ # Error in letprep(alias, strexpr) : 
+ #  wrapr:let alias values must all be single strings (not arrays)</code></pre>
+<pre class="r"><code>Snails %&gt;% dist_intervals_dplyr(c(&quot;Deaths&quot;, &quot;Exposure&quot;), group = &quot;Species&quot;)</code></pre>
+<pre><code>## `summarise_each()` is deprecated.
+## Use `summarise_all()`, `summarise_at()` or `summarise_if()` instead.
+## To map `funs` over all variables, use `summarise_all()`</code></pre>
+<pre><code>## # A tibble: 2 x 13
+##   Species Deaths_sdlower Exposure_sdlower Deaths_mean Exposure_mean
+##    &lt;fctr&gt;          &lt;dbl&gt;            &lt;dbl&gt;       &lt;dbl&gt;         &lt;dbl&gt;
+## 1       A     -0.5320915         1.370135    1.708333           2.5
+## 2       B     -0.5477438         1.370135    4.020833           2.5
+## # ... with 8 more variables: Deaths_sdupper &lt;dbl&gt;, Exposure_sdupper &lt;dbl&gt;,
+## #   Deaths_iqrlower &lt;dbl&gt;, Exposure_iqrlower &lt;dbl&gt;, Deaths_median &lt;dbl&gt;,
+## #   Exposure_median &lt;dbl&gt;, Deaths_iqrupper &lt;dbl&gt;, Exposure_iqrupper &lt;dbl&gt;</code></pre>
+<p>And with a little bit of tidying of the data, you can have a much richer dataset</p>
+<pre class="r"><code>library(tidyr)
+Snails %&gt;% dist_intervals_dplyr(c(&quot;Deaths&quot;, &quot;Exposure&quot;), group = &quot;Species&quot;) %&gt;% 
+  gather(key = Deaths, Metric, -Species) %&gt;% 
+  arrange(Species, Deaths)</code></pre>
+<pre><code>## `summarise_each()` is deprecated.
+## Use `summarise_all()`, `summarise_at()` or `summarise_if()` instead.
+## To map `funs` over all variables, use `summarise_all()`</code></pre>
+<pre><code>## # A tibble: 24 x 3
+##    Species            Deaths     Metric
+##     &lt;fctr&gt;             &lt;chr&gt;      &lt;dbl&gt;
+##  1       A   Deaths_iqrlower -1.0000000
+##  2       A   Deaths_iqrupper  2.0000000
+##  3       A       Deaths_mean  1.7083333
+##  4       A     Deaths_median  0.5000000
+##  5       A    Deaths_sdlower -0.5320915
+##  6       A    Deaths_sdupper  3.9487582
+##  7       A Exposure_iqrlower  1.7500000
+##  8       A Exposure_iqrupper  3.2500000
+##  9       A     Exposure_mean  2.5000000
+## 10       A   Exposure_median  2.5000000
+## # ... with 14 more rows</code></pre>
+<p>I do find that applying parameterized dplyr functions an amazing advantage when working with more advanced ETL workflows. This is by no means to say that the <code>replyr</code> package is redundant, but more a declaration to say that <code>dplyr</code> has the ability to dynamically conduct analysis - albeit some fighting to get it to work.</p>
+</div>

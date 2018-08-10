@@ -1,0 +1,167 @@
+---
+title: Setup packrat project for working on remote databases with R
+author: Stefan
+date: '2018-08-10'
+slug: setup-packrat-prject-for-database-with-r
+categories:
+  - R
+tags:
+  - packrat
+---
+
+
+
+<div id="overview" class="section level2">
+<h2>Overview</h2>
+<p>As a data analyst I often consult for clients who need me to work on their existing infrastructure. But this requires me to set up my entire environment on a remote machine.</p>
+<p>So the question is; <em>“What is the best way for me to setup an environment for database exploration on a clean machine?”</em></p>
+<p>Introducing packrat - R’s package management system.</p>
+<div id="installation" class="section level3">
+<h3>Installation</h3>
+<p>The first thing you want to do is setup the environment you want to use on your <strong>local</strong> machine. This is important when the machine you will be given access to is entirely isolated from the internet (strict firewall setup).</p>
+<ol class="example" style="list-style-type: decimal">
+<li>Install packrat:</li>
+</ol>
+<pre class="r"><code>install.packages(&quot;packrat&quot;)</code></pre>
+<p>You need to install packrat first before you can create a version controlled repository for your project.</p>
+<ol start="2" class="example" style="list-style-type: decimal">
+<li>Create a new packrat project:</li>
+</ol>
+<div class="figure">
+<img src="/Pictures/Packrat/create_packrat_project.png" />
+
+</div>
+<p>The packrat project is completely isolated from your usual R libraries. In fact it uses the libraries inside the project folder at <code>packrat/lib-R</code></p>
+<p>In my case R tried to load the <code>EightyR</code> package on startup but couldn’t find it:</p>
+<!-- ![](/Packrat/no_package_EightyR.png)   -->
+<ol start="3" class="example" style="list-style-type: decimal">
+<li>Install essential packages</li>
+</ol>
+<ul>
+<li>install.packages(“tidyverse”)<br />
+</li>
+<li>install.packages(“odbc”)<br />
+</li>
+<li>install.packages(“DBI”)</li>
+</ul>
+<ol start="4" class="example" style="list-style-type: decimal">
+<li>Make sure the ODBC connections are setup on the client side machine for the databases you are interested in.</li>
+</ol>
+<p>For example if you are working on a Windows machine you will have to use the ODBC wizzard to setup all the drivers;</p>
+<div class="figure">
+<img src="/Pictures/Packrat/windows_odbc.png" />
+
+</div>
+<p>But if you are on a linux machine you will need to setup the <code>.odbc.ini</code> file in your home directory (the one you will be using R-studio on)</p>
+<p>My file can be found like this:</p>
+<div class="figure">
+<img src="/Pictures/Packrat/odbc_ini_file.png" />
+
+</div>
+<p>setup your file to match the database drivers you are using, for example:</p>
+<div class="figure">
+<img src="/Pictures/Packrat/example_odbc_ini.png" />
+
+</div>
+<ol start="5" class="example" style="list-style-type: decimal">
+<li>Test your connections tab in R-studio</li>
+</ol>
+<p>The connections tab makes our lives easier by picking up all the drivers and connections we have installed on the running machine.</p>
+<p>We can therefore use the connections tab to open a connection to the databases and then run some analytics on them.</p>
+<p>Your connections tab should look something like this:</p>
+<div class="figure">
+<img src="/Pictures/Packrat/example_connections_tab.png" />
+
+</div>
+<p>Click on the database you want to test and copy the connection string to your Rmd or script:</p>
+<p><img src="/Pictures/Packrat/connection_string.png" /><br />
+Make sure that you can connect to the database:</p>
+<pre class="r"><code>translation_con &lt;- dbConnect(odbc::odbc(), &quot;e20_translation&quot;)
+
+example_tbl &lt;- tbl(translation_con, sql(&quot;select * from eighty20_databaseadmin_uat.translation_db&quot;)) 
+
+example_tbl</code></pre>
+<div class="figure">
+<img src="/Pictures/Packrat/example_table.png" />
+
+</div>
+</div>
+</div>
+<div id="dbplyr" class="section level2">
+<h2>dbplyr</h2>
+<p><em>Do we have to write sql for every query??</em></p>
+<p>You can simply write your query in the <code>sql()</code> expression. But this is seldom done because we can leverage <code>dbplyr</code>.</p>
+<p>What you need to know;<br />
+- dbplyr syntax works exactly like dplyr syntax<br />
+- dbplyr code gets executed in database by using sql translation<br />
+- dbplyr code prints the output to the screen by executing the code in database</p>
+<p><strong>This means your output never touches your R environment unless you tell it to!</strong></p>
+<div id="example-of-temporary-data" class="section level3">
+<h3>Example of temporary data</h3>
+<p>Let’s execute a <code>dbplyr</code> chain and save it to an object called temporary_tbl:</p>
+<pre class="r"><code>temporary_tbl &lt;- 
+  example_tbl %&gt;% 
+  group_by(ordinal) %&gt;% 
+  tally
+  
+temporary_tbl</code></pre>
+<div class="figure">
+<img src="/Pictures/Packrat/temporary_tbl.png" />
+
+</div>
+<p>In standard dplyr fashion we have counted the number of rows describing wether or not a field is a nominal field.</p>
+<p>It is tempting then to assume that this data in fact lives in the variable <code>temporary_tbl</code>. This is not the case:</p>
+<pre class="r"><code>temporary_tbl %&gt;% str</code></pre>
+<div class="figure">
+<img src="/Pictures/Packrat/temporary_tbl_class.png" />
+
+</div>
+<p>What is this voodoo!?</p>
+<p>When we call the variable <code>temporary_tbl</code> we are actually executing the query in database and then redirecting the output of the terminal to our R console.</p>
+</div>
+<div id="collect-statement" class="section level3">
+<h3>collect() statement</h3>
+<p>If we wanted to further use this in a ggplot for example we need to call the <code>collect()</code> statement:</p>
+<pre class="r"><code>in_memory &lt;- example_tbl %&gt;% 
+  group_by(ordinal) %&gt;% 
+  tally %&gt;% 
+  collect
+
+in_memory %&gt;% class</code></pre>
+<div class="figure">
+<img src="/Pictures/Packrat/in_memory_str.png" />
+
+</div>
+<p>We see that the collect statement creates a tibble object for us. Unfortunately most databases will do numeric calculations in a format integer 64 for precision. Although this is a good thing the dbplyr package does not type cast this for us explicitly to a numeric type variable…</p>
+<p>Leaving this data type as integer 64 will cause many headaches later so it’s a good idea to create a wrapper that can correct this for us:</p>
+<pre class="r"><code>convert_int_64 &lt;- function(df){
+  is_int_64 &lt;- function(x){
+    ifelse(class(x)==&quot;integer64&quot;,T,F)
+  }
+  
+  return(df %&gt;% mutate_if(is_int_64,as.numeric))
+}</code></pre>
+<p>We can execute this chain to plot the table:</p>
+<pre class="r"><code>example_tbl %&gt;% 
+  group_by(ordinal) %&gt;% 
+  tally %&gt;% 
+  collect %&gt;% 
+  convert_int_64 %&gt;% 
+  ggplot()+
+  geom_bar(stat=&#39;identity&#39;, aes(x=ordinal,y=n, fill = ordinal))+
+  ggtitle(&quot;Collected dbplyr chain and then plotted a bar chart&quot;)</code></pre>
+<div class="figure">
+<img src="/Pictures/Packrat/dbplyr_chain_barplot.png" />
+
+</div>
+<p>When dbplyr cannot translate your chain into a lazy query you can do one of the following:<br />
+- Call the <code>collect()</code> statement earlier in the chain and then carry on in memory<br />
+- Write a <code>file_name.sql</code> file and call it using <code>example_tbl &lt;- tbl(translation_con, sql(read_file(&quot;file_name.sql&quot;)))</code></p>
+</div>
+</div>
+<div id="compile-your-project" class="section level2">
+<h2>Compile your project</h2>
+<p>Now that you have tested all the tools and packages you will need you can commit all your work and push it to a remote repository for version control.</p>
+<p>When moving over to the new machine make sure that the IT team on the clients side can clone the repository into your R-studio or user home directory.</p>
+<p>Launching the packrat project in this folder will automatically load up all the packages and versions you installed on your local machine</p>
+</div>

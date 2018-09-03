@@ -1,0 +1,77 @@
+---
+title: "Performing a Bayesian T-Test in Excel"
+author: "Kylen"
+date: "2018-08-22"
+output: html_document
+---
+
+
+
+
+<div id="objectives" class="section level1">
+<h1>Objectives</h1>
+<p>In this post we will compare two samples for differences in their means. The catch is that we want to implement this in a spreadsheet programme (MS Excel), so that it can be easily used by people with no background in R/Python. Microsoft have included many functions allowing for standard frequentist analyses to be performed in Excel, however we will use these functions in order to perform bayesian inference.</p>
+<p>We will be guided by the following principles when deciding how to perform the analyses:</p>
+<ul>
+<li>Only use base excel (No VBA). The reason for this is that macro enabled worksheets can be blocked by antivirus software and email programs, which makes it slightly more of a hassle to share.</li>
+<li>Minimise the amount of customisation that needs to be done for each analysis.</li>
+<li>Minimise the amount of data that needs to be stored in the worksheet.</li>
+</ul>
+</div>
+<div id="problem-setup" class="section level1">
+<h1>Problem Setup</h1>
+<p>We have two groups, Target and Control, of size <span class="math inline">\(n_t\)</span> and <span class="math inline">\(n_c\)</span> respectively. For these groups we have each of their sample means (<span class="math inline">\(\bar{x}_t\)</span> and <span class="math inline">\(\bar{x}_c\)</span>) and sample variances (<span class="math inline">\(s^2_t\)</span> and <span class="math inline">\(s^2_c\)</span>).</p>
+<p>We will define <span class="math inline">\(\gamma\)</span> (the standard effect size) as the difference between the true means of the Target and Control group, divided by the standard deviation of the Target group. We parameterise it in this manner so that we do not have to adjust the analysis based on the magnitude of the values.</p>
+<p>All the results below will be presented in terms of <span class="math inline">\(\gamma\)</span>. If we wish to return to the original scale we will need to multiply by the standard deviation of the target group, which can be approximated by <span class="math inline">\(s_t\)</span>. Doing so does slightly underestimate the uncertainty (as we are not considering the distribution of the standard deviation around <span class="math inline">\(s_t\)</span>), however this effect is typically small.</p>
+<div id="normality" class="section level2">
+<h2>Normality</h2>
+<p>Assuming that the underlying distribution of values has both a mean and variance, the Central Limit Theorem allows us to say that the sample mean will converge to a Normal (Gaussian) distribution. Basing our calculations on this immediately grants us several advantages:</p>
+<ul>
+<li>The distribution does not have to be changed for different analyses</li>
+<li>The Normal distribution is part of the Exponential Family. One of the properties of this family is that all of the information contained in the data is contained in the sufficient statistics. This means that we do not need to import all of the data into our spreadsheet, we can instead simply input the sufficient statistics. For the normal distribution these are the sample mean and sample variance</li>
+<li>A significant amount of theory around the sampling distributions of the Normal has already been done, and these analyses are common enough that important functions are included in Excel</li>
+</ul>
+<p>Note that this does mean that the analysis could be inaccurate for small sample sizes.</p>
+</div>
+<div id="prior-distribution" class="section level2">
+<h2>Prior Distribution</h2>
+<p>It is necessary to define a prior distribution for <span class="math inline">\(\gamma\)</span>. For the credibility intervals and parameter estimation we can use an improper uniform prior (ie, all real numbers are equally likely). However we cannot do this for the hypothesis tests, as this will result in our alternative hypothesis having zero likelihood. I have chosen to use the Uniform distribution with a maximum of <span class="math inline">\(m\)</span> and minimum of <span class="math inline">\(-m\)</span> as this allows the math to work out simply, meaning that we will not need to use Monte Carlo methods to simulate the posterior. We want to choose a reasonably wide distribution so that we do not ignore large effect sizes. A value of around 2 should be wide enough for most use cases, but this can be adjusted as needed. Note that the wider the prior distribution is the more the hypothesis tests will favour the null hypothesis.</p>
+<p>If we wish to use a one-sided prior (if we believe that the effect cannot be negative), then we simply set the minimum to zero.</p>
+</div>
+<div id="conditional-distributions" class="section level2">
+<h2>Conditional Distributions</h2>
+<p>Conditional on <span class="math inline">\(\gamma\)</span>, we have that <span class="math inline">\(\bar{x}_t - \bar{x}_c\)</span> will have an approximately Normal distribution (from the Central Limit Theorem). Since we do not know the variances we can convert this into Student’s t-Distribution. We will not assume that the variances of the two groups are equal but this does mean that we need to make some approximations. We will divide the difference in sample means by: <span class="math inline">\(s_\Delta = \sqrt{\frac{s_t^2}{n_t} + \frac{s_c^2}{n_c}}\)</span>. The degrees of freedom are approximately: <span class="math inline">\(\nu = \frac{s_\Delta^4}{\frac{(s_t^2/n_t)^2}{n_t - 1} +\frac{(s_c^2/n_c)^2}{n_c - 1}}\)</span>. This statistic (<span class="math inline">\(t = \frac{\bar{x}_t - \bar{x}_c}{s_\Delta}\)</span>) has a non-standard t-distribution with a mean of approximately <span class="math inline">\(\gamma\frac{s_t}{s_\Delta}\)</span>.</p>
+</div>
+<div id="posterior-distributions" class="section level2">
+<h2>Posterior Distributions</h2>
+<p>Since the t-distribution is symmetric, if we assume an improper uniform prior for <span class="math inline">\(\gamma\)</span>, then <span class="math inline">\(\gamma\frac{s_t}{s_\Delta} - t\)</span> has an approximate t-distribution with <span class="math inline">\(\nu\)</span> degrees of freedom (conditional on the observed data). If we wish to have a one-sided prior the distribution is proportional to the t-distribution but only where <span class="math inline">\(\gamma\)</span> is positive, otherwise it is zero.</p>
+</div>
+</div>
+<div id="inference" class="section level1">
+<h1>Inference</h1>
+<p>With the requisite setup out of the way we can now move on to performing inference. Here I will present the bayesian analgues of common frequentist inferential techniques. ##Hypothesis Testing Firstly we set up our 2 hypotheses: <span class="math display">\[H_0: \gamma = 0 \\
+H_1: \gamma \sim \mbox{Unif}(-m,m)\]</span></p>
+<p>Or, in the one sided case: <span class="math display">\[H_1: \gamma \sim \mbox{Unif}(0,m)\]</span></p>
+<p>For a Bayesian Hypothesis test we calculate the odds ratio: <span class="math inline">\(K = \frac{Pr(T=t|H_1)}{Pr(T=t|H_0)}\)</span></p>
+<p>This shows how much the data favour the <span class="math inline">\(H_1\)</span> compared to <span class="math inline">\(H_0\)</span>. The denominator is simply the density of the t-distibution with <span class="math inline">\(\nu\)</span> degrees of freedom at the observed value of <span class="math inline">\(t\)</span>.</p>
+<p>The numerator is given by <span class="math inline">\(\int_{-m}^m \frac{1}{2m}f_\nu(t-\gamma\frac{s_t}{s_\Delta}) d\gamma\)</span>, where <span class="math inline">\(f_\nu\)</span> is the pdf of a standard t distribution with <span class="math inline">\(\nu\)</span> degrees of freedom. This simplifies to <span class="math inline">\(\frac{s_\Delta}{2ms_t}(F_\nu(t+m\frac{s_t}{s_\Delta})-F_\nu(t-m\frac{s_t}{s_\Delta}))\)</span>. In the one sided case it instead simplifies to : <span class="math inline">\(\frac{s_\Delta}{ms_t}(F_\nu(t)-F_\nu(t-m\frac{s_t}{s_\Delta}))\)</span></p>
+<p>Excel contains functions for both the pdf and cdf of the t-distribution (the T.Dist function, which has a boolean parameter ‘cumulative’).</p>
+<div id="credibility-intervals" class="section level2">
+<h2>Credibility Intervals</h2>
+<p>Recall that with an improper uniform prior <span class="math inline">\(\gamma\frac{s_t}{s_\Delta} - t\)</span> has an approximate t-distribution with <span class="math inline">\(\nu\)</span> degrees of freedom. Excel has a function for the inverse cumulative t-distribution (T.Inv) so we can obtain a percentile <span class="math inline">\(\alpha\)</span> of <span class="math inline">\(\gamma\)</span> as <span class="math inline">\((F_\nu^{-1}(\alpha)+t)\frac{s_\Delta}{s_t}\)</span>. We can create credibility intervals using this. As the t-distribution is symmetric, a symmetric interval will also be the minimum width (highest probability density) interval.</p>
+<p>With the one sided prior, the posterior distribution of <span class="math inline">\(\gamma\frac{s_t}{s_\Delta} - t\)</span> is proportional to <span class="math inline">\(t_\nu\)</span>, except that the density below <span class="math inline">\(-t\)</span> is zero. We can determine the percentile <span class="math inline">\(\alpha\)</span> of <span class="math inline">\(\gamma\)</span> as follows: <span class="math display">\[(F_\nu^{-1}\left(1-(1-\alpha)F_\nu(t)\right)+t)\frac{s_\Delta}{s_t}\]</span> In this case the symmetric interval (which has equal probability above and below) is not the same as the minimum width interval. This interval will be symmetric about the mode (which is <span class="math inline">\(\frac{ts_\Delta}{s_t}\)</span>), unless this results in the lower bound becoming negative, in which case the lower bound is zero and the upper bound will be the percentile corresponding to the required credibility level. To summarise, the lower bound of a <span class="math inline">\(1-\alpha\)</span> credibility interval is <span class="math inline">\(\max\left(F_\nu^{-1}\left(\frac{\alpha}{2}F_\nu(t)\right)+t,0\right)\frac{s_\Delta}{s_t}\)</span>. The upper bound is either given by the percentile formula presented earlier (when the lower bound is zero), or <span class="math inline">\(\left(F_\nu^{-1}\left((1-\frac{\alpha}{2})F_\nu(t)\right)+t\right)\frac{s_\Delta}{s_t}\)</span>.</p>
+</div>
+<div id="parameter-estimation" class="section level2">
+<h2>Parameter Estimation</h2>
+<p>In the two-sided case we can determine the mean of <span class="math inline">\(\gamma\)</span> as <span class="math inline">\(\frac{ts_\Delta}{s_t}\)</span>.</p>
+<p>The one-sided case is more complicated. I will present the mean of <span class="math inline">\(\gamma\)</span> here and leave the derivation as an exercise for the reader:</p>
+<p><span class="math display">\[\mbox{E}[\gamma|t,\nu] =
+  \frac{s_\Delta}{s_t}\left(t+\frac{\sqrt{\nu}\Gamma\left({\frac{\nu+1}{2}}\right)}{\sqrt{\pi}(\nu-1)F_\nu(t)\Gamma\left(\frac{\nu}{2}\right)}\left(1+\frac{t^2}{\nu}\right)^{-\frac{\nu-1}{2}}\right)
+  \]</span> There is no gamma function in excel, however there is a GammaLn function which is the natural logarithm of the gamma function. We can therefore obtain the ratio of two gamma functions by taking the difference of the corresponding gammaln functions and exponentiating the result.</p>
+</div>
+</div>
+<div id="extensions" class="section level1">
+<h1>Extensions</h1>
+<p>The above analyses cover the majority of simple use cases. They can be extended to apply to arbitrary cost functions for parameter estimation.</p>
+<p>The larger limitation is the restriction on the prior. The uniform prior does not give us the nice ‘regression’ properties that can be observed in bayesian analyses with informative priors. This can be somewhat replicated by including a probability mass at zero in the prior. Another solution is to use the triangular distribution instead of the uniform, as this is still simple enough to implement in Excel.</p>
+</div>

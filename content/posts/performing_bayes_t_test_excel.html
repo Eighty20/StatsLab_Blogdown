@@ -1,10 +1,14 @@
 ---
-title: "Performing a Bayesian T-Test in Excel"
-author: "Kylen"
-date: "2018-08-22"
-output: html_document
+title: Performing a Bayesian T-Test in Excel
+author: Kylen
+date: 2018-09-03
+slug: bayes-t-test-excel
+categories:
+  - Excel
+tags:
+  - Excel
+  - Bayes
 ---
-
 
 
 
@@ -49,13 +53,17 @@ output: html_document
 </div>
 <div id="inference" class="section level1">
 <h1>Inference</h1>
-<p>With the requisite setup out of the way we can now move on to performing inference. Here I will present the bayesian analgues of common frequentist inferential techniques. ##Hypothesis Testing Firstly we set up our 2 hypotheses: <span class="math display">\[H_0: \gamma = 0 \\
+<p>With the requisite setup out of the way we can now move on to performing inference. Here I will present the bayesian analgues of common frequentist inferential techniques.</p>
+<div id="hypothesis-testing" class="section level2">
+<h2>Hypothesis Testing</h2>
+<p>Firstly we set up our 2 hypotheses: <span class="math display">\[H_0: \gamma = 0 \\
 H_1: \gamma \sim \mbox{Unif}(-m,m)\]</span></p>
 <p>Or, in the one sided case: <span class="math display">\[H_1: \gamma \sim \mbox{Unif}(0,m)\]</span></p>
 <p>For a Bayesian Hypothesis test we calculate the odds ratio: <span class="math inline">\(K = \frac{Pr(T=t|H_1)}{Pr(T=t|H_0)}\)</span></p>
 <p>This shows how much the data favour the <span class="math inline">\(H_1\)</span> compared to <span class="math inline">\(H_0\)</span>. The denominator is simply the density of the t-distibution with <span class="math inline">\(\nu\)</span> degrees of freedom at the observed value of <span class="math inline">\(t\)</span>.</p>
 <p>The numerator is given by <span class="math inline">\(\int_{-m}^m \frac{1}{2m}f_\nu(t-\gamma\frac{s_t}{s_\Delta}) d\gamma\)</span>, where <span class="math inline">\(f_\nu\)</span> is the pdf of a standard t distribution with <span class="math inline">\(\nu\)</span> degrees of freedom. This simplifies to <span class="math inline">\(\frac{s_\Delta}{2ms_t}(F_\nu(t+m\frac{s_t}{s_\Delta})-F_\nu(t-m\frac{s_t}{s_\Delta}))\)</span>. In the one sided case it instead simplifies to : <span class="math inline">\(\frac{s_\Delta}{ms_t}(F_\nu(t)-F_\nu(t-m\frac{s_t}{s_\Delta}))\)</span></p>
 <p>Excel contains functions for both the pdf and cdf of the t-distribution (the T.Dist function, which has a boolean parameter ‘cumulative’).</p>
+</div>
 <div id="credibility-intervals" class="section level2">
 <h2>Credibility Intervals</h2>
 <p>Recall that with an improper uniform prior <span class="math inline">\(\gamma\frac{s_t}{s_\Delta} - t\)</span> has an approximate t-distribution with <span class="math inline">\(\nu\)</span> degrees of freedom. Excel has a function for the inverse cumulative t-distribution (T.Inv) so we can obtain a percentile <span class="math inline">\(\alpha\)</span> of <span class="math inline">\(\gamma\)</span> as <span class="math inline">\((F_\nu^{-1}(\alpha)+t)\frac{s_\Delta}{s_t}\)</span>. We can create credibility intervals using this. As the t-distribution is symmetric, a symmetric interval will also be the minimum width (highest probability density) interval.</p>

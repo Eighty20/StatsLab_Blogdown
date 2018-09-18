@@ -1,0 +1,365 @@
+---
+title: "Working With Amps"
+author: "Peter Smith"
+date: 2018-09-18
+output:
+  blogdown::html_page:
+    toc: true
+    highlight: tango/
+slug: AMPS_data_wrangling
+categories:
+  - R
+tags:
+  - Data_wrangling
+  - AMPS
+---
+
+#Working with the AMPS dataset
+
+On one of my recent projects, I've had to do a lot of work with AMPS, drawing the data from the SQL database directly rather than via the portal on our website. Now, if you've never had to work with the AMPS data directly, its... tricky. I ended up writing some helpful functions that I thought I would blog about so the next person using the dataset can have an easier time. 
+
+##Understanding the data
+The data itself sits in a nice view on SQL with a grain of _respondent_ (so each row contains all the responses for one respondent to the survey), however its the way the columns themselves are encoded that are the source of issue. Lets take a look!
+
+![Raw AMPS data](/Pictures/Working_with_AMPS/AMPS_preview.PNG?display=inline-block)
+
+As you can see, the column names aren't really informative. Also, all the data is all encoded using numerical symbols. Fortunately, we have a translation-table that can be used to decode the data.
+
+![AMPS translation table](/Pictures/Working_with_AMPS//AMPS_translate.PNG)
+
+OK, lets describe whats going on here. The AMPS survey has two types of questions.  
+
+1. Select 1 answer (eg: _marital status_)
+2. Choose all applicable answers (eg: _What Financial Products do you own?_)
+
+In an online survey, we would use a _Radio-button_ and a _Checkbox_ respectively to capture these responses so I'm going to lean on this terminology going forward. 
+
+Getting back to the data, columns _m5210, m9125 and m9126_ all seem to be checkboxes while column _r5609_ seems to be a radio-button. This explains why _m5210_ has and entries "04" and "14" in the AMPS dataset - it means these respondents selected both checkbox both _0 and 4_ or _1 and 4_ for this question. 
+
+Getting back to the translation table we make the following observations:
+
+1. The column _field_ always contains the corresponding column-name from AMPS
+2. The column _field_ may contain the checkbox reference if the data came from a checkbox
+3. *Field_desc* always contains the descriptive column_name for the question asked
+4. *Field_desc* may contain the checkbox descriptive label
+5. *Level_labels* contains the labels for a radio-button corresponding to the *levels* column
+6. If there are more than 10 options for a checkbox (or possibly radio-button?), a new column is created. Thus columns *m9125* and *m9126* actually contain data for the same question!
+
+Cool, I think we have a good grasp of what the data now. The next question is how do we want to transform the data to make it usable in R?
+
+Well, radio-buttons just capture categorical data, so converting that column into a factor makes a lot of sense - we just need to tie the correct labels to the correct levels. For the checkboxes, we'll need to one-hot encode the data since multiple options can be selected simultaneously. It makes a lot of sense to write a nice generic function that could be used to fix any of these columns. So that's what I did :). The rest of this post will be showing off those functions.  
+
+One last note, There are some inconsistencies in the labelling between AMPS surveys. So the label for field *m9125m7* might be different in _amps2015b_ compared to _amps2014b_. While I'm at it. I'm going to ensure that the functions I write can handle this as well. 
+
+##Working with AMPS in R
+
+###Read in Libraries
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+library(odbc)
+library(EightyR)
+load_toolbox()
+```
+
+###Read in Data
+
+It'll help with writing the functions if I have the data already in R so I can play with it while I code. This is pretty straight-forward and so I'll do it without comment. I bring in results from two different survey years, so I'm forced to address this while I write my functions. 
+```{r}
+con <- dbConnect(odbc::odbc(), "AMPS") 
+amps_query<-c("
+ select 
+'amps2015b' as source,
+                 r5609,
+                 r5235,
+                 m5210,
+                 m9125,
+                 m9126
+from amps.amps2015b
+union all
+select 
+'amps2014b' as source,
+				 r5609,
+                 r5235,
+                 m5210,
+                 m9125,
+                 m9126
+from amps.amps2014b
+")
+
+translate_query<-c("
+select 
+  db_table, 
+  field, 
+  field_desc, 
+  levels, 
+  level_labels, 
+  ordinal
+from eighty20_databaseadmin.translation_db
+where db_table in ('amps2015b', 'amps2014b')
+and 
+    (
+      field like ('r5609%') or
+      field like ('r5235%') or
+      field like ('m5210%') or
+      field like ('m9125%') or
+      field like ('m9126%')
+    )
+")
+
+df.amps<- dplyr::tbl(con, sql(amps_query)) %>% collect()
+df.translate<-dplyr::tbl(con, sql(translate_query))%>%collect()
+```
+
+Lets take a quick glimpse at the AMPS
+```{r}
+glimpse(df.amps)
+```
+
+a now the translation-table. 
+```{r}
+glimpse(df.translate)
+```
+
+###Transforming Radio-buttons
+
+Dealing with the radio buttons seems the most straight-forward so I'll write this function first. The goal of the function is to be able to specify the AMPS and translation tables, as well as which columns are to be converted, and to get, as output the factorized columns.
+
+I'll start off with writing a function that takes a single column and converts it. 
+```{r}
+#this function converts a single radio-button column to factor
+fn_label_one_radio_button<-function(colname, db_table, amps, translation){
+    #extract relevant row from translation table
+    src<-amps[[db_table]][1]
+    trans<-translation%>%
+     filter(field == colname,
+            db_table == src)%>%
+     select(field, field_desc, levels, level_labels)%>%
+     unique()
+
+#match label to the associated level
+out<-as.character(factor(amps[[colname]], 
+             levels = strsplit(trans$levels, split = '\\|\\|')[[1]][!duplicated(strsplit(trans$levels, split = '\\|\\|')[[1]])], 
+             labels = strsplit(trans$level_labels, split = '\\|\\|')[[1]][!duplicated(strsplit(trans$levels, split = '\\|\\|')[[1]])]
+            ))
+
+#output a data.frame with column name extracted from the field_desc column.
+eval(parse(text = paste0("return(data.frame(",
+                         gsub(' ','_',tolower(trans$field_desc)),
+                         "=as.character(out)))")))
+}
+
+```
+
+Lets test the function out to see how it works. 
+
+```{r}
+radio_button<-fn_label_one_radio_button('r5609', 'source', df.amps, df.translate)
+
+glimpse(radio_button)
+
+```
+
+As you can see, we now have a data.frame with a factor named "*marital_status*" with descriptive levels "*Single*" etc!
+
+This is great, but I'd like to be able to specify all the columns to be converted at once. So I'm going to create a wrapper for this function for ease of use. I'm also going to rather create *fn_label_one_radio_button* inside this wrapper, since I want the user to always use the wrapped function.
+
+```{r}
+rm(fn_label_one_radio_button)
+ 
+fn_label_radio_buttons<-function(colnames, db_table, amps, translation) {
+##Create sub-function
+    fn_label_one_radio_button<-function(colname, db_table, amps){
+        #extract relevant row from translation table
+        src<-amps[[db_table]][1]
+        trans<-translation%>%
+         filter(field == colname,
+                db_table == src)%>%
+         select(field, field_desc, levels, level_labels)%>%
+         unique()
+    
+        #match label to the associated level
+        out<-as.character(factor(amps[[colname]], 
+                     levels = strsplit(trans$levels, split = '\\|\\|')[[1]][!duplicated(strsplit(trans$levels, split = '\\|\\|')[[1]])], 
+                     labels = strsplit(trans$level_labels, split = '\\|\\|')[[1]][!duplicated(strsplit(trans$levels, split = '\\|\\|')[[1]])]
+                    ))
+        
+        #output a data.frame with column name extracted from the field_desc column.
+        eval(parse(text = paste0("return(data.frame(",
+                                 gsub(' ','_',tolower(trans$field_desc)),
+                                 "=as.character(out)))")))
+        }
+
+        
+##split amps by source, then apply the above function to all columns. then combine outputs into single dataframe and output.
+    return(  
+      do.call('bind_rows',
+        lapply(split(amps, f = amps[[db_table]]), function(amps) {
+          do.call('cbind',lapply(colnames, 
+                               FUN = fn_label_one_radio_button, db_table, amps))
+        })))
+}
+```
+
+Let's test it out!
+
+```{r}
+radio_buttons<-fn_label_radio_buttons(c('r5609','r5235'), 'source',df.amps,df.translate)
+glimpse(radio_buttons)
+```
+
+As you can see, the function successfully extracts the relevant columns from the amps data, and converts them to factors using the data from the translations table! 
+
+Now, I'm going to breakdown the logic of what's actually happening in that function. The function is a bit fiddly in the detail, but the logical steps it takes are pretty straightforward.
+
+Starting with the wrapped *fn_label_one_radio_button*, the steps taken are as follows:
+
+1. Find the row in the translation table that corresponds to the column we're converting with. We make sure the sources match (eg. 'amps2015b') and the column_name matches the field.
+
+2. Extract the levels and labels from the translate table.
+
+3. Extract the desired column_name from the field_desc column and output a data.frame with that as the column name for the data (replacing whitespace with underscores).
+
+Then in the wrapper function I do the following:
+
+1. Split the AMPS data by source (remember, amps2014b may have different encodings to amps2015b)
+
+2. for a single source, apply *fn_label_one_radio_button* to each column separately
+
+3. use *do.call('cbind',)* to create a single dataframe containing all the data for this single source.
+
+4. use *do.call('bind_rows',)* to append all these datasets together again. 
+
+###Transforming Checkboxes
+
+Now lets deal with the checkboxes. Again, I'm going to write a function to handle a single column, then create a wrapper function that allows for specifying multiple columns all at once.
+
+```{r}
+fn_extract_one_checkbox <-
+  function(column, db_table, amps, translation) {
+    #first, only get rows relating to the field in consideration
+    src<-amps[[db_table]][1]
+    df.trans<-translation%>%
+      filter(grepl(column, field))%>%
+      filter(db_table==src)%>%
+      mutate(factor_level = substr(field, 7,7))
+    
+    #strip out column_name
+    field_name <- gsub(" ","",strsplit(df.trans$field_desc[1],split = "_")[[1]][1])
+    
+    #strip out verbose descriptions of factor levels
+    df.trans$factor_name<-sapply(strsplit(df.trans$field_desc,split = "_"), '[',3)
+      
+    #initialise matrix to expand factors into
+    df.output_matrix<-setNames(data.frame(matrix(ncol = nrow(df.trans), nrow = nrow(amps), data = 0)), df.trans$factor_level)
+    
+    #for each factor level, check whether that string occurs inside the data. 
+    #NOTE: if more than 10 levels in a column, this would bug out. 
+    lapply(names(df.output_matrix), function(lvl) {
+      df.output_matrix[[lvl]]<<-grepl(lvl,amps[[column]])
+      return(lvl)
+      })
+    
+    #format names to be general_desc_factor_name
+    names(df.output_matrix)<-gsub("[[:space:]]","",tolower(df.trans$field_desc))
+    names(df.output_matrix)<-gsub("-","",names(df.output_matrix))
+    return(df.output_matrix)
+  }
+
+```
+
+Checking the output,
+```{r}
+checkbox<-fn_extract_one_checkbox("m5210", 'source', df.amps, df.translate)
+
+glimpse(checkbox)
+```
+
+And now, creating a wrapper,
+```{r}
+rm(fn_extract_one_checkbox)
+
+
+fn_extract_checkboxes<-function(columns, db_table, amps, translation) {
+  
+  fn_extract_one_checkbox<- function(column,db_table,amps) {
+    #first, only get rows relating to the field in consideration
+    src<-amps[[db_table]][1]
+    df.trans<-translation%>%
+      filter(grepl(column, field))%>%
+      filter(db_table==src)%>%
+      mutate(factor_level = substr(field, 7,7))
+    
+    #strip out column_name
+    field_name <- gsub(" ","",strsplit(df.trans$field_desc[1],split = "_")[[1]][1])
+    
+    #strip out verbose descriptions of factor levels
+    df.trans$factor_name<-sapply(strsplit(df.trans$field_desc,split = "_"), '[',3)
+      
+    #initialise matrix to expand factors into
+    df.output_matrix<-setNames(data.frame(matrix(ncol = nrow(df.trans), nrow = nrow(amps), data = 0)), df.trans$factor_level)
+    
+    #for each factor level, check whether that string occurs inside the data. 
+    #NOTE: if more than 10 levels in a column, this would bug out. 
+    lapply(names(df.output_matrix), function(lvl) {
+      df.output_matrix[[lvl]]<<-grepl(lvl,amps[[column]])
+      return(lvl)
+      })
+    
+    #format names to be general_desc_factor_name
+    names(df.output_matrix)<-gsub("[[:space:]]","",tolower(df.trans$field_desc))
+    names(df.output_matrix)<-gsub("-","",names(df.output_matrix))
+    return(df.output_matrix)
+  }
+
+
+return(
+  do.call('bind_rows',
+         lapply(split(amps, f = as.factor(amps[[db_table]])), function(amps) {
+         do.call('cbind',lapply(columns, FUN = fn_extract_one_checkbox, db_table, amps))
+}))
+)
+  
+}
+
+
+```
+
+
+```{r}
+checkboxes<-fn_extract_checkboxes(c("m5210", "m9125","m9126"), 'source', df.amps, df.translate)
+
+glimpse(checkboxes)
+
+```
+
+Nice! Its maybe worth noting that I've been a bit inconsistent in that I've removed white-space in the column_names, but I've been happy to leave in brackets or dashes. I'm happy with this for now, but maybe later I'll decide to either not handle whitespace at all, or to handle all characters that shouldn't appear in a column name. Right now, the user can get rid of brackets if they want by using either *gsub()* or *make.names*.
+
+##Bringing it all together
+
+Let's create a final converted dataset using these functions just to show how easy it is. 
+Lets have a look at the unformatted version again:
+```{r}
+glimpse(df.amps)
+```
+
+and now the formatted version:
+```{r}
+formatted_amps<-cbind(
+  fn_label_radio_buttons(c('r5609','r5235'), 'source',df.amps,df.translate),
+  fn_extract_checkboxes(c("m5210", "m9125","m9126"), 'source', df.amps, df.translate))
+
+glimpse(formatted_amps)
+```
+
+
+
+##Conclusions and Criticisms
+
+The key takeout of this blog is that the functions *fn_label_radio_buttons* and  *fn_extract_checkboxes* can be used to convert raw AMPS data into something that's analytics-friendly in R. It account for different data labelling between versions of the AMPS survey as well.
+
+One criticism of these functions on reflection, is I assume that the amps dataset contains a column corresponding to *db_table* in the translation table. This column doesn't actually exist and it's something I created myself in the SQL scripts, but I don't see a way around it when working with multiple years of AMPS at once to figure out which entry in the translations table to use. 
+
+Another criticism is that, when the levels in different years of AMPS data don't match exactly, those columns are coerced into character instead of factor. I could handle this a bit more explicitly to avoid this behaviour.
+
+A piece of outstanding work is that I should write a wrapper for the radio and checkbox functions. Then the user could only call one function, specifying which columns are radio_buttons and which are checkboxes and the wrapper could handle each accordingly. 

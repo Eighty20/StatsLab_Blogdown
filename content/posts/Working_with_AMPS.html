@@ -1,0 +1,428 @@
+---
+title: "Working With Amps"
+author: "Peter Smith"
+date: 2018-09-18
+output:
+  blogdown::html_page:
+    toc: true
+slug: AMPS_data_wrangling
+categories:
+  - R
+tags:
+  - Data_wrangling
+  - AMPS
+---
+
+
+<div id="TOC">
+<ul>
+<li><a href="#working-with-the-amps-dataset">Working with the AMPS dataset</a><ul>
+<li><a href="#understanding-the-data">Understanding the data</a></li>
+<li><a href="#working-with-amps-in-r">Working with AMPS in R</a><ul>
+<li><a href="#read-in-libraries">Read in Libraries</a></li>
+<li><a href="#read-in-data">Read in Data</a></li>
+<li><a href="#transforming-radio-buttons">Transforming Radio-buttons</a></li>
+<li><a href="#transforming-checkboxes">Transforming Checkboxes</a></li>
+</ul></li>
+<li><a href="#bringing-it-all-together">Bringing it all together</a></li>
+<li><a href="#conclusions-and-criticisms">Conclusions and Criticisms</a></li>
+</ul></li>
+</ul>
+</div>
+
+<div id="working-with-the-amps-dataset" class="section level1">
+<h1>Working with the AMPS dataset</h1>
+<p>On one of my recent projects, I’ve had to do a lot of work with AMPS, drawing the data from the SQL database directly rather than via the portal on our website. Now, if you’ve never had to work with the AMPS data directly, its… tricky. I ended up writing some helpful functions that I thought I would blog about so the next person using the dataset can have an easier time.</p>
+<div id="understanding-the-data" class="section level2">
+<h2>Understanding the data</h2>
+<p>The data itself sits in a nice view on SQL with a grain of <em>respondent</em> (so each row contains all the responses for one respondent to the survey), however its the way the columns themselves are encoded that are the source of issue. Lets take a look!</p>
+<div class="figure">
+<img src="/Pictures/Working_with_AMPS/AMPS_preview.PNG?display=inline-block" alt="Raw AMPS data" />
+<p class="caption">Raw AMPS data</p>
+</div>
+<p>As you can see, the column names aren’t really informative. Also, all the data is all encoded using numerical symbols. Fortunately, we have a translation-table that can be used to decode the data.</p>
+<div class="figure">
+<img src="/Pictures/Working_with_AMPS//AMPS_translate.PNG" alt="AMPS translation table" />
+<p class="caption">AMPS translation table</p>
+</div>
+<p>OK, lets describe whats going on here. The AMPS survey has two types of questions.</p>
+<ol style="list-style-type: decimal">
+<li>Select 1 answer (eg: <em>marital status</em>)</li>
+<li>Choose all applicable answers (eg: <em>What Financial Products do you own?</em>)</li>
+</ol>
+<p>In an online survey, we would use a <em>Radio-button</em> and a <em>Checkbox</em> respectively to capture these responses so I’m going to lean on this terminology going forward.</p>
+<p>Getting back to the data, columns <em>m5210, m9125 and m9126</em> all seem to be checkboxes while column <em>r5609</em> seems to be a radio-button. This explains why <em>m5210</em> has and entries “04” and “14” in the AMPS dataset - it means these respondents selected both checkbox both <em>0 and 4</em> or <em>1 and 4</em> for this question.</p>
+<p>Getting back to the translation table we make the following observations:</p>
+<ol style="list-style-type: decimal">
+<li>The column <em>field</em> always contains the corresponding column-name from AMPS</li>
+<li>The column <em>field</em> may contain the checkbox reference if the data came from a checkbox</li>
+<li><em>Field_desc</em> always contains the descriptive column_name for the question asked</li>
+<li><em>Field_desc</em> may contain the checkbox descriptive label</li>
+<li><em>Level_labels</em> contains the labels for a radio-button corresponding to the <em>levels</em> column</li>
+<li>If there are more than 10 options for a checkbox (or possibly radio-button?), a new column is created. Thus columns <em>m9125</em> and <em>m9126</em> actually contain data for the same question!</li>
+</ol>
+<p>Cool, I think we have a good grasp of what the data now. The next question is how do we want to transform the data to make it usable in R?</p>
+<p>Well, radio-buttons just capture categorical data, so converting that column into a factor makes a lot of sense - we just need to tie the correct labels to the correct levels. For the checkboxes, we’ll need to one-hot encode the data since multiple options can be selected simultaneously. It makes a lot of sense to write a nice generic function that could be used to fix any of these columns. So that’s what I did :). The rest of this post will be showing off those functions.</p>
+<p>One last note, There are some inconsistencies in the labelling between AMPS surveys. So the label for field <em>m9125m7</em> might be different in <em>amps2015b</em> compared to <em>amps2014b</em>. While I’m at it. I’m going to ensure that the functions I write can handle this as well.</p>
+</div>
+<div id="working-with-amps-in-r" class="section level2">
+<h2>Working with AMPS in R</h2>
+<div id="read-in-libraries" class="section level3">
+<h3>Read in Libraries</h3>
+<pre class="r"><code>knitr::opts_chunk$set(echo = TRUE)
+library(odbc)
+library(EightyR)
+load_toolbox()</code></pre>
+<pre><code>## -------------------------------------------
+## Loading the Analytics Toolbox libary
+## -------------------------------------------
+## 
+## purrr
+##  
+## ggplot2
+##  
+## dplyr
+##  
+## tidyr
+##  
+## readr
+##  
+## lubridate
+##  
+## openxlsx</code></pre>
+</div>
+<div id="read-in-data" class="section level3">
+<h3>Read in Data</h3>
+<p>It’ll help with writing the functions if I have the data already in R so I can play with it while I code. This is pretty straight-forward and so I’ll do it without comment. I bring in results from two different survey years, so I’m forced to address this while I write my functions.</p>
+<pre class="r"><code>con &lt;- dbConnect(odbc::odbc(), &quot;AMPS&quot;) 
+amps_query&lt;-c(&quot;
+ select 
+&#39;amps2015b&#39; as source,
+                 r5609,
+                 r5235,
+                 m5210,
+                 m9125,
+                 m9126
+from amps.amps2015b
+union all
+select 
+&#39;amps2014b&#39; as source,
+                 r5609,
+                 r5235,
+                 m5210,
+                 m9125,
+                 m9126
+from amps.amps2014b
+&quot;)
+
+translate_query&lt;-c(&quot;
+select 
+  db_table, 
+  field, 
+  field_desc, 
+  levels, 
+  level_labels, 
+  ordinal
+from eighty20_databaseadmin.translation_db
+where db_table in (&#39;amps2015b&#39;, &#39;amps2014b&#39;)
+and 
+    (
+      field like (&#39;r5609%&#39;) or
+      field like (&#39;r5235%&#39;) or
+      field like (&#39;m5210%&#39;) or
+      field like (&#39;m9125%&#39;) or
+      field like (&#39;m9126%&#39;)
+    )
+&quot;)
+
+df.amps&lt;- dplyr::tbl(con, sql(amps_query)) %&gt;% collect()
+df.translate&lt;-dplyr::tbl(con, sql(translate_query))%&gt;%collect()</code></pre>
+<p>Lets take a quick glimpse at the AMPS</p>
+<pre class="r"><code>glimpse(df.amps)</code></pre>
+<pre><code>## Observations: 51,168
+## Variables: 6
+## $ source &lt;chr&gt; &quot;amps2015b&quot;, &quot;amps2015b&quot;, &quot;amps2015b&quot;, &quot;amps2015b&quot;, &quot;am...
+## $ r5609  &lt;chr&gt; &quot;1&quot;, &quot;2&quot;, &quot;2&quot;, &quot;2&quot;, &quot;2&quot;, &quot;1&quot;, &quot;2&quot;, &quot;2&quot;, &quot;4&quot;, &quot;2&quot;, &quot;2&quot;, ...
+## $ r5235  &lt;chr&gt; &quot;9&quot;, &quot;9&quot;, &quot;5&quot;, &quot;5&quot;, &quot;5&quot;, &quot;1&quot;, &quot;1&quot;, &quot;5&quot;, &quot;1&quot;, &quot;9&quot;, &quot;1&quot;, ...
+## $ m5210  &lt;chr&gt; &quot;4&quot;, &quot;4&quot;, &quot;04&quot;, &quot;4&quot;, &quot;4&quot;, &quot;4&quot;, &quot;4&quot;, &quot;4&quot;, &quot;4&quot;, &quot;4&quot;, &quot;4&quot;,...
+## $ m9125  &lt;chr&gt; &quot;9&quot;, &quot;9&quot;, &quot;5&quot;, &quot;5&quot;, &quot;5&quot;, &quot;1&quot;, &quot;1&quot;, &quot;5&quot;, &quot;1&quot;, &quot;9&quot;, &quot;1&quot;, ...
+## $ m9126  &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,...</code></pre>
+<p>a now the translation-table.</p>
+<pre class="r"><code>glimpse(df.translate)</code></pre>
+<pre><code>## Observations: 40
+## Variables: 6
+## $ db_table     &lt;chr&gt; &quot;amps2014b&quot;, &quot;amps2015b&quot;, &quot;amps2014b&quot;, &quot;amps2015b...
+## $ field        &lt;chr&gt; &quot;m5210m0&quot;, &quot;m5210m0&quot;, &quot;m5210m1&quot;, &quot;m5210m1&quot;, &quot;m521...
+## $ field_desc   &lt;chr&gt; &quot;Financial services - personally have__Home Loan/...
+## $ levels       &lt;chr&gt; &quot;1&quot;, &quot;1&quot;, &quot;1&quot;, &quot;1&quot;, &quot;1&quot;, &quot;1&quot;, &quot;1&quot;, &quot;1&quot;, &quot;1&quot;, &quot;1&quot;,...
+## $ level_labels &lt;chr&gt; &quot;Yes&quot;, &quot;Yes&quot;, &quot;Yes&quot;, &quot;Yes&quot;, &quot;Yes&quot;, &quot;Yes&quot;, &quot;Yes&quot;, ...
+## $ ordinal      &lt;chr&gt; &quot;N&quot;, &quot;N&quot;, &quot;N&quot;, &quot;N&quot;, &quot;N&quot;, &quot;N&quot;, &quot;N&quot;, &quot;N&quot;, &quot;N&quot;, &quot;N&quot;,...</code></pre>
+</div>
+<div id="transforming-radio-buttons" class="section level3">
+<h3>Transforming Radio-buttons</h3>
+<p>Dealing with the radio buttons seems the most straight-forward so I’ll write this function first. The goal of the function is to be able to specify the AMPS and translation tables, as well as which columns are to be converted, and to get, as output the factorized columns.</p>
+<p>I’ll start off with writing a function that takes a single column and converts it.</p>
+<pre class="r"><code>#this function converts a single radio-button column to factor
+fn_label_one_radio_button&lt;-function(colname, db_table, amps, translation){
+    #extract relevant row from translation table
+    src&lt;-amps[[db_table]][1]
+    trans&lt;-translation%&gt;%
+     filter(field == colname,
+            db_table == src)%&gt;%
+     select(field, field_desc, levels, level_labels)%&gt;%
+     unique()
+
+#match label to the associated level
+out&lt;-as.character(factor(amps[[colname]], 
+             levels = strsplit(trans$levels, split = &#39;\\|\\|&#39;)[[1]][!duplicated(strsplit(trans$levels, split = &#39;\\|\\|&#39;)[[1]])], 
+             labels = strsplit(trans$level_labels, split = &#39;\\|\\|&#39;)[[1]][!duplicated(strsplit(trans$levels, split = &#39;\\|\\|&#39;)[[1]])]
+            ))
+
+#output a data.frame with column name extracted from the field_desc column.
+eval(parse(text = paste0(&quot;return(data.frame(&quot;,
+                         gsub(&#39; &#39;,&#39;_&#39;,tolower(trans$field_desc)),
+                         &quot;=as.character(out)))&quot;)))
+}</code></pre>
+<p>Lets test the function out to see how it works.</p>
+<pre class="r"><code>radio_button&lt;-fn_label_one_radio_button(&#39;r5609&#39;, &#39;source&#39;, df.amps, df.translate)
+
+glimpse(radio_button)</code></pre>
+<pre><code>## Observations: 51,168
+## Variables: 1
+## $ marital_status &lt;fct&gt; Single, Married or living together, Married or ...</code></pre>
+<p>As you can see, we now have a data.frame with a factor named “<em>marital_status</em>” with descriptive levels “<em>Single</em>” etc!</p>
+<p>This is great, but I’d like to be able to specify all the columns to be converted at once. So I’m going to create a wrapper for this function for ease of use. I’m also going to rather create <em>fn_label_one_radio_button</em> inside this wrapper, since I want the user to always use the wrapped function.</p>
+<pre class="r"><code>rm(fn_label_one_radio_button)
+ 
+fn_label_radio_buttons&lt;-function(colnames, db_table, amps, translation) {
+##Create sub-function
+    fn_label_one_radio_button&lt;-function(colname, db_table, amps){
+        #extract relevant row from translation table
+        src&lt;-amps[[db_table]][1]
+        trans&lt;-translation%&gt;%
+         filter(field == colname,
+                db_table == src)%&gt;%
+         select(field, field_desc, levels, level_labels)%&gt;%
+         unique()
+    
+        #match label to the associated level
+        out&lt;-as.character(factor(amps[[colname]], 
+                     levels = strsplit(trans$levels, split = &#39;\\|\\|&#39;)[[1]][!duplicated(strsplit(trans$levels, split = &#39;\\|\\|&#39;)[[1]])], 
+                     labels = strsplit(trans$level_labels, split = &#39;\\|\\|&#39;)[[1]][!duplicated(strsplit(trans$levels, split = &#39;\\|\\|&#39;)[[1]])]
+                    ))
+        
+        #output a data.frame with column name extracted from the field_desc column.
+        eval(parse(text = paste0(&quot;return(data.frame(&quot;,
+                                 gsub(&#39; &#39;,&#39;_&#39;,tolower(trans$field_desc)),
+                                 &quot;=as.character(out)))&quot;)))
+        }
+
+        
+##split amps by source, then apply the above function to all columns. then combine outputs into single dataframe and output.
+    return(  
+      do.call(&#39;bind_rows&#39;,
+        lapply(split(amps, f = amps[[db_table]]), function(amps) {
+          do.call(&#39;cbind&#39;,lapply(colnames, 
+                               FUN = fn_label_one_radio_button, db_table, amps))
+        })))
+}</code></pre>
+<p>Let’s test it out!</p>
+<pre class="r"><code>radio_buttons&lt;-fn_label_radio_buttons(c(&#39;r5609&#39;,&#39;r5235&#39;), &#39;source&#39;,df.amps,df.translate)</code></pre>
+<pre><code>## Warning in bind_rows_(x, .id): Unequal factor levels: coercing to character</code></pre>
+<pre><code>## Warning in bind_rows_(x, .id): binding character and factor vector,
+## coercing into character vector
+
+## Warning in bind_rows_(x, .id): binding character and factor vector,
+## coercing into character vector</code></pre>
+<pre class="r"><code>glimpse(radio_buttons)</code></pre>
+<pre><code>## Observations: 51,168
+## Variables: 2
+## $ marital_status                         &lt;fct&gt; Married or living toget...
+## $ main_bank_for_all_banking_transactions &lt;chr&gt; &quot;Standard Bank&quot;, &quot;ABSA&quot;...</code></pre>
+<p>As you can see, the function successfully extracts the relevant columns from the amps data, and converts them to factors using the data from the translations table!</p>
+<p>Now, I’m going to breakdown the logic of what’s actually happening in that function. The function is a bit fiddly in the detail, but the logical steps it takes are pretty straightforward.</p>
+<p>Starting with the wrapped <em>fn_label_one_radio_button</em>, the steps taken are as follows:</p>
+<ol style="list-style-type: decimal">
+<li><p>Find the row in the translation table that corresponds to the column we’re converting with. We make sure the sources match (eg. ‘amps2015b’) and the column_name matches the field.</p></li>
+<li><p>Extract the levels and labels from the translate table.</p></li>
+<li><p>Extract the desired column_name from the field_desc column and output a data.frame with that as the column name for the data (replacing whitespace with underscores).</p></li>
+</ol>
+<p>Then in the wrapper function I do the following:</p>
+<ol style="list-style-type: decimal">
+<li><p>Split the AMPS data by source (remember, amps2014b may have different encodings to amps2015b)</p></li>
+<li><p>for a single source, apply <em>fn_label_one_radio_button</em> to each column separately</p></li>
+<li><p>use <em>do.call(‘cbind’,)</em> to create a single dataframe containing all the data for this single source.</p></li>
+<li><p>use <em>do.call(‘bind_rows’,)</em> to append all these datasets together again.</p></li>
+</ol>
+</div>
+<div id="transforming-checkboxes" class="section level3">
+<h3>Transforming Checkboxes</h3>
+<p>Now lets deal with the checkboxes. Again, I’m going to write a function to handle a single column, then create a wrapper function that allows for specifying multiple columns all at once.</p>
+<pre class="r"><code>fn_extract_one_checkbox &lt;-
+  function(column, db_table, amps, translation) {
+    #first, only get rows relating to the field in consideration
+    src&lt;-amps[[db_table]][1]
+    df.trans&lt;-translation%&gt;%
+      filter(grepl(column, field))%&gt;%
+      filter(db_table==src)%&gt;%
+      mutate(factor_level = substr(field, 7,7))
+    
+    #strip out column_name
+    field_name &lt;- gsub(&quot; &quot;,&quot;&quot;,strsplit(df.trans$field_desc[1],split = &quot;_&quot;)[[1]][1])
+    
+    #strip out verbose descriptions of factor levels
+    df.trans$factor_name&lt;-sapply(strsplit(df.trans$field_desc,split = &quot;_&quot;), &#39;[&#39;,3)
+      
+    #initialise matrix to expand factors into
+    df.output_matrix&lt;-setNames(data.frame(matrix(ncol = nrow(df.trans), nrow = nrow(amps), data = 0)), df.trans$factor_level)
+    
+    #for each factor level, check whether that string occurs inside the data. 
+    #NOTE: if more than 10 levels in a column, this would bug out. 
+    lapply(names(df.output_matrix), function(lvl) {
+      df.output_matrix[[lvl]]&lt;&lt;-grepl(lvl,amps[[column]])
+      return(lvl)
+      })
+    
+    #format names to be general_desc_factor_name
+    names(df.output_matrix)&lt;-gsub(&quot;[[:space:]]&quot;,&quot;&quot;,tolower(df.trans$field_desc))
+    names(df.output_matrix)&lt;-gsub(&quot;-&quot;,&quot;&quot;,names(df.output_matrix))
+    return(df.output_matrix)
+  }</code></pre>
+<p>Checking the output,</p>
+<pre class="r"><code>checkbox&lt;-fn_extract_one_checkbox(&quot;m5210&quot;, &#39;source&#39;, df.amps, df.translate)
+
+glimpse(checkbox)</code></pre>
+<pre><code>## Observations: 51,168
+## Variables: 5
+## $ `financialservicespersonallyhave__homeloan/mortgagebond`                 &lt;lgl&gt; ...
+## $ financialservicespersonallyhave__vehiclefinancewithafinancialinstitution &lt;lgl&gt; ...
+## $ financialservicespersonallyhave__personalloan                            &lt;lgl&gt; ...
+## $ financialservicespersonallyhave__noneofthese                             &lt;lgl&gt; ...
+## $ financialservicespersonallyhave__mainbank                                &lt;lgl&gt; ...</code></pre>
+<p>And now, creating a wrapper,</p>
+<pre class="r"><code>rm(fn_extract_one_checkbox)
+
+
+fn_extract_checkboxes&lt;-function(columns, db_table, amps, translation) {
+  
+  fn_extract_one_checkbox&lt;- function(column,db_table,amps) {
+    #first, only get rows relating to the field in consideration
+    src&lt;-amps[[db_table]][1]
+    df.trans&lt;-translation%&gt;%
+      filter(grepl(column, field))%&gt;%
+      filter(db_table==src)%&gt;%
+      mutate(factor_level = substr(field, 7,7))
+    
+    #strip out column_name
+    field_name &lt;- gsub(&quot; &quot;,&quot;&quot;,strsplit(df.trans$field_desc[1],split = &quot;_&quot;)[[1]][1])
+    
+    #strip out verbose descriptions of factor levels
+    df.trans$factor_name&lt;-sapply(strsplit(df.trans$field_desc,split = &quot;_&quot;), &#39;[&#39;,3)
+      
+    #initialise matrix to expand factors into
+    df.output_matrix&lt;-setNames(data.frame(matrix(ncol = nrow(df.trans), nrow = nrow(amps), data = 0)), df.trans$factor_level)
+    
+    #for each factor level, check whether that string occurs inside the data. 
+    #NOTE: if more than 10 levels in a column, this would bug out. 
+    lapply(names(df.output_matrix), function(lvl) {
+      df.output_matrix[[lvl]]&lt;&lt;-grepl(lvl,amps[[column]])
+      return(lvl)
+      })
+    
+    #format names to be general_desc_factor_name
+    names(df.output_matrix)&lt;-gsub(&quot;[[:space:]]&quot;,&quot;&quot;,tolower(df.trans$field_desc))
+    names(df.output_matrix)&lt;-gsub(&quot;-&quot;,&quot;&quot;,names(df.output_matrix))
+    return(df.output_matrix)
+  }
+
+
+return(
+  do.call(&#39;bind_rows&#39;,
+         lapply(split(amps, f = as.factor(amps[[db_table]])), function(amps) {
+         do.call(&#39;cbind&#39;,lapply(columns, FUN = fn_extract_one_checkbox, db_table, amps))
+}))
+)
+  
+}</code></pre>
+<pre class="r"><code>checkboxes&lt;-fn_extract_checkboxes(c(&quot;m5210&quot;, &quot;m9125&quot;,&quot;m9126&quot;), &#39;source&#39;, df.amps, df.translate)
+
+glimpse(checkboxes)</code></pre>
+<pre><code>## Observations: 51,168
+## Variables: 19
+## $ `financialservicespersonallyhave__homeloan/mortgagebond`                 &lt;lgl&gt; ...
+## $ financialservicespersonallyhave__vehiclefinancewithafinancialinstitution &lt;lgl&gt; ...
+## $ financialservicespersonallyhave__personalloan                            &lt;lgl&gt; ...
+## $ financialservicespersonallyhave__noneofthese                             &lt;lgl&gt; ...
+## $ financialservicespersonallyhave__mainbank                                &lt;lgl&gt; ...
+## $ financialinstitution__absa                                               &lt;lgl&gt; ...
+## $ financialinstitution__africanbank                                        &lt;lgl&gt; ...
+## $ financialinstitution__capitecbank                                        &lt;lgl&gt; ...
+## $ financialinstitution__discovery                                          &lt;lgl&gt; ...
+## $ `financialinstitution__firstnationalbank(fnb)`                           &lt;lgl&gt; ...
+## $ financialinstitution__investecbank                                       &lt;lgl&gt; ...
+## $ financialinstitution__nedbank                                            &lt;lgl&gt; ...
+## $ `financialinstitution__postbank/posbank`                                 &lt;lgl&gt; ...
+## $ financialinstitution__standardbank                                       &lt;lgl&gt; ...
+## $ `financialinstitution__ubank/tebabank`                                   &lt;lgl&gt; ...
+## $ financialinstitution__wesbank                                            &lt;lgl&gt; ...
+## $ financialinstitution__otherbanks                                         &lt;lgl&gt; ...
+## $ `financialinstitution__other(notspecified)`                              &lt;lgl&gt; ...
+## $ `financialinstitution__otherfinancialinstitution(notspecified)`          &lt;lgl&gt; ...</code></pre>
+<p>Nice! Its maybe worth noting that I’ve been a bit inconsistent in that I’ve removed white-space in the column_names, but I’ve been happy to leave in brackets or dashes. I’m happy with this for now, but maybe later I’ll decide to either not handle whitespace at all, or to handle all characters that shouldn’t appear in a column name. Right now, the user can get rid of brackets if they want by using either <em>gsub()</em> or <em>make.names</em>.</p>
+</div>
+</div>
+<div id="bringing-it-all-together" class="section level2">
+<h2>Bringing it all together</h2>
+<p>Let’s create a final converted dataset using these functions just to show how easy it is. Lets have a look at the unformatted version again:</p>
+<pre class="r"><code>glimpse(df.amps)</code></pre>
+<pre><code>## Observations: 51,168
+## Variables: 6
+## $ source &lt;chr&gt; &quot;amps2015b&quot;, &quot;amps2015b&quot;, &quot;amps2015b&quot;, &quot;amps2015b&quot;, &quot;am...
+## $ r5609  &lt;chr&gt; &quot;1&quot;, &quot;2&quot;, &quot;2&quot;, &quot;2&quot;, &quot;2&quot;, &quot;1&quot;, &quot;2&quot;, &quot;2&quot;, &quot;4&quot;, &quot;2&quot;, &quot;2&quot;, ...
+## $ r5235  &lt;chr&gt; &quot;9&quot;, &quot;9&quot;, &quot;5&quot;, &quot;5&quot;, &quot;5&quot;, &quot;1&quot;, &quot;1&quot;, &quot;5&quot;, &quot;1&quot;, &quot;9&quot;, &quot;1&quot;, ...
+## $ m5210  &lt;chr&gt; &quot;4&quot;, &quot;4&quot;, &quot;04&quot;, &quot;4&quot;, &quot;4&quot;, &quot;4&quot;, &quot;4&quot;, &quot;4&quot;, &quot;4&quot;, &quot;4&quot;, &quot;4&quot;,...
+## $ m9125  &lt;chr&gt; &quot;9&quot;, &quot;9&quot;, &quot;5&quot;, &quot;5&quot;, &quot;5&quot;, &quot;1&quot;, &quot;1&quot;, &quot;5&quot;, &quot;1&quot;, &quot;9&quot;, &quot;1&quot;, ...
+## $ m9126  &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,...</code></pre>
+<p>and now the formatted version:</p>
+<pre class="r"><code>formatted_amps&lt;-cbind(
+  fn_label_radio_buttons(c(&#39;r5609&#39;,&#39;r5235&#39;), &#39;source&#39;,df.amps,df.translate),
+  fn_extract_checkboxes(c(&quot;m5210&quot;, &quot;m9125&quot;,&quot;m9126&quot;), &#39;source&#39;, df.amps, df.translate))</code></pre>
+<pre><code>## Warning in bind_rows_(x, .id): Unequal factor levels: coercing to character</code></pre>
+<pre><code>## Warning in bind_rows_(x, .id): binding character and factor vector,
+## coercing into character vector
+
+## Warning in bind_rows_(x, .id): binding character and factor vector,
+## coercing into character vector</code></pre>
+<pre class="r"><code>glimpse(formatted_amps)</code></pre>
+<pre><code>## Observations: 51,168
+## Variables: 21
+## $ marital_status                                                           &lt;fct&gt; ...
+## $ main_bank_for_all_banking_transactions                                   &lt;chr&gt; ...
+## $ `financialservicespersonallyhave__homeloan/mortgagebond`                 &lt;lgl&gt; ...
+## $ financialservicespersonallyhave__vehiclefinancewithafinancialinstitution &lt;lgl&gt; ...
+## $ financialservicespersonallyhave__personalloan                            &lt;lgl&gt; ...
+## $ financialservicespersonallyhave__noneofthese                             &lt;lgl&gt; ...
+## $ financialservicespersonallyhave__mainbank                                &lt;lgl&gt; ...
+## $ financialinstitution__absa                                               &lt;lgl&gt; ...
+## $ financialinstitution__africanbank                                        &lt;lgl&gt; ...
+## $ financialinstitution__capitecbank                                        &lt;lgl&gt; ...
+## $ financialinstitution__discovery                                          &lt;lgl&gt; ...
+## $ `financialinstitution__firstnationalbank(fnb)`                           &lt;lgl&gt; ...
+## $ financialinstitution__investecbank                                       &lt;lgl&gt; ...
+## $ financialinstitution__nedbank                                            &lt;lgl&gt; ...
+## $ `financialinstitution__postbank/posbank`                                 &lt;lgl&gt; ...
+## $ financialinstitution__standardbank                                       &lt;lgl&gt; ...
+## $ `financialinstitution__ubank/tebabank`                                   &lt;lgl&gt; ...
+## $ financialinstitution__wesbank                                            &lt;lgl&gt; ...
+## $ financialinstitution__otherbanks                                         &lt;lgl&gt; ...
+## $ `financialinstitution__other(notspecified)`                              &lt;lgl&gt; ...
+## $ `financialinstitution__otherfinancialinstitution(notspecified)`          &lt;lgl&gt; ...</code></pre>
+</div>
+<div id="conclusions-and-criticisms" class="section level2">
+<h2>Conclusions and Criticisms</h2>
+<p>The key takeout of this blog is that the functions <em>fn_label_radio_buttons</em> and <em>fn_extract_checkboxes</em> can be used to convert raw AMPS data into something that’s analytics-friendly in R. It account for different data labelling between versions of the AMPS survey as well.</p>
+<p>One criticism of these functions on reflection, is I assume that the amps dataset contains a column corresponding to <em>db_table</em> in the translation table. This column doesn’t actually exist and it’s something I created myself in the SQL scripts, but I don’t see a way around it when working with multiple years of AMPS at once to figure out which entry in the translations table to use.</p>
+<p>Another criticism is that, when the levels in different years of AMPS data don’t match exactly, those columns are coerced into character instead of factor. I could handle this a bit more explicitly to avoid this behaviour.</p>
+<p>A piece of outstanding work is that I should write a wrapper for the radio and checkbox functions. Then the user could only call one function, specifying which columns are radio_buttons and which are checkboxes and the wrapper could handle each accordingly.</p>
+</div>
+</div>

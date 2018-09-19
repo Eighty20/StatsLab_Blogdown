@@ -5,7 +5,6 @@ date: 2018-09-18
 output:
   blogdown::html_page:
     toc: true
-    highlight: tango/
 slug: AMPS_data_wrangling
 categories:
   - R

@@ -1,67 +1,21 @@
 ---
-title: "Detailed_Documentation"
+title: "Kieron uplift method"
 author: "Kieron van de Laar"
 date: "9/10/2018"
 output: html_document
 ---
 
-Include new variable in the matching:
-Get from Marlan.
-
-Look at the wide data.
-
 ```{}
 ```
 
-# Vitality WW-uplift Step-by-step internal Documentation<br/>
-The purpose of this R project is to calculate the uplift that the vitality healthy foods rewards programme has had on Woolworths Foods.<br/>
-In order to do this, we need to calculate the spend of the "treatment" group, before and after joining, compared to the "control" group.<br/>
+# Measuring uplift via genetic matching<br/>
+
+The purpose of this rmd is to explore the method of measuring uplift that slots into Stefan's methodology flow chart at [here is a spot]: 
 
 Since there was no experiment designed, there is no actual control group. One can, however, be approximated. <br/>
 
-By matching "vitality" customers (customers who have joined the programme) to "non-vitality" customers, we can find customers who are like those who joined, person-to-person, to act as a control group. Any divergence in the spend of the control group (customers matched to vitality customers) and the treatment group (vitality customers) will be considered uplift, after accounting for differences beforehand (since matching isn't perfect).<br/>
+By matching "treated" customers (customers who have joined the programme) to "non-treated" customers, we can find customers who are like those who joined, person-to-person, to act as a control group. Any divergence in the spend of the control group ("non-treated" customers matched to "treated" customers) and the treatment group ("treated" customers) will be considered uplift, after accounting for differences beforehand (since matching isn't perfect).<br/>
 
-This document is based on the process documentation, which provides a high level description of each script in the ww_vitality_uplift process. This document goes into more detail, and is intended to be used alongside the scripts themselves to assist anyone new to the process in the running of the process.<br/>
-
-## Notes on how the process can be improved
-
-* Currently customers are matched using a genetic matching algorithm. A randomforest matching algorithm may be faster and more accurate
-* Other that, many of the individual scripts could have a few minor changes to improve their performance. These are noted in their respective sections
-    - This includes using fastMFA to run the MFA more quickly
-    - This also includes potentially using Stefan's widening script to speed up script 02b.
-        + Unfortunately Stefan's method does not include the interactions so I don't think it'll work
-* Throughout the process, keep tabs on customer counts. If customers are ever lost, make sure we can justify why
-
-## Glossary
-
-* Loyal - Spent at least once a month for the last 6 months, and if a vitality customer also spent within the 3 months before joining vitality
-* Infrequent - Everyone else
-* Alien transaction - An alien transaction is a transaction that did not identify itself, but which has subsequently been identified using credit card matching
-* Alien customer - This is a customer who did not identify themselves for a month (out of the three for the pre-period), even though they did spend (found by credit card matching)
-    - This was done in order to separate out customers whose spend we are confident in, and customers who are shaky
-* Non-alien transation - A non-alien transaction is a transaction that identified itself with a WW/vitality card
-* Non-alien customer - a customer who identifies themselves
-* Cohort - a group of customers, grouped by the calendar month in which they joined the vitality programme
-* Batch - Customers are split into batches to make the process easier to run. A batch is one of:
-    + alienloyal
-    + nonalienloyal
-    + alientotal
-    + nonalientotal
-* Customer_type - one of:
-    + alien - defined above
-    + baseline - Does not fall into other categories
-    + cash-only - only spent cash
-    + no-history - No spend history in the last 12 months
-    + no-preperiod - spend history in the last 12 months, but not in the last 3 months
-
-## Final customer mapping
-
-The groupings that are used for the presentation to the client are based on the analytical groupings throughout this process. To see the mapping from the analytical groups to the reporting groups, please see: <br/>
-  "~T:\t-drive\Clients\Woolworths\2014-05-28_Vitality_uplift\CY2017_Analysis\mapping\customer_group_mapping.xlsx"
-          
-Futher note:<br/>
-In the last run, the "alien" customers should have been included. They were not included because they ran out of time and so they were estimated. <br/>
-In the last run, the infrequent baseline customers (within batch "Non_alien_total") should have been included as well.
 
 ```{}
 ```

@@ -60,7 +60,7 @@ When measuring take up or conversion rates we define 4 general responses:
 
 We can illustrate this using:  
 
-![](/Pictures/types_of_response.png)
+![](/Pictures/Uplift/types_of_response.png)
 
 ## Methodologies and use cases
 

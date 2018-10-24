@@ -62,6 +62,26 @@ We can illustrate this using:
 
 ![](/Pictures/Uplift/types_of_response.png)
 
+We do not want to measure lift on cases where they would have converted anyway. We also wouldn't want to target people who will respond negatively.  
+
 ## Methodologies and use cases
 
-###
+### TFG campaign analytics
+
+Some campaign performance analytics were performed for TFG on their in-store campaigns. These campaigns did not have any outbound advertising or targeting. All adverts were shown instore only and discounts were given at point of sale.
+
+Analysis was performed post response ons selected stores and brands.
+
+It was decided that uplift would be measured on a basket level to estimate how much the campaign has pushed instore basket value.
+
+A Pre-Post measurement methodology was decided. To overcome some of the drawbacks of this approach a control group was established. Baskets were identified based on qualifying criteria like the tender type for payment method.
+
+A design matrix was setup for each day over the campaign period starting with a pre-period. Using a GLS model the basket value was predicted over the period of the campaign for both groups.
+
+By further predicting the treatment group assuming no treatment uolift was measured using this counter factual.
+
+### Standard Bank
+
+Product benefit analysis was measured using established control groups. 
+
+A GLM was fit on the data predicting the revenue response of interest. Using the trained model the expected effect size was estimated for applying the treatment to each business 

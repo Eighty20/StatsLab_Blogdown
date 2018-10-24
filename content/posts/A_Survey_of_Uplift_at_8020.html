@@ -14,9 +14,15 @@ tags:
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
 <p>In consumer analytics it is very important to measure the effectiveness of your marketing and campaign management.</p>
-<p><img src="/Pictures/Uplift/main.png" /></p>
+<div class="figure">
+<img src="/Pictures/Uplift/main.png" />
+
+</div>
 <p>Unfortunately each company may have a different oppertunity-infrastructure proposition. Some may run product campaigns. Others run loyalty programs for customers. Some programs have already been run or outbound communication has already been sent out before it was decided to run performance analytics.</p>
-<p><img src="/Pictures/Uplift/secondary.jpg" /></p>
+<div class="figure">
+<img src="/Pictures/Uplift/secondary.jpg" />
+
+</div>
 <p>All of these variations make measuring uplift quite complicated. In particular different teams on different projects will have significantly different strategies for measuring uplift.</p>
 <p>The purpose of this blog post is to collate information on the different uplift methodologies employed and the use cases for those. Some suggestions and recommendations are also made regarding the different methodologies.</p>
 </div>
@@ -55,11 +61,26 @@ tags:
 <li>The Do Not Disturbs or Sleeping Dogs : customers who are less likely to respond because they were targeted</li>
 </ul>
 <p>We can illustrate this using:</p>
-<p><img src="/Pictures/Uplift/types_of_response.png" /></p>
+<div class="figure">
+<img src="/Pictures/Uplift/types_of_response.png" />
+
+</div>
+<p>We do not want to measure lift on cases where they would have converted anyway. We also wouldn’t want to target people who will respond negatively.</p>
 </div>
 <div id="methodologies-and-use-cases" class="section level2">
 <h2>Methodologies and use cases</h2>
-<div id="section" class="section level3">
-<h3></h3>
+<div id="tfg-campaign-analytics" class="section level3">
+<h3>TFG campaign analytics</h3>
+<p>Some campaign performance analytics were performed for TFG on their in-store campaigns. These campaigns did not have any outbound advertising or targeting. All adverts were shown instore only and discounts were given at point of sale.</p>
+<p>Analysis was performed post response ons selected stores and brands.</p>
+<p>It was decided that uplift would be measured on a basket level to estimate how much the campaign has pushed instore basket value.</p>
+<p>A Pre-Post measurement methodology was decided. To overcome some of the drawbacks of this approach a control group was established. Baskets were identified based on qualifying criteria like the tender type for payment method.</p>
+<p>A design matrix was setup for each day over the campaign period starting with a pre-period. Using a GLS model the basket value was predicted over the period of the campaign for both groups.</p>
+<p>By further predicting the treatment group assuming no treatment uolift was measured using this counter factual.</p>
+</div>
+<div id="standard-bank" class="section level3">
+<h3>Standard Bank</h3>
+<p>Product benefit analysis was measured using established control groups.</p>
+<p>A GLM was fit on the data predicting the revenue response of interest. Using the trained model the expected effect size was estimated for applying the treatment to each business</p>
 </div>
 </div>

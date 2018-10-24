@@ -1,0 +1,1403 @@
+---
+title: "Detailed_Documentation"
+author: "Kieron van de Laar"
+date: "9/10/2018"
+output: html_document
+---
+
+Include new variable in the matching:
+Get from Marlan.
+
+Look at the wide data.
+
+```{}
+```
+
+# Vitality WW-uplift Step-by-step internal Documentation<br/>
+The purpose of this R project is to calculate the uplift that the vitality healthy foods rewards programme has had on Woolworths Foods.<br/>
+In order to do this, we need to calculate the spend of the "treatment" group, before and after joining, compared to the "control" group.<br/>
+
+Since there was no experiment designed, there is no actual control group. One can, however, be approximated. <br/>
+
+By matching "vitality" customers (customers who have joined the programme) to "non-vitality" customers, we can find customers who are like those who joined, person-to-person, to act as a control group. Any divergence in the spend of the control group (customers matched to vitality customers) and the treatment group (vitality customers) will be considered uplift, after accounting for differences beforehand (since matching isn't perfect).<br/>
+
+This document is based on the process documentation, which provides a high level description of each script in the ww_vitality_uplift process. This document goes into more detail, and is intended to be used alongside the scripts themselves to assist anyone new to the process in the running of the process.<br/>
+
+## Notes on how the process can be improved
+
+* Currently customers are matched using a genetic matching algorithm. A randomforest matching algorithm may be faster and more accurate
+* Other that, many of the individual scripts could have a few minor changes to improve their performance. These are noted in their respective sections
+    - This includes using fastMFA to run the MFA more quickly
+    - This also includes potentially using Stefan's widening script to speed up script 02b.
+        + Unfortunately Stefan's method does not include the interactions so I don't think it'll work
+* Throughout the process, keep tabs on customer counts. If customers are ever lost, make sure we can justify why
+
+## Glossary
+
+* Loyal - Spent at least once a month for the last 6 months, and if a vitality customer also spent within the 3 months before joining vitality
+* Infrequent - Everyone else
+* Alien transaction - An alien transaction is a transaction that did not identify itself, but which has subsequently been identified using credit card matching
+* Alien customer - This is a customer who did not identify themselves for a month (out of the three for the pre-period), even though they did spend (found by credit card matching)
+    - This was done in order to separate out customers whose spend we are confident in, and customers who are shaky
+* Non-alien transation - A non-alien transaction is a transaction that identified itself with a WW/vitality card
+* Non-alien customer - a customer who identifies themselves
+* Cohort - a group of customers, grouped by the calendar month in which they joined the vitality programme
+* Batch - Customers are split into batches to make the process easier to run. A batch is one of:
+    + alienloyal
+    + nonalienloyal
+    + alientotal
+    + nonalientotal
+* Customer_type - one of:
+    + alien - defined above
+    + baseline - Does not fall into other categories
+    + cash-only - only spent cash
+    + no-history - No spend history in the last 12 months
+    + no-preperiod - spend history in the last 12 months, but not in the last 3 months
+
+## Final customer mapping
+
+The groupings that are used for the presentation to the client are based on the analytical groupings throughout this process. To see the mapping from the analytical groups to the reporting groups, please see: <br/>
+  "~T:\t-drive\Clients\Woolworths\2014-05-28_Vitality_uplift\CY2017_Analysis\mapping\customer_group_mapping.xlsx"
+          
+Futher note:<br/>
+In the last run, the "alien" customers should have been included. They were not included because they ran out of time and so they were estimated. <br/>
+In the last run, the infrequent baseline customers (within batch "Non_alien_total") should have been included as well.
+
+```{}
+```
+
+# Data
+
+## 03-Process_data
+
+#### Input tables
+
+* basket (vsql) (grain: transaction/item)
+    - primary_customer_id
+        + Where customer_no exists, this is customer_no
+        + Where customer_no does not exist, this is the card payment token
+    - customer_no_original
+        + customer_no given by ww
+    - store
+    - till_no
+    - tran_date
+    - tran_time
+    - tran_type
+    - dept_no
+    - item_tran_amt
+    - item_tran_amt_exvat
+    - discount_amount
+    - discount_amount_exvat
+    - trans_no
+    - line_item
+    - tradingweek
+    - tradingyear
+    - tran_id
+    - vitality_cust_ind
+    - vitality_uda_value
+    - item
+    - customer_no
+        + if customer_no_original is populated, customer_no = customer_no_original
+        + if customer_no_original is not populated, customer_no is estimated where possible using credit card matching
+            + Ensure that in this case there is an alien flag. 
+            + There are a small number of customers for whom this is not true
+    - alien
+    - Further note that certain exclusions need to be made:
+        + Voids
+        + Transactions from Engen and Now Now
+* calendar (vsql) (grain: calendar date)
+    - calendar_date
+    - fin_day
+    - fin_week
+    - fin_year
+    - calendar_year
+    - calendar_year_month
+    - fin_month
+    - fin_half
+    - day_name
+    - day_short_name
+    - month_name
+    - month_short_name
+    - old_trading_year
+    - fin_week_ly
+    - fin_year_ly
+    - old_season
+    - old_season_name
+    - start_this_week
+    - end_this_week
+    - start_this_mnth
+    - end_this_mnth
+    - fin_quarter
+    - date_last_updated
+    - season_code
+    - season_name
+* customer_cards (vsql) (grain: customer/loyalty/tender_no)
+    - primary_customer_id
+    - customer_no
+    - ww_loyalty
+    - ext_loyalty
+    - tender_no
+* customer_data (vsql) (grain: customer/product)
+    - customer_no
+    - join_date
+    - product_code_no
+    - product_join_date
+    - age
+    - gender_code
+    - race
+    - province
+    - food_segment
+    - non_food_segment
+* emails
+    - email
+* lifestyle (vsql) (grain: customer/segment)
+    - primary_account_no
+    - fin_year_no
+    - fin_month_no
+    - segment_no
+    - segment_type
+    - date_last_updated
+    - Further note:
+        + Previously, lifestyle segments were done based on the primary_customer_id, given by data_warehouse.
+        + Currently, data comes from POS, and so does not include the primary customer identifier. This means that the data does not include lifestyle segments for customers without a customer_no or casual customers.
+        + **Keep this in mind while running the code**
+        + It will mostly effect the data processing side of things, though it may increase the number of NA columns later.
+* portfolio (vsql) (grain: customer/product)
+    - customer_no
+    - product_code_no
+    - portfolio_status
+    - portfolio_create_date
+    - portfolio_close_date
+    - date_last_updated
+* race (vsql) (grain: customer)
+    - c2_customer_no
+    - race
+    - last_update_date
+* tender (vsql) (grain: customer/transaction)
+    - primary_account_no
+    - customer_no
+    - customer_no_original
+    - store
+    - tran_date
+    - tran_time
+    - tender_trans_type
+    - tender_amt
+    - alien
+    - tran_id
+    - card_number
+    - Further note: Tender amount doesn't always match basket amount, because tender may include non-food items
+* department (vsql) (grain: department)
+    - department
+    - department_name
+    - subgroup
+    - subgroup_name
+    - group_id
+    - group_name
+    - business_unit
+    - business_unit_name
+    - record_status
+    - date_inserted
+    - last_updated_date
+* location (vsql) (grain: store)
+    - location
+    - location_name
+    - county_code
+    - province_code
+    - open_date
+    - region_name
+    - area_name
+    - active_store_ind
+    - record_status
+    - date_inserted
+    - last_updated_date
+
+#### Output tables
+
+* aliens (vsql) (grain: year/customer)
+    - year
+    - primary_customer_id
+        + Where customer_no exists, this is customer_no
+        + Where customer_no does not exist, this is the card payment token
+    - customer_no
+    - card_number
+        + number of the card used in the transaction
+    - wwtoken
+        + tokenised version of the card used to identify the spend
+    - count
+        + Number of transactions in which a customer/card pair have appeared
+* outp_analysis_data (vsql) (grain: customer)
+    - customer_no 
+    - vitality
+        + 1 = Anyone who has ever been a vitality member before
+        + 0 = Anyone who has never been a vitality member
+    - cohort
+    - wrewards before
+        + 1 = Has had at least one of products '18','23','28','30','99' before joining vitality
+        + 0 = Did not have any of '18','23','28','30','99' before joining vitality 
+            + 18 = Woolworths Rewards program
+            + 23 = WFS Loyalty Program
+            + 28 = WRewards Swipe Card
+            + 30 = WRewards Pop-out Card
+            + 99 = Woolworths Littleworld
+    - customer_type_id
+    - trans_freq_id
+    - Further note that this will have 3 columns added to it over the course of the analysis. (which changes the grain to customer/control)
+        + batch
+        + control
+        + weight
+* outp_customer_data (vsql) (grain: customer/product)
+    - customer_no
+    - join_date
+    - product_code_no
+    - product_join_date
+    - age
+    - gender_code
+    - race
+    - province
+    - food_segment
+* outp_spend_data (vsql) (grain: customer/month/day/time/province/type)
+    - customer_no
+    - spend_month
+    - spend_day
+    - spend_time
+    - alien
+    - province_code
+    - spend_type 
+    - item_sum
+    - discount_sum
+    - spend_sum 
+    - store_counts
+    - visits_count
+    - non_cash_spend
+
+```{}
+```
+
+### 02-update_alien_tenderv2.sql
+
+#### Input
+
+* tender (vsql) (grain: customer/transaction)
+    - primary_account_no
+    - customer_no
+    - customer_no_original
+    - store
+    - tran_date
+    - tran_time
+    - tender_trans_type
+    - tender_amt
+    - alien
+    - tran_id
+    - card_number
+    - Further note: Tender amount doesn't always match basket amount, because tender may include non-food items
+    
+#### Output
+
+Updates to the same table
+
+#### Estimated run time
+
+Cleaning tender table: roughly 25 minutes <br/>
+Updating the tender table: roughly 18, made up of those below <br/>
+
+Step 1: roughly 8 minutes <br/>
+Step 2: roughly 2 minutes <br/>
+Step 3, first update: roughly 2 minutes <br/>
+Step 3, second update: roughly 2 minutes <br/>
+Step 3, third update: roughly 2 minutes <br/>
+Step 3, fourth update: roughly 2 minutes <br/>
+
+#### Purpose
+
+To update the tender table:
+
+* Assign 'alien' status to unidentified transactions
+* Use credit card matching rules to identify transactions that were not identified by the customers themselves
+
+#### Method
+
+Go through the script **Data_processing/03-Process_data/02-update_alien_tenderv2.sql**<br/>
+**DO NOT RUN THIS STRAIGHT UP AS A SCRIPT**. This is a series of queries, that should be run according to the comments <br/>
+This will update aliens, create the aliens table, identify what credit card transactions can be identified, and then validate all the updates made.
+<br/>
+These validations should match 02-Data-checks/alienupdate_validations.txt <br/>
+<br/>
+This script first renames the current aliens table. This allows us to save new alien data without overwriting the old data. <br/>
+Next we need to clean the tender table so that we can accurately assign the new aliens. We do this by setting 'alien = null' and 'customer_no = customer_no_original' for all entries in the tender table. This last one sets customer_no to the customer_no we received from Woolworths where it exists, and null otherwise. <br/>
+
+We can now define all unidentified transactions as alien transactions. This means everywhere that there was no customer_no_original (the customer_no from Woolworths) the transaction was unidentified, and therefore alien set to TRUE. <br/>
+
+After this there are 4 queries just meant to quickly and easily confirm that the alien flag is correctly placed. <br/>
+
+The next step is to create an aliens table. This name is misleading, it basically contains every customer_no/credit card combination, by year, with a count of how often each pair is seen. This will be used to help match credit cards to customers to identify some of the alien transactions. <br/>
+
+Next we update the tender table in 4 stages. In each stage, for each transaction, we assign the customer_no of that transaction to be the customer_no associated with the credit card used according to a rule. Each of the four stages uses its own rules. <br/>
+
+1. For every credit card that is associated with only one customer_no, and associated with that customer_no multiple times. Grab that customer_no.
+2. For every credit card that is associated with only one customer_no, and associated with that customer_no multiple times, within a given year. Grab that customer_no
+3. For every credit card that is associated with multiple customer_nos within a given year, grab the customer_no associated most frequently with that card.
+4. The previous stages will have updated a few customer_nos, and this may have made a few more transactions identifiable. This stage uses the previous updates to find the last few transactions that can still be updated and updates them
+
+Then we run several validations to ensure that the alien flag is still correct, and that the customer_nos haven't gone weird. Use the queries to match the output in 03-Process_data/alienupdate_validations.txt. If it does, then everything is still good.
+
+```{}
+```
+
+### 03-clean_update_basket_alien.sh
+
+#### Input
+
+* basket (vsql) (grain: transaction/item)
+    - primary_customer_id
+        + Where customer_no exists, this is customer_no
+        + Where customer_no does not exist, this is the card payment token
+    - customer_no_original
+        + customer_no given by ww
+    - store
+    - till_no
+    - tran_date
+    - tran_time
+    - tran_type
+    - dept_no
+    - item_tran_amt
+    - item_tran_amt_exvat
+    - discount_amount
+    - discount_amount_exvat
+    - trans_no
+    - line_item
+    - tradingweek
+    - tradingyear
+    - tran_id
+    - vitality_cust_ind
+    - vitality_uda_value
+    - item
+    - customer_no
+        + if customer_no_original is populated, customer_no = customer_no_original
+        + if customer_no_original is not populated, customer_no is estimated where possible using credit card matching
+            + Ensure that in this case there is an alien flag. 
+            + There are a small number of customers for whom this is not true
+    - alien
+    - Further note that certain exclusions need to be made:
+        + Voids
+        + Transactions from Engen and Now Now
+    
+#### Output
+
+Updates to the same table
+
+#### Estimated run time
+
+Hard to say. Was run over the weekend.
+
+#### Purpose
+
+To update the basket table:
+
+* Assign 'alien' status to unidentified transactions
+* Use the identifications found via credit card on the tender table to indentify the related basket transactions
+
+#### Method
+
+Run **Data_processing/03-Process_data/03-clean_update_basket_alien.sh**<br/>
+
+This will:<br/>
+
+* Clean the aliens column
+    - In the same way that the aliens column was cleaned in the tender table in the previous script
+* Clean the customer_no column
+    - In the same way that the customer_no column was cleaned in the tender table in the previous script
+* Update the aliens column
+    - assigning transactions the same alien status they hold in the tender table
+* Update the customer_no column
+    - assigning transactions the same customer_no they hold in the tender table
+    
+This is all done in batches, by year by month. This is because the basket table is stupidly big, and running it straight would take long. Doing it this way means that if it fails part way we don't lose everything.
+
+After this, validate the basket table by running the same validations that were run on the tender table. These are the validations that are found under:<br/>
+"-- step 4 - validations" in **Data_processing/03-Process_data/02-update_alien_tenderv2.sql** <br/>
+When running these validations, remember to edit the queries to validate the basket table and not the tender table.<br/>
+These validations should match 02-Data-checks/alienupdate_validations.txt
+
+
+#### Notes
+
+There is another script **fix_aliens_baskettable.sh** which is designed to fix a particular issue tha Kieron encountered on his run. Only run it if necessary.<br/>
+This error was that there were customer_nos that existed in the basket table but not the tender table, because of this they were not correctly updated. The bash script above will help solve that by manually intervening and updating those particular customer_nos. <br/>
+**error_fixaliensbasket.txt** and **log_file_fixaliensbasket.txt** are the log and error file for this script respectively. They are less important. <br/>
+The run time of this fix is approximately 4 hours. <br/>
+```{}
+```
+
+### 06-add_back_nulled_customers.sql
+
+Just incase some customer_nos were made null (where customer_no_original is not null) in the process of cleaning and updating, it is possible to add them back by running: <br/>
+**06-add_back_nulled_customers.sql** <br/>
+<br/>
+
+The validations will indicate whether or not this step is necessary. It is likely unnecessary.
+                  
+```{}
+```
+
+## 04-final_tables
+
+### Summary
+
+This whole process can be run by running **04-final_tables/create_outp_tables.sh**. <br/>
+Below each of the 3 steps are described in more details: <br/>
+
+### 01_Customer_create.sql
+
+#### Input
+
+* basket (vsql) (grain: transaction/item)
+    - primary_customer_id
+        + Where customer_no exists, this is customer_no
+        + Where customer_no does not exist, this is the card payment token
+    - customer_no_original
+        + customer_no given by ww
+    - store
+    - till_no
+    - tran_date
+    - tran_time
+    - tran_type
+    - dept_no
+    - item_tran_amt
+    - item_tran_amt_exvat
+    - discount_amount
+    - discount_amount_exvat
+    - trans_no
+    - line_item
+    - tradingweek
+    - tradingyear
+    - tran_id
+    - vitality_cust_ind
+    - vitality_uda_value
+    - item
+    - customer_no
+        + if customer_no_original is populated, customer_no = customer_no_original
+        + if customer_no_original is not populated, customer_no is estimated where possible using credit card matching
+            + Ensure that in this case there is an alien flag. 
+            + There are a small number of customers for whom this is not true
+    - alien
+    - Further note that certain exclusions need to be made:
+        + Voids
+        + Transactions from Engen and Now Now
+* lifestyle (vsql) (grain: customer/segment)
+    - primary_account_no
+    - fin_year_no
+    - fin_month_no
+    - segment_no
+    - segment_type
+    - date_last_updated
+    - Further note:
+        + Previously, lifestyle segments were done based on the primary_customer_id, given by data_warehouse.
+        + Currently, data comes from POS, and so does not include the primary customer identifier. This means that the data does not include lifestyle segments for customers without a customer_no or casual customers.
+        + **Keep this in mind while running the code**
+        + It will mostly effect the data processing side of things, though it may increase the number of NA columns later.
+* portfolio (vsql) (grain: customer/product)
+    - customer_no
+    - product_code_no
+    - portfolio_status
+    - portfolio_create_date
+    - portfolio_close_date
+    - date_last_updated
+* customer (vsql) (grain: customer/product) (view on the customer_data table)
+    - customer_no
+    - join_date
+    - product_code_no
+    - product_join_date
+    - age
+    - gender_code
+    - race
+    - province
+    - food_segment
+    - non_food_segment
+    
+#### Output
+
+* outp_customer_data (vsql) (grain: customer/product)
+    - customer_no
+    - join_date
+    - product_code_no
+    - product_join_date
+    - age
+    - gender_code
+    - race
+    - province
+    - food_segment
+    
+#### Estimated run time
+
+Approximately 2 min.
+
+#### Purpose
+
+To create the aggregate customer data table that makes the analysis easier. 
+
+#### Method
+
+Run **04-final_tables/01_Customer_create/sql** <br/>
+<br/>
+This grabs the demographics from the customer table. <br/>
+It also grabs information about what woolworths products (vitality, wrewards, myschool etc) the customer is subscribed to. <br/>
+It also finds the first date a customer subscribed to any WW product. As well as maintaining the dates the customer subscribed to each. <br/>
+It uses the Date of Birth to calculate the customers age. <br/>
+It collects their gender. <br/>
+It uses the postal codes to assign provinces to each customer. <br/>
+It then puts these together into a single table to summarise the customer_data. <br/>
+
+```{}
+```
+
+### 02_Spend_create.sql
+
+#### Input
+
+* basket (vsql) (grain: transaction/item)
+    - primary_customer_id
+        + Where customer_no exists, this is customer_no
+        + Where customer_no does not exist, this is the card payment token
+    - customer_no_original
+        + customer_no given by ww
+    - store
+    - till_no
+    - tran_date
+    - tran_time
+    - tran_type
+    - dept_no
+    - item_tran_amt
+    - item_tran_amt_exvat
+    - discount_amount
+    - discount_amount_exvat
+    - trans_no
+    - line_item
+    - tradingweek
+    - tradingyear
+    - tran_id
+    - vitality_cust_ind
+    - vitality_uda_value
+    - item
+    - customer_no
+        + if customer_no_original is populated, customer_no = customer_no_original
+        + if customer_no_original is not populated, customer_no is estimated where possible using credit card matching
+            + Ensure that in this case there is an alien flag. 
+            + There are a small number of customers for whom this is not true
+    - alien
+    - Further note that certain exclusions need to be made:
+        + Voids
+        + Transactions from Engen and Now Now
+* department (vsql) (grain: department)
+    - department
+    - department_name
+    - subgroup
+    - subgroup_name
+    - group_id
+    - group_name
+    - business_unit
+    - business_unit_name
+    - record_status
+    - date_inserted
+    - last_updated_date
+* location (vsql) (grain: store)
+    - location
+    - location_name
+    - county_code
+    - province_code
+    - open_date
+    - region_name
+    - area_name
+    - active_store_ind
+    - record_status
+    - date_inserted
+    - last_updated_date
+* tender (vsql) (grain: customer/transaction)
+    - primary_account_no
+    - customer_no
+    - customer_no_original
+    - store
+    - tran_date
+    - tran_time
+    - tender_trans_type
+    - tender_amt
+    - alien
+    - tran_id
+    - card_number
+    - Further note: Tender amount doesn't always match basket amount, because tender may include non-food items
+    
+#### Output
+
+* outp_spend_data (vsql) (grain: customer/month/day/time/province/type)
+    - customer_no
+    - spend_month
+    - spend_day
+    - spend_time
+    - alien
+    - province_code
+    - spend_type 
+    - item_sum
+    - discount_sum
+    - spend_sum 
+    - store_counts
+    - visits_count
+    - non_cash_spend
+    
+#### Estimated run time
+
+Run overnight. That is plenty time for the script.
+
+#### Purpose
+
+The purpose of this script is to summarise the transactional data by some key descriptors. <br/>
+This will make the analysis much easier to do. <br/>
+
+#### Method
+
+Run script **04-final_tables/02_Spend_create.sql** to create the outp_spend_table. <br/>
+<br/>
+This grabs customer_no, store, tran_date, tran_time, dept_no, item_tran_amt, discount_amount from ww.basket. <br/>
+When grabbing item_tran_amt it accounts for the discount and includes the discount into the item_tran_amt. <br/>
+Then it grabs only the Foods departments from the department table, and joins it. <br/>
+It also grabs the location information of each store, as long as they aren't ENGEN stores and joins that on too. <br/>
+From this group of information, it aggregates it by counting the number number of items, summing the discount, and summing the item_tran amount for each customer_no, store, tran_date, tran_time, spend_type, and province_code combination.<br/>
+This gives us the number of items, total amount of discount and total amount paid for each transaction from the ww.basket table, along with some extra information about the transaction. <br/>
+<br/>
+We also grab specifically non-cash spend from the tender table. <br/>
+Tran_date is then broken into several parts. Day of week, time of day (morning, afternoon etc) and month. <br/>
+We end up with spend data summarised by:
+
+* Customer_no
+* Day of week
+* Time of day
+* Month
+* Province
+* Spend type
+* Alien
+* Number of stores
+* Number of visits
+
+#### Notes
+
+Some stores did not capture transaction time. All of those transactions were recorded as midnight, which gave midnight an extreme spike in sales. As such, we more accurately assign midnight to an "unknown" spend time of day. <br/>
+
+```{}
+```
+
+### 03_Analysis_create.sql
+
+#### Input
+
+* outp_customer_data (vsql) (grain: customer/product)
+    - customer_no
+    - join_date
+    - product_code_no
+    - product_join_date
+    - age
+    - gender_code
+    - race
+    - province
+    - food_segment
+* outp_spend_data (vsql) (grain: customer/month/day/time/province/type)
+    - customer_no
+    - spend_month
+    - spend_day
+    - spend_time
+    - alien
+    - province_code
+    - spend_type 
+    - item_sum
+    - discount_sum
+    - spend_sum 
+    - store_counts
+    - visits_count
+    - non_cash_spend
+
+#### Output
+
+* outp_analysis_data (vsql) (grain: customer)
+    - customer_no 
+    - vitality
+        + 1 = Anyone who has ever been a vitality member before
+        + 0 = Anyone who has never been a vitality member
+    - cohort
+    - wrewards before
+        + 1 = Has had at least one of products '18','23','28','30','99' before joining vitality
+        + 0 = Did not have any of '18','23','28','30','99' before joining vitality 
+            + 18 = Woolworths Rewards program
+            + 23 = WFS Loyalty Program
+            + 28 = WRewards Swipe Card
+            + 30 = WRewards Pop-out Card
+            + 99 = Woolworths Littleworld
+    - customer_type_id
+    - trans_freq_id
+    - Further note that this will have 3 columns added to it over the course of the analysis. (which changes the grain to customer/control)
+        + batch
+        + control
+        + weight
+        
+#### Estimated run time
+
+Not a clue under the sun
+
+#### Purpose
+
+This script aggregates all the data into a very easily analysed form.
+
+#### Method
+
+Run script **04-final_tables/03_Analysis_create.sql** to create the outp_analysis_table. <br/>
+This script grabs customer_no and then creates a number of fields based on outp_customer_data and outp_spend_data:
+
+* vitality
+    - if a customer ever joined the vitality program then 1 else 0
+* cohort
+    - The date the customer joined the vitality program
+* wrewards_before
+    - 1 if the customer joined a wrewards program at least 3 months before joining vitality
+* customer_type_id
+    - alien if the customer is alien
+    - baseline if the customer is not an alien and did spend in the 3 months prior to joining the vitality program
+    - cash_only if the customer did not spend in the 3 months prior to joining and has only spent cash
+    - no_history if there is no spend history in the last 12 months for the customer
+    - no_preperiod if the customer has spent in the last 12 months but not the last 3
+    - unknown if the customer does not fall into any of these categories. This should remain empty.
+* trans_freq_id
+    - loyal if a customer has spent every month for the last 6 months and did spend in the three months prior to joining the vitality programe.
+    - infrequent if a customer is not loyal
+
+
+#### Notes
+
+Some non-vitality customers were assigned customer_type_ids to match to vitality members. Some of these non-vitality customers ended up not being used in the matching, which left them as a group that looked like they could be used for uplift. Remember this fact and don't use them. <br/>
+These customers are: batch = (blank), customer_type_id = alien/baseline, trans_freq_id = loyal/infrequent. <br/>
+
+```{}
+```
+
+# Analysis
+
+## Script 02a: 02a_Extract_widen_demographics_data.R
+
+### Input:
+
+* ww.outp_customer_data table in (vsql). (grain: customer/product)
+    - customer_no
+    - join_date - This shows the first time we ever see the customer
+    - product_code_no
+    - product_join_date - This shows the date the customer joined a particular product
+    - age
+    - gender_code
+    - race - This is a very badly derived field. It is not reliable. It will be removed.
+    - province
+    - food_segment
+    
+### Output:
+
+An RDS for each cohort that contains a table with columns
+    
+* customer number
+* one-hot encoded on "gender_code", "race", "province", and "food_segment"
+* age
+
+### Save Location 
+
+Output/Customer_data/<br/>
+e.g. Output/Customer_data/customer_data_2013_03_01.rds<br/>
+
+### Estimated run time
+
+Approximately 1 hour
+
+### Purpose
+
+Extract the demographics data from ww.outp_customer_data.<br/>
+Change the form of the data by widening certain variables<br/>
+
+### Method
+
+Grab data for all vitality and non-vitality customers, grouped by cohort<br/>
+Widen (or 1 hot encode) the data on "gender_code", "race", "province", and "food_segment".<br/>
+Remember that the "race" variable should not actually be used.
+
+### Possible improvements
+
+It is possible to edit the outp_customer_data table to improve the process<br/>
+When editing this script for improvement, maybe be explicit in column selections of the sql script<br/>
+DO NOT WIDEN ON RACE. IGNORE RACE. IT IS NOT A RELIABLE FIELD<br/>
+
+```{}
+```
+## Script 02b: 02b_Extract_widen_spend_data.R
+
+### Input:
+  
+* ww.outp_spend_data table (vsql) (grain: customer/month/day/time/province/type)  
+    - customer_no
+    - spend_month
+    - spend_day
+    - spend_time
+    - alien
+    - province_code
+    - spend_type
+    - item_sum
+    - discount_sum
+    - spend_sum
+    - store_counts
+    - visits_count
+    - non_cash_spend
+    
+### Output:
+
+An RDS for each cohort that contains a table with columns: <br/>
+
+* customer number
+* Wide data on spend month, spend time of day, spend type (bakery etc), item per visit, spend for visit, spend per item
+    
+### Save Location
+The save location is Output/Spend_data/<br/>
+e.g. Output/Spend_data/spend_data_non_identified_2013_03_01.rds<br/>
+
+### Estimated run time
+This script takes longer than a working day to run. Approximately 16 hours.
+
+### Purpose
+
+Extract the spend data from ww.outp_spend_data<br/>
+Change the form of the data to impose stricter matching conditions by widening and interacting certain variables<br/>
+
+### Method
+
+Set up sql-scripts that grab data for all vitality and non-vitality customers, grouped by cohort<br/>
+
+Once the sql-scripts are set up the function **query_and_process_spend_data()** is run. This does several things:
+
+* Set up the keys and values to spread by
+* Run the sql-query for each cohort. This grabs the data itself for each cohort in long format
+* NA values are filtered out
+* Dates are rounded to the nearest day
+* A row ID is created using the row number
+* An lapply is used to widen the data on each key; "spend_day", "spend_time", and "spend_type".
+    - The values used to spread these keys are “spend_sum”.
+* The data is then also aggregated, each key summed by month, 0 spend_sum is excluded
+* Interesting new columns are added
+    - items_per_visit
+    - per_item_spend
+    - spend_per_visit
+* NA columns are removed
+    - In ww.outp_spend_data the item_sum, discount_sum, spend_sum, and spend_time columns can be null
+    - As a result, when widening on these columns, you will introduce NA columns.
+    - For item_sum, discount_sum, and spend_sum these nulls only occur when spend_type = 'non_cash'
+    - For spend_time, these nulls only occured when tran_time is between '00:00:00' and '00:00:59'
+        + This has been changed so that tran_time between '00:00:00' and '00:00:59' now says "other"
+* The aggregated data is re-widened
+* The finally widened data is saved
+
+### Improvements/Notes
+
+This script is one which may be improved by using Stefan's 02b_new_widening.Rmd.<br/>
+However, Stefan's script does not include the interactions. I am of the opinion that using Stefan's script will not save much time if we have to include the interactions.
+Note that each spend_type in the outp_spend_data table is effectively a department. As such, they already include the non-cash spend at that department. However, there is also a "non-cash" entry in that column. This shows a double counting of the non-cash spend. <br/>
+This is not a massive issue, since the data is widened, and the non-cash spend gets its own column, and only this wide data is used. However, for the sake of having correct tables, this double counting should be corrected. Some options are:
+* Maybe for each spend type (bakery etc) have a cash and non-cash entry. This will increase the number of entries, but create a consistent grain
+* Maybe rather than having an additional record, rather have a column for total, for non-cash, and for cash. This prevents double counting.
+
+In the meantime please ensure that the non-cash column was handled correctly. Did all the departments add up to 1 etc<br/>
+  
+The filter of spend sum != 0 likely dropped customers. This is not necessarily an issue as it would only have dropped customers who did not spend. However, for reconciling purposes we should check whether or not customers were in fact dropped. Throughout the process use customer counts to ensure that customers are not dropped and that when they are dropped it is justified.
+```{}
+```
+
+## Script 03: 03_MFA_genetic_match.R
+
+### Input:
+
+* "Widened" demographic data from Script 02a_Extract_widen_demographics_data.R
+    - e.g. Output/Customer_data/customer_data_2013_03_01.rds
+* "Widened" spend data from Script 02b_Extract_widen_spend_data.R
+    - Output/Spend_data/spend_data_non_identified_2013_03_01.rds
+* ww.outp_analysis_data table (vsql) (grain: customer), which contains:
+    - customer_no
+    - vitality
+    - cohort
+    - wrewards_before
+    - customer_type_id
+    - trans_freq_id
+
+### Output:
+There are several sets of output, one for each section of this script (MFA, gen match, match), and so the output for each section will be listed at the end of that section. <br/>
+
+### Purpose
+
+Run MFA on the widened data <br/>
+Use above created factors in a genetic matching to create a weight matrix <br/>
+Use above weight matrix to match all Vitality members to non-members <br/>
+
+### Method - Preamble
+
+* Define the sequence of cohorts
+* Define how many cores are necessary for the process (dependent on the number of batches)
+* Set up required sql-queries to fetch batch data (the customer numbers and vitality status) for each batch
+* Set up groupings for MFA
+    - customers
+    - treatmentControl
+    - sumSpend
+    - age
+    - demographics
+    - segments
+    - habits
+    - times
+    - baskets
+* Fetch list of RDS files containing demographics and spend data from Scripts 02a and 02b.
+* The sql-scripts are then run together in a vectorised format to get the batch data in a list of databases.
+ <br/>
+
+### Method - Actually doing the MFA
+
+The script loops through the cohorts:
+
+* If the MFA output for a particular cohort already exists, then move on to the next cohort
+* If not, start a parallel loop through the list of dataframes (the batched data)
+    + make a save location for the MFA output for that cohort and batch
+    + For each batch (remember, this is done in parallel) read in the spend data (which is in an RDS from the previous script)
+    + Inner join the batch data (The data collected by batch in the above sql-queries) with the spend data. This filters the spend data to only include customers in the batch, and includes their vitality status
+    + Read in the demographic data
+    + Inner join the demographic data to the data joined above. By now you have (for each batch) a data frame that contains all the spend and demographic data, and vitality status of each customer, in a wide format, within the batch. And only within the batch.
+    + Extract each relevant column for the MFA groupings
+    + Make sure the data we're sending the the MFA function is decent. No infinite rows etc.
+    + Grab a sample of rows from the data, since running MFA on the full data set is too slow
+    + Run the MFA on the sample. Note that this can probably be improved using Hanjo's "fastMFA", we may even be able to use a larger sample
+    + Then for each MFA group we center and scale the data according the MFA results, in two parts.
+    + Lastly, we save the output
+
+#### Output:
+
+An RDS table for each cohort that contains:
+
+* customer_no
+* vitality indicator
+* sum of spend for the month for each of the 3 months prior to the cohorts join
+* 35 columns of MFA output (The matrix for dimension reduction)
+
+#### Save Location
+Output/Batch_data/__ batch_name __/MFA/ <br/>
+e.g. Output/Batch_data/Non_alien_loyal/MFA/MFA_Non_alien_loyal_2013_03_01.rds
+
+#### Estimated Run Time
+The MFA section of this script takes 2-3 hours to run
+<br/>
+
+### Method - Genetic Matching
+Once the MFA is completed, we begin the process of the genetic matching <br/>
+
+This section also loops through the cohorts:
+
+* If the Genmatch output for a particular cohort already exists, then move on to the next cohort
+* If not, start a parallel loop through the list of dataframes (the batched data)
+    + Read in the MFA output
+    + Make sure the data is good. Select only non-infinite rows
+    + Set a sample size for the gen match. The function is too slow to run on the entire dataset, so we use a sample size which is the min of 500 (or some other set size) and the number of observations within the program
+    + Take a sample (of size found above) of vitality members
+    + Take a sample (of size found above) of non-vitality members
+    + Make these two samples a data set, and create the "treatment" variable 
+    + Create the dataframe for the matching: remove the customer number and program flag column (the treatment)
+    + Run the Genmatch function
+    + save the output
+
+#### Output:
+An RDS per cohort that contains:<br/>
+  A list with 5 objects:
+  
+  1) value<br/>
+      1.1. A vector of length 76<br/>
+      1.2. The fit values at the solution. By default, this is a vector of p-values sorted from the smallest to the largest. There will generally be twice as many p-values as there are variables in BalanceMatrix, unless there are dichotomous variables in this matrix. There is one p-value for each covariate in BalanceMatrix which is the result of a paired t-test and another p-value for each non-dichotomous variable in BalanceMatrix which is the result of a Kolmogorov-Smirnov test. Recall that these p-values cannot be interpreted as hypothesis tests. They are simply measures of balance.
+  2) par<br/>
+      2.1. A vector of length 38<br/>
+      2.2. A vector of the weights given to each variable in X.
+  3) Weight.matrix<br/>
+      3.1. A 38x38 matrix<br/>
+      3.2. A matrix whose diagonal corresponds to the weight given to each variable in X. This object corresponds to the Weight.matrix in the Match function.
+  4) matches<br/>
+      4.1. A 500x3 matrix<br/>
+      4.2. A matrix where the first column contains the row numbers of the treated observations in the matched dataset. The second column contains the row numbers of the control observations. And the third column contains the weight that each matched pair is given. These objects may not correspond respectively to the index.treated, index.control and weights objects which are returned by Match because they may be ordered in a different way. Therefore, end users should use the objects returned by Match because those are ordered in the way that users expect.
+  5) ecaliper<br/>
+      5.1. NULL<br/>
+      5.2. The size of the enforced caliper on the scale of the X variables. This object has the same length as the number of covariates in X.
+
+Of these objects within the list, we only care about the weight matrix, since it is what is used for the Matching step.
+
+#### Save Locatiom
+
+Output/Batch_data/__ batch_Name __/Genetic/ <br/>
+e.g. /Output/Batch_data/Non_alien_loyal/Genetic_Non_alien_loyal_2013_03_01.rds <br/>
+
+#### Estimated run time
+
+The genetic matching section of this script takes 1-2 days to run
+<br/>
+
+### Method - Actually matching
+
+Now that we have the matrix that defines the matching algorithm (Weight.matrix), we use it to match all vitality members to non-vitality members.<br/>
+This section also loops through the cohorts:<br/>
+
+* If the matched output for a particular cohort already exists, then move on to the next cohort
+* If not, start a parallel loop through the list of dataframes (the batched data)
+    + Read in the MFA output
+    + Read in the Gen match output
+    + Make sure the MFA output is good. Select only non-infinite rows
+    + Grab the treatment variable
+    + From the MFA output, remove the customer number and the program flag (treatment) column
+    + Run the match on the data using the weighting matrix given by the Genmatch output
+    + Select out the treatment and control groups from the Match
+    + Combine these into a dataframe, 
+    + Save the data
+
+#### Output:
+An RDS per cohort, with 3 columns: <br/>
+
+1. Customer number
+2. Customer number of the customer matched to the customer
+3. Weight for the matching
+
+#### Save Location
+
+Output/Batch_data/__ batchName __/Matched/<br/>
+e.g. /Output/Batch_data/Non_alien_loyal/Matched/Matched_Non_alien_loyal_2013_03_01.rds<br/>
+
+#### Estimated run time
+
+The matching section of this script takes 1-2 hours to run
+<br/>
+
+### Method - Final adjustments
+This matching (and the saving of the data) was done in a function, and therefore separately for each cohort.<br/>
+We now read all that data into memory, and take the data from each cohort and row bind them into a single large dataframe and write that output
+<br/>
+
+#### Output:
+A txt table that contains, for all the cohorts row binded
+
+* customer_no
+* customer number of matched customer
+* weight for matching
+
+#### Save Location
+
+Output/Batch_data/__ batch_name __/<br/>
+e.g. /Output/Batch_data/Non_alien_loyal/Matched_results_Non_alien_loyal.txt<br/>
+
+#### Estimated run time
+
+I don't actually have an estimated run time for this section. It shouldn't be that long.
+<br/>
+
+### Improvements
+    
+**NOTE: customer race is not reliable. Don't match with it. Make sure it isn't used**<br/>
+It might be worth separating the MFA, Genetic Mathching, and Matching sections of this script into 3 separate scripts.<br/>
+Probably worth including the checks. Look at the match quality.<br/>
+
+```{}
+```
+## Script 04: 04_Create_temp_batch_tables_update_analysis_table.R
+
+### Input:
+
+ww.outp_analysis_data table (vsql) (grain: customer)<br/>
+It contains:
+
+* customer_no
+* vitality
+* cohort
+* wrewards_before
+* customer_type_id
+* trans_freq_id
+
+### Output:
+
+Edits to the ww.outp_analysis_data table (vsql) (grain: customer), with columns below (new columns in bold):
+
++ customer_no
++ vitality
++ cohort
++ wrewards_before
++ customer_type_id
++ trans_freq_id
++ **batch**
++ **control**
++ **weight**
+
+After this process, the grain of the ww.outp_analysis_data table (vsql) (grain: customer) changes to ww.outp_analysis_data table (vsql) (grain: customer/control)
+
+### Purpose
+
+Merge the matches with the analysis tables.
+
+### Method
+
+* This script starts by setting up a function that grabs the required password for your user to access vertica
+* It then uses this to access vertica and run a sql script stored in **"./Data_processing/04-final_tables/04_Create_temp_match_tables.sql"**
+    - This creates a temporary table in vertica for the matches created in the previous script.
+* Then, looping through the batches:
+    - It reads in the correct batch data
+    - It then uses the script template stored in **"./Data_processing/04-final_tables/04_Upload_temp_match_tables.sql"** to create an upload script specific to the batch in the current loop 
+    - It then runs this upload script
+    - It then removes the upload script from storage
+* Lastly it runs the script stored in **"./Data_processing/04-final_tables/05_update_analysis_table.sql"** to update the analysis table with the matches created in the matching process
+    - It basically left joins the match data to the analysis_data
+
+### Estimated run time
+
+This script takes less than 1 hour to run
+
+### Improvements
+
+Note that this analysis update script is not a very good way of doing things. Think of a better way.<br/>
+  eg. for each entry give a key (customer number) use a view that does the join and query the view.
+
+```{}
+```
+
+## Script 05: 05_Extract_matched_spend_data.R
+
+### Input:
+
+ww.outp_analysis_data table (vsql) (grain: customer/control) <br/>
+It contains:
+
+* customer_no
+* vitality
+* cohort
+* wrewards_before
+* customer_type_id
+* trans_freq_id
+* batch,
+* control,
+* weight
+
+### Output:
+
+An RDS for each batch and spend type containing
+
+* customer number
+* spend period
+* cohort period
+* treated indicator
+* spend sum
+* spend type where relevant
+
+### Save Location
+
+Output/Batch_data/__ batchName __/<br/>
+e.g. Output/Batch_data/__ batchName __/Matched_spend_data_spend_sum.rds
+
+### Estimated run time
+
+This script takes approximately 3 hours to run
+
+### Purpose
+
+Extract the spend and spend type of identified customers, non-identified customers, and matched customers. <br/>
+This is basically a set of sql queries.
+
+### Method
+
+Make sql-queries to get relevant spend data <br/>
+Put the queries together in a list <br/>
+Run these scripts in an lapply. <br/>
+
+```{}
+```
+## Script 06: 06_Compile_triangles.R
+
+### Input:
+The output from the previous script
+
+### Output:
+
+A runoff triangle (spend month by cohort) for each batch in an xlsx, the data for the runoff triangles in long form.
+
+### Save Location
+
+The save location for the xlsx is Output/Triangles.xlsx<br/>
+The save location for the rds is Output/triangleList.rds
+
+### Estimated run time
+
+Approximately 1 hour
+
+### Purpose
+
+Create the data needed for the run-off triangle visualisations used in the presentation. <br/>
+
+### Method
+
+The query creates a triangle per batch, based on spend type and spend sum (depending on what is appropriate for the batch).:
+
+* It starts by reading in the matched spend data
+* Then it rounds the spend period and cohort period to the nearest day
+* If the batch contains spend type then
+    + Widen the data by spreading on the spend types by the spend sum
+    + Prepare the data further (this is a process in itself)
+        - **Here it is worth noting: The matches aren't necessarily perfect, the vitality group might spend a little more on average than the other group before the program, and so their spend needs to be adjusted downward, otherwise the uplift will be inflated**
+        - Each spend type is prepared separately (So each iteration is preparing a database with 5 columns: customer_no, cohort_period, spend_period, treated, and spend_type)
+        - The first thing that is done, is removing the customer_no
+        - The data is then grouped by cohort_period, spend_period, and treated.
+        - Within these groups, the data is summed
+        - The treatment and control groups are separated
+        - If an adjustment needs to be made to spend to make the control and treatment groups match better, it gets made here:
+            + Basically the spend of the control group is increased by the proportion of treatment_spend/control_spend to make them more comparable.
+    + After the data is prepared we create the actual triangles as a list, one per spend type
+    + Filter where the spend date is greater than or equal to the cohort. We don't want the spend before joining
+    + Filter where cohort is greater than a certain date. We only want one year's worth of data.
+    + Widen the data again on cohort period and spend period, using spend_sum as the value.
+    + Calculate row sums
+    + Replace NA values with 0
+    + Calculate the grand total
+    + We create the percent triangles by calculating the percentage difference between the values of the treated group and the control group
+    + Return all triangles
+* If the batch does not contain spend type then
+    + Prepare the data further (this is a process in itself)
+        - **This data prep is the same as the data prep seen above**
+    + Create the actual triangle
+    + Filter where the spend date is greater than or equal to the cohort. We don't want the spend before joining
+    + Filter where cohort is greater than a certain date. We only want one year's worth of data.
+    + Widen the data again on cohort period and spend period, using spend_sum as the value.
+    + Calculate row sums
+    + Replace NA values with 0
+    + Calculate the grand total
+    + We create the percent triangles by calculating the percentage difference between the values of the treated group and the control group
+    + Return all triangles
+
+Then we take the list of triangle dataframes and flatten them into a dataframe <br/>
+We fix the triangle names and then save the triangles to Triangles.xlsx in the Output folder <br/>
+
+Next we run the **"Analysis/06_Compile_triangles.sql"** query to calculate the missing triangles, save these into the Triangles.xlsx in the Output folder, and then save all the triangles in an RDS 
+
+### Notes
+
+The script is less important, as it is easier to create the triangles in excel with a pivot <br/>
+
+```{}
+```
+## Script 07: 07_Graphics.R
+
+### Input:
+
+* ww.outp_customer_data table (vsql) (grain: customer/product)
+* ww.outp_spend_data table (vsql) (grain: customer/month/day/time/province/type)
+* ww.outp_analysis_data table (vsql) (grain: customer/control)
+
+### Output:
+
+* xlsx file with 12 tabs of data 
+* Each tab is used to create one of the charts in the presentation
+* 4 rds files that also contain this data
+* 8 .png files that contain graphic output
+
+### Save Location 
+* The xlsx save location is Output/Graphics.xlsx <br/>
+* The rds save locations are Output/<br/>
+* e.g. Output/demographicsPostList.rds<br/>
+* The .png save locations are /Output/Slide_deck_plots/
+* e.g. /Output/Slide_deck_plots/Food_segment.png
+
+### Purpose
+
+Generate basic tables in excel that will form the base of the graphics used for the powerpoint deck, as well as 4 rds files.
+
+### Method
+
+* Set up the sql-queries that will be needed to access the relevant demographic and spend data, before and after joining the program
+* Run the queries and save the data to RDS files, and add them to the excel tab 1 by 1
+
+Lastly we create all the charts in ggplot (so that its not neccessary to make them in excel) and output them to an absolute file path. 
+
+### Estimated run time
+
+This script takes about 5 minutes to run
+
+### Notes/Improvements
+
+The file paths of the output graphs should be checked and made relative.
+
+```{}
+```
+## Post Scripts:
+
+### Graphics
+
+#### Input:
+Graphics.xlsx created above
+
+#### Output:
+Several charts for the presentation
+
+* Gender after the campaign
+* Race after the campaign
+* Province after the campaign
+* Food segment after the campaign
+* Age after the campaign
+* Gender before the campaign
+* Race before the campaign
+* Province before the campaign
+* Food segment before the campaign
+* Age before the campaign
+* Spend before the campaign
+* Spend after the campaign
+
+Open Graphics.xlsx, and insert a chart based on the data in each tab.
+
+### Uplift calculations
+
+#### Input:
+
+ww.outp_analysis_data table (vsql) (grain: customer/control)
+
+#### Output:
+
+An xlsx file with 12 tabs used to calculate spend uplift, attrition uplift, adjustments and commission for the campaign.
+
+#### Purpose
+
+The purpose of this work is to calculate uplift generated amongst different customer groups, and calculate commission owed to vitality.
+
+#### Method
+Run 08_excel_uplift_calcs.Rmd to create the uplift_calculations.xlsx workbook with only the data tab.
+
+Use this data tab to create a further 11 tabs for the purpose of calculating uplift.
+“WW_member_b4_and_after”, “Commission”, “Uplift_bar_chart”, “Aliens”, “No_history”, “Poor matching”, “Rebase”, “Definitions”, “Triangles_baseline”, “Triangles_total”, “Final_table”
+
+##### Definitions
+This tab contains definitions for terms used throughout the project.
+Copy definitions from the old versions and add any new definitions that are needed
+
+##### Aliens
+This tab calculates attrition and uplift specifically for alien customers. 
+
+##### No_history
+This tab simply records the spend, per month, of customers for whom we have no transaction history (over the past 12 months) prior to the campaign.
+
+##### Poor matching
+This tab accounts for the fact that matches aren’t perfect. It measures the “wrongness” of the matches for spend and creates a metric to use to adjust uplift by in order to measure a more accurate uplift.
+
+##### Rebase
+This sheet compares the current methodology with the old methodology. ideally there should be no differences.
+
+##### Triangles baseline
+This sheet creates the transaction and uplift (by cohort and spend month) triangles for non-alien-loyal, baseline customers.
+
+##### Triangles total
+This sheet creates the transaction and uplift (by cohort and spend month) triangles for all non-alien customers.
+
+##### WW_member_b4_and_after
+This spreadsheet calculates spend, uplift, attrition, and grabs adjustments from Rebase and Poor matching. It calculates these for the whole duration, and for a number of 6month subperiods.
+
+##### Uplift_bar_chart
+This grabs information from WW_member_b4_and_after to create charts that were used in the final deck.
+
+##### Final_table
+Final table pulls the spend and uplift information calculated over the course of the other tabs and summarises it. Further, it calculates the uplift attributable to WW and Vitality according to our assumptions.
+
+##### Commission
+The commission tab uses the amount attributable to vitality that was calculated, along with the commission rate, to calculate the commission payable to vitality.

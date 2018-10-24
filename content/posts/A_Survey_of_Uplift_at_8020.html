@@ -37,8 +37,8 @@ tags:
 <li>Calculate lift of actual response over expected response.</li>
 </ol>
 <p>When modelling this can be done on a person basis because we can predict the desired response using the replicant covariates.</p>
-<p>For a given response $ Y_i $ as the take up or conversion of a customer say we can define uplift mathematically:</p>
-<p>$ E(Y_i | X_i) = f(T_i,X_i,T_i * X_i) = E(Y_i | X_i, T_i = 1) - E(Y_i | X_i, T_i = 0) $</p>
+<p>For a given response <span class="math inline">\(Y_i\)</span> as the take up or conversion of a customer say we can define uplift mathematically:</p>
+<p><span class="math inline">\(E(Y_i | X_i) = f(T_i,X_i,T_i * X_i) = E(Y_i | X_i, T_i = 1) - E(Y_i | X_i, T_i = 0)\)</span></p>
 <p>Both predictions can be made using a trained model by setting the treatment indicator $ T_i $ and predicting the outcome for that row.</p>
 <p>This is very similar to the group calculation in the steps above. We are comparing the expected outcome given a control with what actually happened. Although in the model case you can also use the expected value for the treated case.</p>
 </div>
@@ -69,18 +69,26 @@ tags:
 </div>
 <div id="methodologies-and-use-cases" class="section level2">
 <h2>Methodologies and use cases</h2>
-<div id="tfg-campaign-analytics" class="section level3">
-<h3>TFG campaign analytics</h3>
-<p>Some campaign performance analytics were performed for TFG on their in-store campaigns. These campaigns did not have any outbound advertising or targeting. All adverts were shown instore only and discounts were given at point of sale.</p>
+<div id="campaign-analytics" class="section level3">
+<h3>Campaign analytics</h3>
+<p>Some campaign performance analytics were performed for a large FMCG retailer on their in-store campaigns. These campaigns did not have any outbound advertising or targeting. All adverts were shown instore only and discounts were given at point of sale.</p>
 <p>Analysis was performed post response ons selected stores and brands.</p>
 <p>It was decided that uplift would be measured on a basket level to estimate how much the campaign has pushed instore basket value.</p>
 <p>A Pre-Post measurement methodology was decided. To overcome some of the drawbacks of this approach a control group was established. Baskets were identified based on qualifying criteria like the tender type for payment method.</p>
 <p>A design matrix was setup for each day over the campaign period starting with a pre-period. Using a GLS model the basket value was predicted over the period of the campaign for both groups.</p>
 <p>By further predicting the treatment group assuming no treatment uolift was measured using this counter factual.</p>
 </div>
-<div id="standard-bank" class="section level3">
-<h3>Standard Bank</h3>
-<p>Product benefit analysis was measured using established control groups.</p>
-<p>A GLM was fit on the data predicting the revenue response of interest. Using the trained model the expected effect size was estimated for applying the treatment to each business</p>
+<div id="basic-membership-benefit-analysis" class="section level3">
+<h3>Basic membership benefit analysis</h3>
+<p>Product benefit analysis was measured for a large bank using established control groups to measure the benefit offering these products to companies</p>
+<p>A GLM was fit on the data predicting the revenue response of interest. Using the trained model the expected effect size was estimated for applying the treatment to each business.</p>
+</div>
+<div id="fmcg-loyalty-analysis-within-their-healthy-foods-department" class="section level3">
+<h3>FMCG loyalty analysis within their healthy foods department</h3>
+<p>In this case we had already measured the take up of membership of the program and we had no measurement of targeted or treatment groups.</p>
+<p>In this case we could assume the response of interest is total spend per customer on healthy foods and that the treatment is giving this person membership to the program. This has some issues due to likely lurker effects. With no randomization and the fact that the treatment is self selected we would have no control over the biases in this treatment variable.</p>
+<p>To address this genetic matching was performed, matching customers who have recorded take up of membership to others who have not. By matching a person onto a doppelganger we attempt to control for confounding effects in the analysis.</p>
+<p>Without even predicting the expected treatment effect for members we could compare each person to his doppelganger and report a lift of spend over the periods following the join date for each member.</p>
+<p>Matches were made on the last quarter of data leading into the month of joining the program.</p>
 </div>
 </div>

@@ -33,9 +33,9 @@ In broad terms uplift can be measured following the following strategy:
 
 When modelling this can be done on a person basis because we can predict the desired response using the replicant covariates. 
 
-For a given response $ Y_i $ as the take up or conversion of a customer say we can define uplift mathematically:  
+For a given response $Y_i$ as the take up or conversion of a customer say we can define uplift mathematically:  
 
-$ E(Y_i | X_i) = f(T_i,X_i,T_i * X_i) = E(Y_i | X_i, T_i = 1) - E(Y_i | X_i, T_i = 0) $  
+$E(Y_i | X_i) = f(T_i,X_i,T_i * X_i) = E(Y_i | X_i, T_i = 1) - E(Y_i | X_i, T_i = 0)$  
 
 Both predictions can be made using a trained model by setting the treatment indicator $ T_i $ and predicting the outcome for that row.  
 
@@ -66,9 +66,9 @@ We do not want to measure lift on cases where they would have converted anyway. 
 
 ## Methodologies and use cases
 
-### TFG campaign analytics
+### Campaign analytics
 
-Some campaign performance analytics were performed for TFG on their in-store campaigns. These campaigns did not have any outbound advertising or targeting. All adverts were shown instore only and discounts were given at point of sale.
+Some campaign performance analytics were performed for a large FMCG retailer on their in-store campaigns. These campaigns did not have any outbound advertising or targeting. All adverts were shown instore only and discounts were given at point of sale.
 
 Analysis was performed post response ons selected stores and brands.
 
@@ -80,8 +80,20 @@ A design matrix was setup for each day over the campaign period starting with a 
 
 By further predicting the treatment group assuming no treatment uolift was measured using this counter factual.
 
-### Standard Bank
+### Basic membership benefit analysis
 
-Product benefit analysis was measured using established control groups. 
+Product benefit analysis was measured for a large bank using established control groups to measure the benefit offering these products to companies
 
-A GLM was fit on the data predicting the revenue response of interest. Using the trained model the expected effect size was estimated for applying the treatment to each business 
+A GLM was fit on the data predicting the revenue response of interest. Using the trained model the expected effect size was estimated for applying the treatment to each business.  
+
+### FMCG loyalty analysis within their healthy foods department
+
+In this case we had already measured the take up of membership of the program and we had no measurement of targeted or treatment groups.
+
+In this case we could assume the response of interest is total spend per customer on healthy foods and that the treatment is giving this person membership to the program. This has some issues due to likely lurker effects. With no randomization and the fact that the treatment is self selected we would have no control over the biases in this treatment variable.
+
+To address this genetic matching was performed, matching customers who have recorded take up of membership to others who have not. By matching a person onto a doppelganger we attempt to control for confounding effects in the analysis.
+
+Without even predicting the expected treatment effect for members we could compare each person to his doppelganger and report a lift of spend over the periods following the join date for each member.
+
+Matches were made on the last quarter of data leading into the month of joining the program.  

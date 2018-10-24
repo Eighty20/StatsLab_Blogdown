@@ -34,6 +34,7 @@ load_pkg(c("plumber","caret"))
 ```{r,include=FALSE}
 library(tidyverse)
 library(caret)
+library(plumber)
 ```
 
 

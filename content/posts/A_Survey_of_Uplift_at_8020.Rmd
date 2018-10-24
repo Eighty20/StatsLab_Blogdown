@@ -1,0 +1,67 @@
+---
+title: A Survey of Uplift at 8020
+author: Stefan
+date: 2018-10-24
+slug: A_Survey_of_Uplift_at_8020
+categories:
+  - General
+tags:
+  - uplift
+---
+
+## Introduction
+
+In consumer analytics it is very important to measure the effectiveness of your marketing and campaign management.  
+
+![](/Pictures/Uplift/main.png)
+
+Unfortunately each company may have a different oppertunity-infrastructure proposition. Some may run product campaigns. Others run loyalty programs for customers. Some programs have already been run or outbound communication has already been sent out before it was decided to run performance analytics.
+
+![](/Pictures/Uplift/secondary.jpg)
+
+All of these variations make measuring uplift quite complicated. In particular different teams on different projects will have significantly different strategies for measuring uplift.
+
+The purpose of this blog post is to collate information on the different uplift methodologies employed and the use cases for those. Some suggestions and recommendations are also made regarding the different methodologies.
+
+## How is uplift measured
+
+In broad terms uplift can be measured following the following strategy:  
+
+1. Estimate response for a control group.  
+2. Calculate expected response for test group.  
+3. Calculate lift of actual response over expected response.  
+
+When modelling this can be done on a person basis because we can predict the desired response using the replicant covariates. 
+
+For a given response $ Y_i $ as the take up or conversion of a customer say we can define uplift mathematically:  
+
+$ E(Y_i | X_i) = f(T_i,X_i,T_i * X_i) = E(Y_i | X_i, T_i = 1) - E(Y_i | X_i, T_i = 0) $  
+
+Both predictions can be made using a trained model by setting the treatment indicator $ T_i $ and predicting the outcome for that row.  
+
+This is very similar to the group calculation in the steps above. We are comparing the expected outcome given a control with what actually happened. Although in the model case you can also use the expected value for the treated case.
+
+## Uplift measurement vs A/B testing
+
+When we haven't run our campaign or targeted outbound advertising we can setup a DoE in advance. We can then do simple A/B testing to determine which campaigns are the best and even make some causal inference.
+
+For general uplift measurement we don't need to be this precise or a DoE may cost too much time or money. Additionally we may already have outbound advertisement or measured the response.
+
+Uplift measurement doesn't try to make any causal inference. We are only interested in measuring the treatment effect due to having been treated.
+
+## What is considered lift
+
+When measuring take up or conversion rates we define 4 general responses:  
+
+- The Persuadables : customers who only respond to the marketing action because they were targeted  
+- The Sure Things: customers who would have responded whether they were targeted or not  
+- The Lost Causes: customers who will not respond irrespective of whether or not they are targeted  
+- The Do Not Disturbs or Sleeping Dogs : customers who are less likely to respond because they were targeted  
+
+We can illustrate this using:  
+
+![](/Pictures/types_of_response.png)
+
+## Methodologies and use cases
+
+###

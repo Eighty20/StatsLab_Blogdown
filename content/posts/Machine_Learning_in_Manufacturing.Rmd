@@ -1,8 +1,12 @@
 ---
-title: "A Survey of Machine Learning in Industry"
-author: "Stefan"
-date: "10/17/2018"
-output: html_document
+title: A Survey of Machine Learning in Industry
+author: Stefan
+date: 2018-10-17
+slug: Survey_ML_Industry
+categories:
+  - General
+tags:
+  - Machine_learning
 ---
 
 ```{r setup, include=FALSE}
@@ -66,7 +70,7 @@ From the journal:
 
 <https://www.tandfonline.com/doi/full/10.1080/21693277.2016.1192517>  
 
-![](static/Pictures/AI_in_manufacturing/RL_uses_manufacturing.jpg)
+![](/Pictures/AI_in_manufacturing/RL_uses_manufacturing.jpg)
 
 And the journal further lists the following use cases:  
 
@@ -80,7 +84,7 @@ And the journal further lists the following use cases:
 
 From these journals the different ML methods are summarised on the following diagram:  
 
-![](static/Pictures/AI_in_manufacturing/Algorithm_overview.jpeg)
+![](/Pictures/AI_in_manufacturing/Algorithm_overview.jpeg)
 
 ## Deep Reinforcement Learning in Practice
 
@@ -103,7 +107,7 @@ See wikipedia:
 
 The basic formula for Q-learning is the quality function:  
 
-![](static/Pictures/AI_in_manufacturing/q_learning_formula.png)
+![](/Pictures/AI_in_manufacturing/q_learning_formula.png)
 
 Here we evaluate the quality of every action for a given state ($a_t,s_t$). The previous believed value of this action is updated using the observed reward + a discounted estimate of the future value of this action.  
 

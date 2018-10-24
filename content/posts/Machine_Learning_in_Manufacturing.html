@@ -1,0 +1,171 @@
+---
+title: A Survey of Machine Learning in Industry
+author: Stefan
+date: 2018-10-17
+slug: Survey_ML_Industry
+categories:
+  - General
+tags:
+  - Machine_learning
+---
+
+
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>This notebook explores the research and papers available on applying machine learning in manufacturing plants or large scale industrial applications.</p>
+</div>
+<div id="great-summary-journal" class="section level2">
+<h2>Great summary journal</h2>
+<p>Here is a great summary paper written by:</p>
+<p><code>Thorsten Wuest, Daniel Weimer, Christopher Irgens &amp; Klaus-Dieter Thoben</code></p>
+<p><a href="https://www.tandfonline.com/doi/full/10.1080/21693277.2016.1192517" class="uri">https://www.tandfonline.com/doi/full/10.1080/21693277.2016.1192517</a></p>
+</div>
+<div id="known-applications-of-ml-in-manufacturing" class="section level2">
+<h2>Known applications of ML in manufacturing</h2>
+<p>From the journal:</p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Manufacturing requirement</th>
+<th align="left">Theoretical ability of ML to meet requirements</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Ability to handle high-dimensional problems and data-sets with reasonable effort</td>
+<td align="left">Certain ML techniques (e.g. SVM) are capable of handling high dimensionality (&gt;1000) very well. However, accompanying issues like possible over-fitting has to be considered (Widodo &amp; Yang, 2007; Yang &amp; Trewn, 2004)</td>
+</tr>
+<tr class="even">
+<td align="left">Ability to reduce possibly complex nature of results and present transparent and concrete advice for practitioners (e.g. monitor XX and parameter YY at checkpoint ZZ)</td>
+<td align="left">ML may be able to derive pattern from existing data and derive approximations about future behavior (Alpaydin, 2010). This new information (knowledge) may support process owners in their decision-making or used to automatically improve a system</td>
+</tr>
+<tr class="odd">
+<td align="left">Ability to adapt to changing environment with reasonable effort and cost. Ideally a degree auf ‘automated’ adaptation to changing condition</td>
+<td align="left">As ML is part of AI, and thus be able to learn and adapt to changes, ‘the system designer need not foresee and provide solutions for all possible situations’ (Alpaydin, 2010). Learning from and adapting to changing environments automatically is a major strength of ML (Lu, 1990; Simon, 1983)</td>
+</tr>
+<tr class="even">
+<td align="left">Ability to further the existing knowledge by learning from results</td>
+<td align="left">ML can contribute to create new information and possibly knowledge by, e.g. identifying patters in existing data (Alpaydin, 2010; Pham &amp; Afify, 2005)</td>
+</tr>
+<tr class="odd">
+<td align="left">Ability to work with the available manufacturing data without special requirements toward capturing of very specific information at the start</td>
+<td align="left">ML techniques are designed to derive knowledge out of existing data (Alpaydin, 2010; Kwak &amp; Kim, 2012). ‘The stored data becomes useful only when it is analyzed and turned into information that we can make use of, for example, to make predictions’ (Alpaydin, 2010)</td>
+</tr>
+<tr class="even">
+<td align="left">Ability to identify relevant process intra- and inter-relations &amp; ideally correlation and/or causality</td>
+<td align="left">The goal of certain ML techniques is to detect certain patterns or regularities that describe relations (Alpaydin, 2010)</td>
+</tr>
+</tbody>
+</table>
+<p>So common tools listed are:</p>
+<ul>
+<li>SVM in high dimensional data<br />
+</li>
+<li>Supervised learning for function approximation<br />
+</li>
+<li>Adaptive AI<br />
+</li>
+<li>Exploritory analysis to improve current implementation<br />
+</li>
+<li>Detecting correlations and causal inference</li>
+</ul>
+<p>What this summary lacks is some detail around the implementation of reinforcement learning in industry.</p>
+</div>
+<div id="blog-on-the-state-of-reinforcement-learning-in-industry" class="section level2">
+<h2>Blog on the state of Reinforcement learning in industry</h2>
+<p>This blog highlights some of the challenges and benefits of using reinforcement learning in practice:</p>
+<p><a href="https://www.oreilly.com/ideas/practical-applications-of-reinforcement-learning-in-industry" class="uri">https://www.oreilly.com/ideas/practical-applications-of-reinforcement-learning-in-industry</a></p>
+<p>Key points:</p>
+<blockquote>
+<p>“So, at least for now, RL may not be ideal for mission-critical applications that require continuous control.”</p>
+</blockquote>
+<blockquote>
+<p>“Industrial automation is another promising area.”</p>
+</blockquote>
+<p>These seem somewhat contradicting…</p>
+<p>So if industrial automation is promising, why can’t we seem to manage continuous control applications?</p>
+</div>
+<div id="use-cases-for-rl" class="section level2">
+<h2>Use cases for RL</h2>
+<p>From the journal:</p>
+<p><a href="https://www.tandfonline.com/doi/full/10.1080/21693277.2016.1192517" class="uri">https://www.tandfonline.com/doi/full/10.1080/21693277.2016.1192517</a></p>
+<div class="figure">
+<img src="/Pictures/AI_in_manufacturing/RL_uses_manufacturing.jpg" />
+
+</div>
+<p>And the journal further lists the following use cases:</p>
+<blockquote>
+<p>You’re using simulations because your system or process is too complex (or too physically hazardous) for teaching machines through trial and error.</p>
+</blockquote>
+<blockquote>
+<p>You’re dealing with large state spaces.</p>
+</blockquote>
+<blockquote>
+<p>You’re seeking to augment human analysts and domain experts by optimizing operational efficiency and providing decision support.</p>
+</blockquote>
+</div>
+<div id="choosing-the-ml-solution" class="section level2">
+<h2>Choosing the ML solution</h2>
+<p>From these journals the different ML methods are summarised on the following diagram:</p>
+<div class="figure">
+<img src="/Pictures/AI_in_manufacturing/Algorithm_overview.jpeg" />
+
+</div>
+</div>
+<div id="deep-reinforcement-learning-in-practice" class="section level2">
+<h2>Deep Reinforcement Learning in Practice</h2>
+<p>This paper is an example of successful DRL in practice:</p>
+<p><a href="https://sites.ualberta.ca/~pilarski/docs/papers/Gunther_2014_ProcediaTechology.pdf" class="uri">https://sites.ualberta.ca/~pilarski/docs/papers/Gunther_2014_ProcediaTechology.pdf</a></p>
+<p>Authors:</p>
+<blockquote>
+<p>Johannes Günthera*, Patrick M. Pilarskib, Gerhard Helfricha, Hao Shena, Klaus Diepolda</p>
+</blockquote>
+<div id="introduction---q-learning" class="section level3">
+<h3>Introduction - Q learning</h3>
+<p>DQN is the most basic implementation of Q-learning using a deep neural network.</p>
+<p>The idea behind q-learning is to establish a value to action mapping for every state an AI agent can encounter.</p>
+<p>See wikipedia:<br />
+<a href="https://en.wikipedia.org/wiki/Q-learning" class="uri">https://en.wikipedia.org/wiki/Q-learning</a></p>
+<p>The basic formula for Q-learning is the quality function:</p>
+<div class="figure">
+<img src="/Pictures/AI_in_manufacturing/q_learning_formula.png" />
+
+</div>
+<p>Here we evaluate the quality of every action for a given state (<span class="math inline">\(a_t,s_t\)</span>). The previous believed value of this action is updated using the observed reward + a discounted estimate of the future value of this action.</p>
+<div id="now-introduce-neural-networks" class="section level4">
+<h4>Now introduce neural networks</h4>
+<p>The traditional method requires one to construct a Q-matrix storing each <span class="math inline">\(a_t,s_t\)</span> pair.</p>
+<p>This becomes unmanageable and inefficient when the problem space is large. How then do we create a model based approximation of an arbitrarily complicated action-state space?</p>
+<p>How do we solve any function in 2018? We use function approximation using deeplearning!</p>
+<p>By turning the environment into an ndarray we can pass the environment to a deep neural network everytime we observe the state and environment change.</p>
+<p>Furthermore, using deep neural networks allows us to use more general types of inputs since data like images can be converted to ndarrays.</p>
+<p>For simulations like atari games the ndarray would be the screen output for each action together with a reward. This would be a 3 dimensional array of the form (height,width,color-channel). That is; for each pixel on the screen a Red, Blue and Green value.</p>
+</div>
+</div>
+<div id="example-dqn-using-keras-with-python" class="section level3">
+<h3>Example DQN using keras with python</h3>
+<p>Here is an excelent blog by <code>Adrien Lucas Ecoffet</code>:</p>
+<p><a href="https://becominghuman.ai/lets-build-an-atari-ai-part-1-dqn-df57e8ff3b26" class="uri">https://becominghuman.ai/lets-build-an-atari-ai-part-1-dqn-df57e8ff3b26</a></p>
+<p>And here is a great blog by blogger keon:</p>
+<p><a href="https://keon.io/deep-q-learning/" class="uri">https://keon.io/deep-q-learning/</a></p>
+<p>You can run the code on your machine if you have keras and gym installed. I recommend running this on ubuntu.</p>
+</div>
+<div id="example-advanced-ppo-implementations-pytorch" class="section level3">
+<h3>Example advanced PPO implementations PyTorch</h3>
+<p>Here is a great post on using pytorch to implement proximal policy optimization from the OpenAI baselines:</p>
+<p><a href="https://github.com/ikostrikov/pytorch-a2c-ppo-acktr/blob/master/algo/ppo.py" class="uri">https://github.com/ikostrikov/pytorch-a2c-ppo-acktr/blob/master/algo/ppo.py</a></p>
+</div>
+<div id="using-openai-baselines" class="section level3">
+<h3>Using OpenAI Baselines</h3>
+<p>OpenAI provides common Reinforcement Learning implementations in python with tensorflow.</p>
+<p>See:</p>
+<p><a href="https://blog.openai.com/openai-baselines-dqn/" class="uri">https://blog.openai.com/openai-baselines-dqn/</a></p>
+<p>The purpose of the baselines is to handle the initial construction of a learning framework so that the researcher can focus on improving and innovating upon solid baselines.</p>
+</div>
+<div id="bridging-the-gap-between-games-and-industry" class="section level3">
+<h3>Bridging the gap between games and industry</h3>
+<p>Here is a great talk from the <code>O'Reilly Artificial Intelligence Conference 2017 - San Francisco, CA by O'Reilly Media, Inc.</code></p>
+<p><a href="https://www.oreilly.com/library/view/oreilly-artificial-intelligence/9781491985250/video314925.html?utm_source=oreilly&amp;utm_medium=newsite&amp;utm_campaign=20171129_ben_lorica_reinforcement_learning_in_industry_related_resources_deep_reinforcement_learning_in_the_enterprise_link" class="uri">https://www.oreilly.com/library/view/oreilly-artificial-intelligence/9781491985250/video314925.html?utm_source=oreilly&amp;utm_medium=newsite&amp;utm_campaign=20171129_ben_lorica_reinforcement_learning_in_industry_related_resources_deep_reinforcement_learning_in_the_enterprise_link</a></p>
+</div>
+</div>

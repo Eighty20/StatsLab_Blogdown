@@ -1,9 +1,7 @@
 ---
-title: "Serving a machine learning model via API"
-output: html_notebook
+title: Serving a machine learning model via API
+author: Stefan
 date: 2018-04-04
-editor_options: 
-  chunk_output_type: inline
 categories:
   - R
 tags:
@@ -29,30 +27,8 @@ tags:
 <p>Load in some packages.<br />
 If you are going to host the api on a suse or redhat linux server make sure you have all the dependencies as well as the packages installed to follow through this example yourself.</p>
 <pre class="r"><code>library(EightyR)
-load_toolbox()</code></pre>
-<pre><code>## -------------------------------------------
-## Loading the Analytics Toolbox libary
-## -------------------------------------------
-## 
-## purrr
-##  
-## ggplot2
-##  
-## dplyr
-##  
-## tidyr
-##  
-## readr
-##  
-## lubridate
-##  
-## openxlsx</code></pre>
-<pre class="r"><code>load_pkg(c(&quot;plumber&quot;,&quot;caret&quot;))</code></pre>
-<pre><code>## 
-## Attaching package: &#39;caret&#39;</code></pre>
-<pre><code>## The following object is masked from &#39;package:purrr&#39;:
-## 
-##     lift</code></pre>
+load_toolbox()
+load_pkg(c(&quot;plumber&quot;,&quot;caret&quot;))</code></pre>
 <p>In order to serve an api you need to store all the functions that you want to serve inside a R script.</p>
 </div>
 <div id="hello-world-example" class="section level2">
@@ -117,18 +93,18 @@ ggplot2::msleep %&gt;%
 
 example_data</code></pre>
 <pre><code>## # A tibble: 51 x 5
-##    sleep_total vore    bodywt  brainwt awake
-##          &lt;dbl&gt; &lt;chr&gt;    &lt;dbl&gt;    &lt;dbl&gt; &lt;dbl&gt;
-##  1       17.0  omni    0.480  0.0155    7.00
-##  2       14.9  omni    0.0190 0.000290  9.10
-##  3        4.00 herbi 600      0.423    20.0 
-##  4       10.1  carni  14.0    0.0700   13.9 
-##  5        3.00 herbi  14.8    0.0982   21.0 
-##  6        5.30 herbi  33.5    0.115    18.7 
-##  7        9.40 herbi   0.728  0.00550  14.6 
-##  8       12.5  herbi   0.420  0.00640  11.5 
-##  9       10.3  omni    0.0600 0.00100  13.7 
-## 10        8.30 omni    1.00   0.00660  15.7 
+##    sleep_total vore   bodywt brainwt awake
+##          &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;
+##  1        17   omni    0.48  0.0155    7  
+##  2        14.9 omni    0.019 0.00029   9.1
+##  3         4   herbi 600     0.423    20  
+##  4        10.1 carni  14     0.07     13.9
+##  5         3   herbi  14.8   0.0982   21  
+##  6         5.3 herbi  33.5   0.115    18.7
+##  7         9.4 herbi   0.728 0.0055   14.6
+##  8        12.5 herbi   0.42  0.0064   11.5
+##  9        10.3 omni    0.06  0.001    13.7
+## 10         8.3 omni    1     0.0066   15.7
 ## # ... with 41 more rows</code></pre>
 <p>Construct a naive model</p>
 <pre class="r"><code>example_model &lt;-  
@@ -140,7 +116,7 @@ example_model</code></pre>
 <pre><code>## Random Forest 
 ## 
 ## 51 samples
-##  4 predictors
+##  4 predictor
 ## 
 ## No pre-processing
 ## Resampling: Bootstrapped (25 reps) 
@@ -148,9 +124,9 @@ example_model</code></pre>
 ## Resampling results across tuning parameters:
 ## 
 ##   mtry  RMSE       Rsquared   MAE      
-##   2     1.7837715  0.8663503  1.3059382
-##   4     0.9243862  0.9653744  0.6718107
-##   6     0.5776495  0.9842119  0.4276161
+##   2     1.8361213  0.8786475  1.3325245
+##   4     1.0224273  0.9623407  0.7173337
+##   6     0.6887237  0.9816254  0.4754172
 ## 
 ## RMSE was used to select the optimal model using the smallest value.
 ## The final value used for the model was mtry = 6.</code></pre>

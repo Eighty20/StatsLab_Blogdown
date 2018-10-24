@@ -1,9 +1,7 @@
 ---
-title: "Serving a machine learning model via API"
-output: html_notebook
+title: Serving a machine learning model via API
+author: Stefan
 date: 2018-04-04
-editor_options: 
-  chunk_output_type: inline
 categories:
   - R
 tags:
@@ -26,12 +24,18 @@ To read more about this package go to:
 Load in some packages.  
 If you are going to host the api on a suse or redhat linux server make sure you have all the dependencies as well as the packages installed to follow through this example yourself.  
 
-```{r}
+```{r, eval=FALSE}
 library(EightyR)
 load_toolbox()
 load_pkg(c("plumber","caret"))
 
 ```
+
+```{r,include=FALSE}
+library(tidyverse)
+library(caret)
+```
+
 
 In order to serve an api you need to store all the functions that you want to serve inside a R script.
 

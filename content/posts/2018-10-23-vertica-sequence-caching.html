@@ -1,0 +1,106 @@
+---
+title: Using sequence caching in Vertica
+author: Gayle
+date: 2018-10-23
+slug: vertica-sequence-caching
+categories:
+  - General
+tags:
+  - data-wrangling
+  - vertica
+---
+
+
+
+<div id="motivation" class="section level2">
+<h2>Motivation</h2>
+<p>The Vertica database uses sequences to keep track of auto-incremented columns. So for example, if you have a table with an ID column, and you want Vertica to automatically generate an ID for every new row that you add, Vertica needs a way of knowing what the next number should be. It does this by creating a sequence associated with the auto-incremented field, and when new rows are added, it checks for the next value in the sequence, and uses that.</p>
+<p>One of the parameters in a Vertica sequence is the <code>cache</code> value. This value can generate some frustration, and there are times when you might want to change the default. It is also a parameter that requires careful consideration if you need to create a sequence manually. This post will go through some of the cases.</p>
+</div>
+<div id="what-is-the-cache-parameter" class="section level2">
+<h2>What is the <code>cache</code> parameter?</h2>
+<p>According to the Vertica manual, the <code>cache</code> parameter:</p>
+<pre><code>Specifies how many sequence numbers are preallocated and stored in memory for faster access. The default is 250 000 with a minimum value of 1. Specifying a cache value of 1 indicates that only one value can be generated at a time, since no cache is assigned.</code></pre>
+<p>What this means is that for a 3-node Vertica cluster, during bulk-loading of a bunch of rows, the first node will start numbering from 1, the second will start from 250 001, and the third from 500 001. This avoids them trying to assign the same ID number to different rows. It also means that 250 000 values of the sequence are available in memory at a time, so that many rows can be loaded at once without causing the database to do extra work in ‘figuring out’ what values should go into the auto-incremented column.</p>
+</div>
+<div id="when-to-decrease-the-cache" class="section level2">
+<h2>When to decrease the cache?</h2>
+<p>Suppose you have a small lookup table, where each item is given a key. Let’s say you’re tracking different types of loans, and you have a table like this:</p>
+<table>
+<thead>
+<tr class="header">
+<th align="right">ID</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">1</td>
+<td align="left">Mortgage</td>
+</tr>
+<tr class="even">
+<td align="right">2</td>
+<td align="left">Vehical Finance</td>
+</tr>
+<tr class="odd">
+<td align="right">3</td>
+<td align="left">Retail Account</td>
+</tr>
+</tbody>
+</table>
+<p>Now let’s say you’re interested in a new type of loan, for example, Personal Loans. So you add that to your lookup table. Now it looks like this:</p>
+<table>
+<thead>
+<tr class="header">
+<th align="right">ID</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">1</td>
+<td align="left">Mortgage</td>
+</tr>
+<tr class="even">
+<td align="right">2</td>
+<td align="left">Vehical Finance</td>
+</tr>
+<tr class="odd">
+<td align="right">3</td>
+<td align="left">Retail Account</td>
+</tr>
+<tr class="even">
+<td align="right">250001</td>
+<td align="left">Personal Loan</td>
+</tr>
+</tbody>
+</table>
+<p>Really? That looks ugly. In a case like this, where each number should have a specific meaning, it would really be better for the numbers to be consecutive. We do this by reducing the sequence cache.</p>
+<p>First identify the name of the sequence. Automatically generated sequences are named as <code>tablename_fieldname_seq</code>. But you can check by querying the <code>sequences</code> built in table.</p>
+<p>Then you can adjust the cache as follows:</p>
+<pre class="sql"><code>alter sequence schema.tablename_fieldname_seq cache 1;</code></pre>
+<p>And then confirm with</p>
+<pre class="sql"><code>select * from sequences;</code></pre>
+<p>You can also adjust other parameters of a sequence, such as the minimum or maximum allowed values, the starting value or the increment.</p>
+</div>
+<div id="when-to-increase-the-cache" class="section level2">
+<h2>When to increase the cache?</h2>
+<p>The cache determines how many values of the sequence are stored in memory at a time. When loading a lot of rows at a time, you want the database to use its resources reading the raw data and writing it to the database, not in trying to work out what value of the sequence should come next. You can determine if the cache is too low by identifying events of type <code>SEQUENCE CACHE REFILLED</code> in the <code>dc_execution_engine_events</code> table.</p>
+<pre class="sql"><code>select count(*) from dc_execution_engine_events where event_type = &#39;SEQUENCE CACHE REFILLED&#39;;</code></pre>
+<p>You should consider multiplying the cache by the number of times the cache had to be refilled. It’s not terrible if the cache needs to be refilled a few times, but a few hundred times will impact performance, and a few thousand (as happened to me recently) will be disasterous.</p>
+</div>
+<div id="a-use-case" class="section level2">
+<h2>A use case</h2>
+<p>The situation I had was a table with an auto-populated identity column that needed to be moved to another database. Restoring the table from backup failed, for reasons that are beyond the scope of this post (which is to say, I don’t really know the reasons). So I dumped all the data into a delimited text file, and used Vertica’s <code>export_tables</code> function to recreate the table structure. I made sure that the output was unalligned, and tuples only, to make reloading the table as easy as possible.</p>
+<p>But when I tried to reload the data in the new database, I had a problem. The identity column was auto-incremented, and so data could not be loaded into that column. So Vertica tried to load the data for the identity column into the second column, and the second column into the third, which resulted in a mismatched data type error, and no data got loaded.</p>
+<p>Now one option would have been to exclude the identity column from the data dump, and reload the data using an auto-increment. But there were no guarentees that I would end up with the same numbering as I’d had initially, and this was a column that I needed to reference in other tables. I needed to make sure that existing data was kept exactly as it was. So I needed a way to ‘switch off’ the auto-increment column, and then switch it back on when I needed to start loading data again.</p>
+<p>As usual, I found that this exact question had been asked and answered already on <a href="https://stackoverflow.com/questions/50796894/add-auto-increment-or-identity-to-existing-table-in-Vertica">StackOverflow</a>. The idea was to create a sequence, whose minimum value would be one more than the maximum value already existing in that column. Then use the sequence to generate default values for the column. The advantage of a default value is that it only gets used when no value is specified. But if you provide a value, such as when loading data from a file, it uses that.</p>
+<p>My experiance with sequences before this was always with the first type - small lookup tables where a cache value bigger than 1 was just annoying. So out of habit, I set the cache to 1 on my sequence. Loading the data from the text file was fine, and my table was ready to use.</p>
+<p>When I needed to load more data I set off my script on a Friday, and I came back on Monday morning to see that it was still trying to load the data! I also found that my <code>dc_execution_engine_events</code> table was full of <code>SEQUENCE CACHE REFILLED</code> events. Thousands and thousands of them. So I changed the cache to 25 000, and reran my script. The entire script ran in under an hour. (How I got tipped off to check the <code>dc_execution_engine_events</code> table is also a whole story, involving ROS and WOS and other fun things. Maybe for another time.)</p>
+</div>
+<div id="best-practice" class="section level2">
+<h2>Best practice</h2>
+<p>So I think the moral of the story is that having a higher cache is better than having a lower one. Setting cache to 1 is a good idea if you are only going to be adding one or two rows at a time, and the value of the identity column is going to be meaningful on its own. (One might want to refer to type 3 loans, and have it be understood that they are referring to Retail loans.)</p>
+<p>For cases where the identity column is used for generating a primary key, that is then going to be referenced on a bunch of foreign tables, without any intrinsic meaning associated with it, then higher cache is better. And most probably, the default value of 250 000 is fine.</p>
+<p>If it bothers you that some of your ID numbers only have 1 or 2 digits, while most of them have 6 digits or more, you can set the minimum value of your sequence to 1 000 000. That way most of your ID numbers will be 7 or 8 digits long, and the weird jumps between session won’t be as noticable.</p>
+</div>

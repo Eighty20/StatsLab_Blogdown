@@ -1,0 +1,217 @@
+---
+title: "Validating customer matching in uplift analysis"
+author: Stefan
+date: 2018-10-31
+slug: validating_matching
+categories:
+  - R
+tags:
+  - uplift
+  - matching
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(odbc)
+library(DBI)
+library(glue)
+# library(tidyverse)
+library(EightyR)
+load_toolbox()
+# install.packages("Matching")
+library(Matching)
+library(boot)
+library(tidyverse)
+library(stringr)
+```
+
+## Introduction
+
+### What is matching
+
+Statistical matching is the process where we pair up responses in the treatment group with their respective doppelganger from the untreated group.
+
+Once matched these groups can be compared similar to a DoE treatment group.
+
+![](/Pictures/Uplift/matching.png)
+
+### Problem statement
+
+Often during performance analytics we have to use statistical matching to construct a control group post program launch.
+
+In this case we may want to validate the quality of the matching. 
+
+I propose here a method for comparing the matching between treated and untreated to matches in the treated group only.
+
+The purpose of the matching is a replacement for treatment groups, so that we believe that between the 2 groups we have now controlled for confounding in atleast the extent that the customers were matched to one another.
+
+To test if the matching is predictive then; we could bootstrap the uplift (the difference in spend between 2 groups) within only the control (matched to) and treated (joined and matched) respectively. This would require us to do matching within these 2 cohorts again, since we need to compare a person to his/her doppelganger.
+
+### Null hypothesis
+
+If our matching process has indeed controlled for lurker effects with respect to the measured response then matching within the treatment group only will reveal no real lift in the response of interest.
+
+By comparison the matched groups between those treated or not will reveal comparitively greater lift when bootstrapped.
+
+## Example case
+
+```{r,include=FALSE}
+## loads the data we need
+date_sequence <- function(firstCohort, lastCohort) {
+  
+  firstCohort <- ymd(firstCohort)
+  lastCohort <- ymd(lastCohort)
+  
+  cohortMonths <- as.character(seq(firstCohort, lastCohort, by = "month"))
+}
+
+outputFolder <- "/t-drive/Clients/Woolworths/2014-05-28_Vitality_uplift/2017-06/"
+
+demographicsFiles <- list.files(str_c(outputFolder, "Output/Customer_data/"), pattern = "customer_data_")
+
+spendFilesNonIdentified <- list.files(str_c(outputFolder, "Output/Spend_data/"), pattern = "spend_data_non_identified")
+
+batchNameVecNonIdentified <- c("Non_alien_loyal", "Non_alien_total")
+
+cohortMonths <- date_sequence("2013-03-01", "2017-12-31")
+
+  demographicsFile <- demographicsFiles[10]
+  spendFile <- spendFilesNonIdentified[10]
+  # listOfCustomerNumberBatchesNonIdentified[]
+  # customerNumbersForBatch <- listOfCustomerNumberBatchesNonIdentified[[j]]
+  batchName <- batchNameVecNonIdentified[1]
+  cohortMonth <- cohortMonths[11]
+
+MFA_output_2014_01_01 <- 
+readRDS(str_c(outputFolder, "Output/Batch_data/", batchName, "/MFA/MFA_", batchName, "_", 
+                                str_replace_all(cohortMonth, '-', '_'), ".rds"))
+
+```
+
+For our example we have MFA output extracting components out of a payment behavior dataset:  
+
+```{r}
+MFA_output_2014_01_01 %>% glimpse
+```
+
+This data summarises customer spend and demographics data through 35 MFA principal components.  
+
+Genetic matching was performed on this data to produce our treatment groups.
+
+## Initial validation
+
+As an immediate check it's a good idea to visualize the different metrics for your matched groups:
+
+![](/Pictures/Uplift/age_compare.png)
+![](/Pictures/Uplift/lifestyle_compare.png)
+
+## Summary metrics
+
+For validation we want to investigate the ATV and ATF.
+
+- ATV is the average transavtion value.
+
+- ATF is the average number of transactions.
+
+**Careful; when matching one to many the join onto the spend data will created weighted duplicates. Make sure how you calculate ATV and ATF. You want to weight and aggregate the spend and matched spend before you start taking averages over the grouping variables of interest**
+
+## Visualization
+
+When applying genetic matching to a single cohort month 2014_01 our analysis reveals the following ATV:  
+
+![](/Pictures/Uplift/ATV_actuals_plot.png)
+
+The matching was performed on the 3 months prior to Jan 2014. For this cohort at least something concerning is that the matches don't appear similar in aggregate for the months before that.
+
+For a benchmark we can perform matching once again. This time we perform the matching only within the treatment group. We do this by assigning treated randomly accross the customers in this group and matching based on this randomly assigned binary outcome.
+
+This is what it looked like:  
+
+![](/Pictures/Uplift/ATV_treated_plot.png)
+
+### Initial conclusions
+
+This is somewhat reassuring. The matching pre-period needs to be investigated further but we can tell that randomizing treatment assignment did in fact lead to a balanced response of ATV in the 2 groups.
+
+If there were untracked effects we wouldn't expect these to be similar within the treatment group.
+
+## Bootstrapping
+
+What we also want to do is bootstrap the ATV and ATF statistics for our match groups.  
+
+This is simple to execute once you have your match and spend data in the correct format.  
+
+Define bootstrapping function:  
+
+```{r, eval=FALSE}
+library(boot)
+
+bootstrap_stats <- function(match_spend_data, bootstrap_size = 1000, group = "group"){
+  
+  get_mean_var <- function(data, indices){
+  d <- data[indices,]
+
+  mean_ATV <- mean(d$ATV,na.rm=T)
+  mean_ATV_matched <- mean(d$ATV_matched ,na.rm=T)
+  var_ATV <- var(d$ATV,na.rm=T)
+  var_ATV_matched <- var(d$ATV_matched ,na.rm=T)
+  mean_transactions <- mean(d$nr_transactions,na.rm=T)
+  mean_transactions_matched <- mean(d$nr_transactions_matched,na.rm=T)
+  var_transactions <- var(d$nr_transactions,na.rm=T)
+  var_transactions_matched <- var(d$nr_transactions_matched,na.rm=T)
+
+  return(c(mean_ATV,mean_ATV_matched,var_ATV,var_ATV_matched,mean_transactions,mean_transactions_matched,var_transactions,var_transactions_matched))
+  # return(c(mean_ATV = mean_ATV,var_ATV = var_ATV,mean_ATV_matched = mean_ATV_matched,var_ATV_matched = var_ATV_matched))
+}
+
+boot_data <- 
+  match_spend_data %>% 
+  group_by(customer_no) %>% 
+  summarise(ATV = mean(ATV, na.rm = T),
+            ATV_matched = mean(ATV_matched , na.rm = T),
+            nr_transactions = mean(nr_transactions,na.rm=T),
+            nr_transactions_matched = mean(nr_transactions_matched,na.rm=T)
+            )
+
+results <- boot(boot_data, statistic=get_mean_var, R=bootstrap_size)
+
+bootsrap_results <- 
+  tibble(
+    variable = c("mean_ATV","mean_ATV_matched","var_ATV","var_ATV_matched","mean_transactions","mean_transactions_matched","var_transactions","var_transactions_matched"),
+    bootrap_value = results$t0
+  ) %>% 
+  mutate(group = group)
+
+bootsrap_results
+}
+```
+
+Apply it:
+
+```{r, eval=FALSE}
+match_design <- 
+  tibble(group = c("actual_2014_01_01","treated_matched","control_matched"),
+       spend_data = list(spend_table), match_data = list(readRDS("../Data/cohort_2014_01_01_matches.rds"),prepare_matches_treated,
+prepare_matches_control))
+
+match_design <- 
+  match_design %>% 
+  mutate(match_comparison_results = pmap(list(spend_data,match_data,group),~compare_matches(..2,..1,..3)))
+
+match_design <- 
+  match_design %>% 
+  mutate(bootrap_statistics = map2(.x = match_comparison_results, .y = group,~bootstrap_stats(match_spend_data = .x$spend_table,bootstrap_size = 1000, group = .y)))
+
+```
+
+The data once matched looked like this:  
+
+![](/Pictures/Uplift/data_matched_spend.png)
+
+Bootstrapped actuals:
+
+![](/Pictures/Uplift/results_bootstrap_actuals.png)  
+
+Bootstrapped treated:  
+
+![](/Pictures/Uplift/results_bootstrap_treated.png)  

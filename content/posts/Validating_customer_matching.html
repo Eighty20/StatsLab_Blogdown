@@ -1,0 +1,196 @@
+---
+title: "Validating customer matching in uplift analysis"
+author: Stefan
+date: 2018-10-31
+slug: validating_matching
+categories:
+  - R
+tags:
+  - uplift
+  - matching
+---
+
+
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<div id="what-is-matching" class="section level3">
+<h3>What is matching</h3>
+<p>Statistical matching is the process where we pair up responses in the treatment group with their respective doppelganger from the untreated group.</p>
+<p>Once matched these groups can be compared similar to a DoE treatment group.</p>
+<div class="figure">
+<img src="/Pictures/Uplift/matching.png" />
+
+</div>
+</div>
+<div id="problem-statement" class="section level3">
+<h3>Problem statement</h3>
+<p>Often during performance analytics we have to use statistical matching to construct a control group post program launch.</p>
+<p>In this case we may want to validate the quality of the matching.</p>
+<p>I propose here a method for comparing the matching between treated and untreated to matches in the treated group only.</p>
+<p>The purpose of the matching is a replacement for treatment groups, so that we believe that between the 2 groups we have now controlled for confounding in atleast the extent that the customers were matched to one another.</p>
+<p>To test if the matching is predictive then; we could bootstrap the uplift (the difference in spend between 2 groups) within only the control (matched to) and treated (joined and matched) respectively. This would require us to do matching within these 2 cohorts again, since we need to compare a person to his/her doppelganger.</p>
+</div>
+<div id="null-hypothesis" class="section level3">
+<h3>Null hypothesis</h3>
+<p>If our matching process has indeed controlled for lurker effects with respect to the measured response then matching within the treatment group only will reveal no real lift in the response of interest.</p>
+<p>By comparison the matched groups between those treated or not will reveal comparitively greater lift when bootstrapped.</p>
+</div>
+</div>
+<div id="example-case" class="section level2">
+<h2>Example case</h2>
+<p>For our example we have MFA output extracting components out of a payment behavior dataset:</p>
+<pre class="r"><code>MFA_output_2014_01_01 %&gt;% glimpse</code></pre>
+<pre><code>## Observations: 456,366
+## Variables: 40
+## $ customer_no                        &lt;int&gt; 13, 51, 82, 98, 139, 170, 1...
+## $ vitality                           &lt;int&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, ...
+## $ `spend_month_spend_sum_2013-10-01` &lt;dbl&gt; 12281.10, 0.00, 1585.58, 53...
+## $ `spend_month_spend_sum_2013-11-01` &lt;dbl&gt; 12137.86, 0.00, 0.00, 8136....
+## $ `spend_month_spend_sum_2013-12-01` &lt;dbl&gt; 12769.57, 541.62, 5609.84, ...
+## $ `1`                                &lt;dbl&gt; 2.206990e+00, -9.920552e-01...
+## $ `2`                                &lt;dbl&gt; 0.34242884, -2.20506687, -0...
+## $ `3`                                &lt;dbl&gt; 0.34804986, -1.95304588, 0....
+## $ `4`                                &lt;dbl&gt; -1.696023886, -1.385098798,...
+## $ `5`                                &lt;dbl&gt; -0.30175202, -0.47332798, -...
+## $ `6`                                &lt;dbl&gt; -0.42201805, 1.30042399, -0...
+## $ `7`                                &lt;dbl&gt; -0.77934720, 0.30207369, 0....
+## $ `8`                                &lt;dbl&gt; -0.68034669, 0.07018387, 0....
+## $ `9`                                &lt;dbl&gt; -0.27725997, -0.16822390, -...
+## $ `10`                               &lt;dbl&gt; 0.01296691, 0.16549627, -0....
+## $ `11`                               &lt;dbl&gt; 0.130646590, -0.144442768, ...
+## $ `12`                               &lt;dbl&gt; 0.11638400, -1.51874464, -0...
+## $ `13`                               &lt;dbl&gt; 0.088020420, -0.373939500, ...
+## $ `14`                               &lt;dbl&gt; -0.22521735, 0.13691562, -0...
+## $ `15`                               &lt;dbl&gt; 0.088687700, 0.593443274, 0...
+## $ `16`                               &lt;dbl&gt; 0.52900438, -0.22733655, -0...
+## $ `17`                               &lt;dbl&gt; -0.03321893, -0.70535188, -...
+## $ `18`                               &lt;dbl&gt; 0.06344598, 1.07738851, 1.3...
+## $ `19`                               &lt;dbl&gt; 0.04313334, -0.11892780, -0...
+## $ `20`                               &lt;dbl&gt; 0.31355059, 0.02262493, -0....
+## $ `21`                               &lt;dbl&gt; 0.515642127, 0.033112011, -...
+## $ `22`                               &lt;dbl&gt; 0.46893878, 0.91978096, 0.7...
+## $ `23`                               &lt;dbl&gt; -1.16564871, 0.29106354, -0...
+## $ `24`                               &lt;dbl&gt; -0.37090531, -0.14419326, -...
+## $ `25`                               &lt;dbl&gt; -0.64744784, -0.23397443, -...
+## $ `26`                               &lt;dbl&gt; -0.467301732, -0.251150460,...
+## $ `27`                               &lt;dbl&gt; -0.19584238, -0.19355691, -...
+## $ `28`                               &lt;dbl&gt; 0.33062267, 0.25182759, 0.4...
+## $ `29`                               &lt;dbl&gt; -0.03982754, 0.11362521, 0....
+## $ `30`                               &lt;dbl&gt; -0.38005037, 0.13911337, -0...
+## $ `31`                               &lt;dbl&gt; 0.22410782, -0.78493345, -0...
+## $ `32`                               &lt;dbl&gt; 0.06572623, -0.01481643, -0...
+## $ `33`                               &lt;dbl&gt; 0.472780487, 0.082725681, 0...
+## $ `34`                               &lt;dbl&gt; 0.12830024, -0.35510797, 0....
+## $ `35`                               &lt;dbl&gt; -0.29165777, -0.01369455, -...</code></pre>
+<p>This data summarises customer spend and demographics data through 35 MFA principal components.</p>
+<p>Genetic matching was performed on this data to produce our treatment groups.</p>
+</div>
+<div id="initial-validation" class="section level2">
+<h2>Initial validation</h2>
+<p>As an immediate check it’s a good idea to visualize the different metrics for your matched groups:</p>
+<p><img src="/Pictures/Uplift/age_compare.png" /> <img src="/Pictures/Uplift/lifestyle_compare.png" /></p>
+</div>
+<div id="summary-metrics" class="section level2">
+<h2>Summary metrics</h2>
+<p>For validation we want to investigate the ATV and ATF.</p>
+<ul>
+<li><p>ATV is the average transavtion value.</p></li>
+<li><p>ATF is the average number of transactions.</p></li>
+</ul>
+<p><strong>Careful; when matching one to many the join onto the spend data will created weighted duplicates. Make sure how you calculate ATV and ATF. You want to weight and aggregate the spend and matched spend before you start taking averages over the grouping variables of interest</strong></p>
+</div>
+<div id="visualization" class="section level2">
+<h2>Visualization</h2>
+<p>When applying genetic matching to a single cohort month 2014_01 our analysis reveals the following ATV:</p>
+<div class="figure">
+<img src="/Pictures/Uplift/ATV_actuals_plot.png" />
+
+</div>
+<p>The matching was performed on the 3 months prior to Jan 2014. For this cohort at least something concerning is that the matches don’t appear similar in aggregate for the months before that.</p>
+<p>For a benchmark we can perform matching once again. This time we perform the matching only within the treatment group. We do this by assigning treated randomly accross the customers in this group and matching based on this randomly assigned binary outcome.</p>
+<p>This is what it looked like:</p>
+<div class="figure">
+<img src="/Pictures/Uplift/ATV_treated_plot.png" />
+
+</div>
+<div id="initial-conclusions" class="section level3">
+<h3>Initial conclusions</h3>
+<p>This is somewhat reassuring. The matching pre-period needs to be investigated further but we can tell that randomizing treatment assignment did in fact lead to a balanced response of ATV in the 2 groups.</p>
+<p>If there were untracked effects we wouldn’t expect these to be similar within the treatment group.</p>
+</div>
+</div>
+<div id="bootstrapping" class="section level2">
+<h2>Bootstrapping</h2>
+<p>What we also want to do is bootstrap the ATV and ATF statistics for our match groups.</p>
+<p>This is simple to execute once you have your match and spend data in the correct format.</p>
+<p>Define bootstrapping function:</p>
+<pre class="r"><code>library(boot)
+
+bootstrap_stats &lt;- function(match_spend_data, bootstrap_size = 1000, group = &quot;group&quot;){
+  
+  get_mean_var &lt;- function(data, indices){
+  d &lt;- data[indices,]
+
+  mean_ATV &lt;- mean(d$ATV,na.rm=T)
+  mean_ATV_matched &lt;- mean(d$ATV_matched ,na.rm=T)
+  var_ATV &lt;- var(d$ATV,na.rm=T)
+  var_ATV_matched &lt;- var(d$ATV_matched ,na.rm=T)
+  mean_transactions &lt;- mean(d$nr_transactions,na.rm=T)
+  mean_transactions_matched &lt;- mean(d$nr_transactions_matched,na.rm=T)
+  var_transactions &lt;- var(d$nr_transactions,na.rm=T)
+  var_transactions_matched &lt;- var(d$nr_transactions_matched,na.rm=T)
+
+  return(c(mean_ATV,mean_ATV_matched,var_ATV,var_ATV_matched,mean_transactions,mean_transactions_matched,var_transactions,var_transactions_matched))
+  # return(c(mean_ATV = mean_ATV,var_ATV = var_ATV,mean_ATV_matched = mean_ATV_matched,var_ATV_matched = var_ATV_matched))
+}
+
+boot_data &lt;- 
+  match_spend_data %&gt;% 
+  group_by(customer_no) %&gt;% 
+  summarise(ATV = mean(ATV, na.rm = T),
+            ATV_matched = mean(ATV_matched , na.rm = T),
+            nr_transactions = mean(nr_transactions,na.rm=T),
+            nr_transactions_matched = mean(nr_transactions_matched,na.rm=T)
+            )
+
+results &lt;- boot(boot_data, statistic=get_mean_var, R=bootstrap_size)
+
+bootsrap_results &lt;- 
+  tibble(
+    variable = c(&quot;mean_ATV&quot;,&quot;mean_ATV_matched&quot;,&quot;var_ATV&quot;,&quot;var_ATV_matched&quot;,&quot;mean_transactions&quot;,&quot;mean_transactions_matched&quot;,&quot;var_transactions&quot;,&quot;var_transactions_matched&quot;),
+    bootrap_value = results$t0
+  ) %&gt;% 
+  mutate(group = group)
+
+bootsrap_results
+}</code></pre>
+<p>Apply it:</p>
+<pre class="r"><code>match_design &lt;- 
+  tibble(group = c(&quot;actual_2014_01_01&quot;,&quot;treated_matched&quot;,&quot;control_matched&quot;),
+       spend_data = list(spend_table), match_data = list(readRDS(&quot;../Data/cohort_2014_01_01_matches.rds&quot;),prepare_matches_treated,
+prepare_matches_control))
+
+match_design &lt;- 
+  match_design %&gt;% 
+  mutate(match_comparison_results = pmap(list(spend_data,match_data,group),~compare_matches(..2,..1,..3)))
+
+match_design &lt;- 
+  match_design %&gt;% 
+  mutate(bootrap_statistics = map2(.x = match_comparison_results, .y = group,~bootstrap_stats(match_spend_data = .x$spend_table,bootstrap_size = 1000, group = .y)))</code></pre>
+<p>The data once matched looked like this:</p>
+<div class="figure">
+<img src="/Pictures/Uplift/data_matched_spend.png" />
+
+</div>
+<p>Bootstrapped actuals:</p>
+<div class="figure">
+<img src="/Pictures/Uplift/results_bootstrap_actuals.png" />
+
+</div>
+<p>Bootstrapped treated:</p>
+<div class="figure">
+<img src="/Pictures/Uplift/results_bootstrap_treated.png" />
+
+</div>
+</div>

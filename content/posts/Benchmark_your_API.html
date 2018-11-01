@@ -1,0 +1,62 @@
+---
+title: "Benchmark your API"
+author: Stefan
+date: 2018-10-31
+slug: Benchmark_API
+categories:
+  - R
+tags:
+  - API
+---
+
+
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>If you have ever created an API endpoint using plumbr or flask you may have wondered how to do some simple load testing…</p>
+<div class="figure">
+<img src="/Pictures/benchmark_api/main.png" />
+
+</div>
+<p>Here is a simple way to test this using an R script.</p>
+</div>
+<div id="define-a-function-that-calls-your-api-with-some-parameters" class="section level2">
+<h2>Define a function that calls your api with some parameters</h2>
+<p>Depending on what your api does you may want to test different parameters altogether, for our case we will just make a simple call using fixed parameters:</p>
+<pre class="r"><code>library(rvest)
+
+# ptm &lt;- proc.time()
+call_serv &lt;- function(){
+  read_html(&quot;http://34.242.232.117:8000/predict?vore=carni&amp;bodywt=85&amp;brainwt=0.325&amp;awake=17.8&quot;)
+}
+# proc.time() - ptm</code></pre>
+<p>Now we can leverage the microbenchmark package to measure the response time of the API.</p>
+<p>To also test the load handling we will leverage the doParallel process to spin up multiple workers each sending requests to our API on the remote server:</p>
+<pre class="r"><code>library(microbenchmark)
+library(doParallel)
+
+cores &lt;- 10
+cl &lt;- makeCluster(cores)
+registerDoParallel(cl)
+clusterEvalQ(cl, library(microbenchmark))
+clusterEvalQ(cl, library(rvest))
+
+# ptm &lt;- proc.time()
+api_res &lt;- foreach(f =1:10, .combine = &quot;rbind&quot;) %dopar% {
+  library(microbenchmark)
+  library(rvest)
+  
+  x &lt;- microbenchmark(
+    calls= call_serv()  ,
+    times = 50L
+  )
+  print(x)
+}
+# proc.time() - ptm
+
+stopCluster(cl)</code></pre>
+</div>
+<div id="conclusion" class="section level2">
+<h2>Conclusion</h2>
+<p>By varying the parameters of the json request and the number of requests we can inspect the performance of our API in order to adjust the remote server specification</p>
+</div>

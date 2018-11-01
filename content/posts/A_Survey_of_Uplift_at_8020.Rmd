@@ -49,6 +49,48 @@ For general uplift measurement we don't need to be this precise or a DoE may cos
 
 Uplift measurement doesn't try to make any causal inference. We are only interested in measuring the treatment effect due to having been treated.
 
+### DOE
+
+If you want to look at my blog on the basics of DoE in R go look at:  
+<https://statslab.eighty20.co.za/posts/design_and_analysis_of_experiments_with_r/>
+
+## Matching
+
+When treatment is already observed in the absence of a DoE or control group you may want to consider matching.
+
+![](/Pictures/Uplift/matching.png)
+
+The idea behind DoE is constructing treatment groups such that condounding factors are randomized over the control groups. 
+
+This way we control for the contribution of factors that are not of interest. 
+
+With matching we pair up each response with a doppelganger. If we assign the new balanced groups of treated and matched as if the matched was the control group we cater for confounding variables since the groups are statistically similar.
+
+**Careful! You can only control for variables you are matching on!**
+
+### Matching methods
+
+- Simple propensity matching  
+
+A model is fit predicting the response. This yields a propensity when predicted for each response.  
+
+Care is taken that the distribution of the propensity is smooth. Then we match responses based on their propensity score.  
+
+- Genetic matching  
+
+Genetic algorithms are very good at solving optimization problems in a robust way. This approach is unfortunately very resource/time expensive.
+
+This method will avoid matching individuals with similar propensity scores but different features (different reasons for having the same propensity).
+
+This feature is very attractive when you want to control for lurker effects. Although from a statistical point of view the propensity matching may be balanced in aggregate (i.e. if by response uplift is not important).
+
+- Random forest matching  
+
+Here we fit a random forest predicting the response. Make sure to store the terminal nodes! Once our model is trained we can use the proximity matrices for responses to match entries that often end up in the same terminal leaves.  
+
+Unlike 1D matching the members are similar based on partitioning of variables. This way different people won't end up with similar distance/entropy scores and get matched.  
+
+
 ## What is considered lift
 
 When measuring take up or conversion rates we define 4 general responses:  

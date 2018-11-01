@@ -47,6 +47,42 @@ tags:
 <p>When we haven’t run our campaign or targeted outbound advertising we can setup a DoE in advance. We can then do simple A/B testing to determine which campaigns are the best and even make some causal inference.</p>
 <p>For general uplift measurement we don’t need to be this precise or a DoE may cost too much time or money. Additionally we may already have outbound advertisement or measured the response.</p>
 <p>Uplift measurement doesn’t try to make any causal inference. We are only interested in measuring the treatment effect due to having been treated.</p>
+<div id="doe" class="section level3">
+<h3>DOE</h3>
+<p>If you want to look at my blog on the basics of DoE in R go look at:<br />
+<a href="https://statslab.eighty20.co.za/posts/design_and_analysis_of_experiments_with_r/" class="uri">https://statslab.eighty20.co.za/posts/design_and_analysis_of_experiments_with_r/</a></p>
+</div>
+</div>
+<div id="matching" class="section level2">
+<h2>Matching</h2>
+<p>When treatment is already observed in the absence of a DoE or control group you may want to consider matching.</p>
+<div class="figure">
+<img src="/Pictures/Uplift/matching.png" />
+
+</div>
+<p>The idea behind DoE is constructing treatment groups such that condounding factors are randomized over the control groups.</p>
+<p>This way we control for the contribution of factors that are not of interest.</p>
+<p>With matching we pair up each response with a doppelganger. If we assign the new balanced groups of treated and matched as if the matched was the control group we cater for confounding variables since the groups are statistically similar.</p>
+<p><strong>Careful! You can only control for variables you are matching on!</strong></p>
+<div id="matching-methods" class="section level3">
+<h3>Matching methods</h3>
+<ul>
+<li>Simple propensity matching</li>
+</ul>
+<p>A model is fit predicting the response. This yields a propensity when predicted for each response.</p>
+<p>Care is taken that the distribution of the propensity is smooth. Then we match responses based on their propensity score.</p>
+<ul>
+<li>Genetic matching</li>
+</ul>
+<p>Genetic algorithms are very good at solving optimization problems in a robust way. This approach is unfortunately very resource/time expensive.</p>
+<p>This method will avoid matching individuals with similar propensity scores but different features (different reasons for having the same propensity).</p>
+<p>This feature is very attractive when you want to control for lurker effects. Although from a statistical point of view the propensity matching may be balanced in aggregate (i.e. if by response uplift is not important).</p>
+<ul>
+<li>Random forest matching</li>
+</ul>
+<p>Here we fit a random forest predicting the response. Make sure to store the terminal nodes! Once our model is trained we can use the proximity matrices for responses to match entries that often end up in the same terminal leaves.</p>
+<p>Unlike 1D matching the members are similar based on partitioning of variables. This way different people won’t end up with similar distance/entropy scores and get matched.</p>
+</div>
 </div>
 <div id="what-is-considered-lift" class="section level2">
 <h2>What is considered lift</h2>

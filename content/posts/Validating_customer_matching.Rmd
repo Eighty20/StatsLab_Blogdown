@@ -178,7 +178,10 @@ results <- boot(boot_data, statistic=get_mean_var, R=bootstrap_size)
 bootsrap_results <- 
   tibble(
     variable = c("mean_ATV","mean_ATV_matched","var_ATV","var_ATV_matched","mean_transactions","mean_transactions_matched","var_transactions","var_transactions_matched"),
-    bootrap_value = results$t0
+    bootrap_value = results$t0,
+    sd = results$t %>% apply(MARGIN = 2,sd),
+    lower = bootrap_value - 1.5*sd,
+    upper = bootrap_value + 1.5*sd
   ) %>% 
   mutate(group = group)
 

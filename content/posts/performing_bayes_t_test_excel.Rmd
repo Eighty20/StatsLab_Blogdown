@@ -1,10 +1,14 @@
 ---
-title: "Performing a Bayesian T-Test in Excel"
-author: "Kylen"
-date: "2018-08-22"
-output: html_document
+title: Performing a Bayesian T-Test in Excel
+author: Kylen
+date: 2018-09-03
+slug: bayes-t-test-excel
+categories:
+  - Excel
+tags:
+  - Excel
+  - Bayes
 ---
-\usepackage{amsmath}
 
 #Objectives
 In this post we will compare two samples for differences in their means. The catch is that we want to implement this in a spreadsheet programme (MS Excel), so that it can be easily used by people with no background in R/Python. Microsoft have included many functions allowing for standard frequentist analyses to be performed in Excel, however we will use these functions in order to perform bayesian inference.
@@ -45,6 +49,7 @@ Since the t-distribution is symmetric, if we assume an improper uniform prior fo
 
 #Inference
 With the requisite setup out of the way we can now move on to performing inference. Here I will present the bayesian analgues of common frequentist inferential techniques.
+
 ##Hypothesis Testing
 Firstly we set up our 2 hypotheses:
 $$H_0: \gamma = 0 \\

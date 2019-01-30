@@ -1,10 +1,86 @@
 ---
 title: "Installing and connecting to an Ingres database"
-author: "Stefan Fouche"
-date: "30 January 2019"
-output: html_document
+author: Stefan
+date: 2019-01-30
+slug: Installing_ingres
+categories:
+  - R
+tags:
+  - Ingres
+  - Database
+  - DBI
+  - ODBC
 ---
 
 
 
+<div id="install-ingres" class="section level3">
+<h3>Install Ingres</h3>
+<p>You can find the installation manual for Ingres at:<br />
+<a href="http://docs.actian.com/ingres/11.0/index.html#page/QuickStart_Linux/Installing_Ingres_for_Linux.htm" class="uri">http://docs.actian.com/ingres/11.0/index.html#page/QuickStart_Linux/Installing_Ingres_for_Linux.htm</a></p>
+<p>The easiest method is probably to download the tar file onto the Ubuntu machine.</p>
+<p>Unzip the tar file using the usual commands</p>
+<p>Inside the unzipped folder run the express_install.sh bash script<br />
+- Provide the -user xxx parameter to setup the environment variables more easily for a specific user on the Ubuntu machine<br />
+- Run only on a bash shell (not fish or other shells)<br />
+- Install as sudo</p>
+<p>e.g. <code>sudo ./express_install.sh -user stefan</code></p>
+<p>Now you need to set up the environment variables. The actian isntallation provides a script for this (given your user selection):</p>
+<p><code>. ~/.ingXXsh</code> Where XX is relative to your OS</p>
+<p>This should set up your environment variables for you. You can check them by calling<br />
+<code>set</code></p>
+</div>
+<div id="setting-up-your-r-studio" class="section level3">
+<h3>Setting up your R-studio</h3>
+<p>Your R-studio will not be able to connect to any Ingres databases yet, even if you have setup the ODBC files.</p>
+<p>Normally it is sufficient to edit the <code>~/.odbc.ini</code> and <code>~/odbc_inst</code> files but Inres requires your environment variables to be setup properly.</p>
+<p>Although we setup our user’s environment variables R-studio does not inherit these environment variables!</p>
+<div id="edit-renviron-file" class="section level4">
+<h4>Edit Renviron file</h4>
+<p>Make sure your main R-studio location is used here:</p>
+<p><code>vim /usr/lib/R/etc/Renviron.site</code></p>
+<p>Now add the following lines to the file:</p>
+<blockquote>
+<p>II_SYSTEM=/opt/Actian/Vector_Client/ ODBCSYSINI=<span class="math inline">\(II_SYSTEM/ingres/files LD_LIBRARY_PATH=/opt/Actian/Vector_Client/ingres/lib:/opt/Actian/Vector_Client/ingres/lib/lp32:/usr/lib/R/lib::/lib:/usr/lib/x86_64-linux-gnu:/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/amd64/server:@JAVA_LD@ PATH=/opt/Actian/Vector_Client/ingres/bin:/opt/Actian/Vector_Client/ingres/utility:\)</span>{PATH}</p>
+</blockquote>
+<p>Make sure that you are using the same install folder as Ingres. This is the default location</p>
+<p>Notice that we edit the default <code>PATH</code> variable. Be careful about setting this! Your session will search from top to bottom!</p>
+</div>
+<div id="config-the-odbc-files" class="section level4">
+<h4>Config the odbc files</h4>
+<p>Open your .odbc.ini file and add the relevant parameters for your connection:</p>
+<p><code>vim ~/.odbc.ini</code></p>
+<blockquote>
+<p>[db_name] Driver=/opt/Actian/Vector_Client/ingres/lib/libiiodbcdriver.1.so Description= Vendor=Actian Corporation DriverType=Ingres HostName=10.100.100.100 ListenAddress=777 Database=db ServerType=Ingres user=stefan password=password</p>
+</blockquote>
+</div>
+<div id="setup-and-test-drivers-and-libraries" class="section level4">
+<h4>Setup and test drivers and libraries</h4>
+<p>You will need to make sure you have installed the following R packages:</p>
+<ul>
+<li>DBI<br />
+</li>
+<li>odbc<br />
+</li>
+<li>dbplyr<br />
+</li>
+<li>dplyr</li>
+</ul>
+<p>To test the connection you can run</p>
+<pre class="r"><code>library(odbc)
+library(dbplyr)
+library(dplyr)
 
+con &lt;- DBI::dbConnect(odbc::odbc(),dsn = &quot;db_name&quot;,uid = &quot;stefan&quot;,pwd = &quot;password&quot;)
+
+DBI::dbWriteTable(con,&quot;test_table&quot;,mtcars)
+
+DBI::dbListTables(con)
+
+# tbl(con,quer = &quot;select * from test_table&quot;)
+
+as.tbl(DBI::dbGetQuery(con, &quot;select * from test_table&quot;))</code></pre>
+<p><code>odbc::odbc()</code> will check your odbc ini file for any connections you have defined. It will use the drivers you specified from the installation. Specifying the user name and password should not be necessary.</p>
+<p>Because Ingres does not yet have supported sql translations you won’t be able to use dbplyr tbl() chains to create sql queries.</p>
+</div>
+</div>

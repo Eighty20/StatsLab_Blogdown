@@ -1,7 +1,8 @@
 ---
 title: "Installing and connecting to an Ingres database"
-author: "Stefan Fouche"
+author: Stefan
 date: 2019-01-30
+slug: Installing_ingres
 categories:
   - R
 tags:

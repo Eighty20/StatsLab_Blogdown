@@ -1,0 +1,118 @@
+---
+title: "Installing and connecting to an Ingres database"
+author: Stefan
+date: 2019-01-30
+slug: Installing_ingres
+categories:
+  - R
+tags:
+  - Ingres
+  - Database
+  - DBI
+  - ODBC
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Install Ingres
+
+You can find the installation manual for Ingres at:  
+<http://docs.actian.com/ingres/11.0/index.html#page/QuickStart_Linux/Installing_Ingres_for_Linux.htm>  
+
+The easiest method is probably to download the tar file onto the Ubuntu machine.
+
+Unzip the tar file using the usual commands
+
+Inside the unzipped folder run the express_install.sh bash script  
+  - Provide the -user xxx parameter to setup the environment variables more easily for a specific user on the Ubuntu machine  
+  - Run only on a bash shell (not fish or other shells)  
+  - Install as sudo
+  
+e.g. `sudo ./express_install.sh -user stefan`  
+
+Now you need to set up the environment variables.
+The actian isntallation provides a script for this (given your user selection):  
+
+`. ~/.ingXXsh` Where XX is relative to your OS  
+
+This should set up your environment variables for you. You can check them by calling  
+`set`  
+
+### Setting up your R-studio 
+
+Your R-studio will not be able to connect to any Ingres databases yet, even if you have setup the ODBC files.
+
+Normally it is sufficient to edit the `~/.odbc.ini` and `~/odbc_inst` files but Inres requires your environment variables to be setup properly.  
+
+Although we setup our user's environment variables R-studio does not inherit these environment variables!
+
+#### Edit Renviron file
+
+Make sure your main R-studio location is used here:  
+
+`vim /usr/lib/R/etc/Renviron.site`
+
+Now add the following lines to the file:  
+
+>II_SYSTEM=/opt/Actian/Vector_Client/
+ODBCSYSINI=$II_SYSTEM/ingres/files
+LD_LIBRARY_PATH=/opt/Actian/Vector_Client/ingres/lib:/opt/Actian/Vector_Client/ingres/lib/lp32:/usr/lib/R/lib::/lib:/usr/lib/x86_64-linux-gnu:/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/amd64/server:@JAVA_LD@
+PATH=/opt/Actian/Vector_Client/ingres/bin:/opt/Actian/Vector_Client/ingres/utility:${PATH}  
+
+Make sure that you are using the same install folder as Ingres. This is the default location
+
+Notice that we edit the default `PATH` variable. Be careful about setting this! Your session will search from top to bottom!  
+
+#### Config the odbc files
+
+Open your .odbc.ini file and add the relevant parameters for your connection:  
+
+`vim ~/.odbc.ini`  
+
+> [db_name]
+Driver=/opt/Actian/Vector_Client/ingres/lib/libiiodbcdriver.1.so
+Description=
+Vendor=Actian Corporation
+DriverType=Ingres
+HostName=10.100.100.100
+ListenAddress=777
+Database=db
+ServerType=Ingres
+user=stefan
+password=password
+
+#### Setup and test drivers and libraries
+
+You will need to make sure you have installed the following R packages:  
+
+- DBI  
+- odbc  
+- dbplyr  
+- dplyr  
+
+To test the connection you can run
+
+```{r, eval=FALSE}
+library(odbc)
+library(dbplyr)
+library(dplyr)
+
+con <- DBI::dbConnect(odbc::odbc(),dsn = "db_name",uid = "stefan",pwd = "password")
+
+DBI::dbWriteTable(con,"test_table",mtcars)
+
+DBI::dbListTables(con)
+
+# tbl(con,quer = "select * from test_table")
+
+as.tbl(DBI::dbGetQuery(con, "select * from test_table"))
+```
+
+`odbc::odbc()` will check your odbc ini file for any connections you have defined. It will use the drivers you specified from the installation. Specifying the user name and password should not be necessary.
+
+Because Ingres does not yet have supported sql translations you won't be able to use dbplyr tbl() chains to create sql queries.
+
+
+

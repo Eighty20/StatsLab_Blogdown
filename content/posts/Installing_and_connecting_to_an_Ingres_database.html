@@ -41,7 +41,7 @@ tags:
 <p><code>vim /usr/lib/R/etc/Renviron.site</code></p>
 <p>Now add the following lines to the file:</p>
 <blockquote>
-<p>II_SYSTEM=/opt/Actian/Vector_Client/ ODBCSYSINI=<span class="math inline">\(II_SYSTEM/ingres/files LD_LIBRARY_PATH=/opt/Actian/Vector_Client/ingres/lib:/opt/Actian/Vector_Client/ingres/lib/lp32:/usr/lib/R/lib::/lib:/usr/lib/x86_64-linux-gnu:/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/amd64/server:@JAVA_LD@ PATH=/opt/Actian/Vector_Client/ingres/bin:/opt/Actian/Vector_Client/ingres/utility:\)</span>{PATH}</p>
+<p>II_SYSTEM=/opt/Actian/Vector_Client/ ODBCSYSINI=$II_SYSTEM/ingres/files LD_LIBRARY_PATH=/opt/Actian/Vector_Client/ingres/lib:/opt/Actian/Vector_Client/ingres/lib/lp32:/usr/lib/R/lib::/lib:/usr/lib/x86_64-linux-gnu:/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/amd64/server:<span class="citation">@JAVA_LD</span>@ PATH=/opt/Actian/Vector_Client/ingres/bin:/opt/Actian/Vector_Client/ingres/utility:${PATH}</p>
 </blockquote>
 <p>Make sure that you are using the same install folder as Ingres. This is the default location</p>
 <p>Notice that we edit the default <code>PATH</code> variable. Be careful about setting this! Your session will search from top to bottom!</p>

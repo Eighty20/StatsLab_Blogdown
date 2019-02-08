@@ -1,0 +1,112 @@
+---
+title: Using GNU SCREEN when working in Terminal
+author: Pieter
+date: '2019-02-08'
+slug: using-screen
+categories:
+  - R
+tags:
+  - terminal
+---
+
+
+
+<div id="what-is-screen" class="section level2">
+<h2>What is screen</h2>
+<p>Screen is a text-based program usually described as a window manager or terminal multiplexer. While it does a great many things, its two biggest features are its detachability and its multiplexing. The detachability means that you can run programs from within screen, detach and logout, then log in later, reattach, and the programs will still be there. The multiplexing means that you can have multiple programs running within a single screen session, each within its own window. You can display multiple windows at once, or just switch between them, even if you only have a single terminal window to use.</p>
+</div>
+<div id="benefits-of-using-screen" class="section level2">
+<h2>Benefits of using screen</h2>
+<p>If your local computer crashes or you lose the connection, the processes or login sessions you establish through screen don’t go away. The screen program creates multiple processes instead of multiple Unix login sessions, which means that it is resource-efficient. Using the detach feature, you can save screen processes when logging out and resume where you left off, saving the trouble of restarting them.</p>
+</div>
+<div id="when-should-i-use-screen" class="section level2">
+<h2>When should I use screen</h2>
+<p>When executing a SQL query or script that will take a long time to complete. You can use screen anytime you like and you might find various personal use cases.</p>
+<blockquote>
+<p>NOTE: Do not use background processes (&amp;) since these can intermittently fail if you do not log out your session gracefully, causing you to lose time.</p>
+</blockquote>
+</div>
+<div id="how-to-use-screen" class="section level2">
+<h2>How to use screen</h2>
+<ol style="list-style-type: decimal">
+<li>SSH into your server as you normally would.</li>
+<li><p>Type <code>screen -S &quot;your username&quot;</code> to create a named screen for you to work in. If you type <code>screen -ls</code> you will now see you have a socket like this:</p>
+<pre class="console"><code>PL-MS-i5-2019# screen -ls
+There is a screen on:
+    45.pieter     (02/08/19 14:01:16)     (Attached)
+1 Socket in /run/screen/S-root.</code></pre>
+Here I can see I have a Socket named <code>45.pieter</code> and I am currently connected to it since it is Attached.</li>
+<li><p>Now you can run your commands as you normally would. For Example:</p>
+<pre class="sql"><code>mysql my_test_script.sql &gt; output.log 2&gt; err.log</code></pre>
+This query might take hours or even days to run. To allow you to run this in the background without risking termination you need to detach your session.</li>
+<li><p>Press <code>Ctrl+a</code> this tells screen you will be inputting a command and then press <code>d</code> to detach from this session. You should see a message like: <code>[detached from 45.pieter]</code> You are no free to close your terminal. You will see this socket is now detached when you run <code>screen -ls</code>.</p>
+<pre class="console"><code>PL-MS-i5-2019# screen -ls
+There is a screen on:
+    137.pieter      (02/08/19 15:24:35)     (Detached)
+1 Socket in /run/screen/S-root.</code></pre></li>
+<li><p>To get your screen back you need to reattach to it with <code>screen -x</code> or <code>screen -x PID</code>.</p></li>
+</ol>
+<p>You can close and terminate any screen you are attached to and working in at any time by typing exit.</p>
+</div>
+<div id="quick-reference" class="section level2">
+<h2>Quick Reference</h2>
+<table>
+<thead>
+<tr class="header">
+<th>Description</th>
+<th>Command</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Start New Screen</td>
+<td>screen -S “your username”</td>
+</tr>
+<tr class="even">
+<td>Create New Window</td>
+<td>Ctrl-a c</td>
+</tr>
+<tr class="odd">
+<td>List your screens</td>
+<td>screen -ls</td>
+</tr>
+<tr class="even">
+<td>Exit Screen</td>
+<td>exit</td>
+</tr>
+<tr class="odd">
+<td>Detach Screen</td>
+<td>Ctrl-a d</td>
+</tr>
+<tr class="even">
+<td>Re-attach Screen</td>
+<td>screen -x or screen -x PID</td>
+</tr>
+<tr class="odd">
+<td>Split Horizontally</td>
+<td>Ctrl-a S</td>
+</tr>
+<tr class="even">
+<td>Split Vertically</td>
+<td>Ctrl-a</td>
+</tr>
+<tr class="odd">
+<td>Move Between Windows</td>
+<td>Ctrl-a Tab</td>
+</tr>
+<tr class="even">
+<td>Name Session</td>
+<td>Ctrl-a A</td>
+</tr>
+<tr class="odd">
+<td>Log Session</td>
+<td>Ctrl-a H</td>
+</tr>
+<tr class="even">
+<td>Note Session</td>
+<td>Ctrl-a h</td>
+</tr>
+</tbody>
+</table>
+<p>For a full Quick Reference list see: (SCREEN Quick Reference)[<a href="http://aperiodic.net/screen/quick_reference" class="uri">http://aperiodic.net/screen/quick_reference</a>]</p>
+</div>

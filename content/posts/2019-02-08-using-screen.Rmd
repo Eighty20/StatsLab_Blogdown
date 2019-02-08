@@ -1,0 +1,78 @@
+---
+title: Using GNU SCREEN when working in Terminal
+author: Pieter
+date: '2019-02-08'
+slug: using-screen
+categories:
+  - R
+tags:
+  - terminal
+---
+
+##What is screen
+
+Screen is a text-based program usually described as a window manager or terminal multiplexer. While it does a great many things, its two biggest features are its detachability and its multiplexing. The detachability means that you can run programs from within screen, detach and logout, then log in later, reattach, and the programs will still be there. The multiplexing means that you can have multiple programs running within a single screen session, each within its own window. You can display multiple windows at once, or just switch between them, even if you only have a single terminal window to use.
+
+
+##Benefits of using screen
+If your local computer crashes or you lose the connection, the processes or login sessions you establish through screen don't go away.
+The screen program creates multiple processes instead of multiple Unix login sessions, which means that it is resource-efficient.
+Using the detach feature, you can save screen processes when logging out and resume where you left off, saving the trouble of restarting them.
+
+
+##When should I use screen
+When executing a SQL query or script that will take a long time to complete.
+You can use screen anytime you like and you might find various personal use cases.
+
+> NOTE: Do not use background processes (&) since these can intermittently fail if you do not log out your session gracefully, causing you to lose time.
+
+
+##How to use screen
+1. SSH into your server as you normally would.
+2. Type `screen -S "your username"` to create a named screen for you to work in. If you type `screen -ls` you will now see you have a socket like this:
+    ```console  
+    PL-MS-i5-2019# screen -ls
+    There is a screen on:
+        45.pieter     (02/08/19 14:01:16)     (Attached)
+    1 Socket in /run/screen/S-root.
+    ```
+Here I can see I have a Socket named `45.pieter` and I am currently connected to it since it is Attached.
+3. Now you can run your commands as you normally would.
+For Example:
+    ```sql
+    mysql my_test_script.sql > output.log 2> err.log
+    ```
+This query might take hours or even days to run. To allow you to run this in the background without risking termination you need to detach your session.
+4. Press `Ctrl+a` this tells screen you will be inputting a command and then press `d` to detach from this session.
+You should see a message like:
+`[detached from 45.pieter]`
+You are no free to close your terminal. You will see this socket is now detached when you run `screen -ls`.
+    ```console
+    PL-MS-i5-2019# screen -ls
+    There is a screen on:
+        137.pieter      (02/08/19 15:24:35)     (Detached)
+    1 Socket in /run/screen/S-root.
+    ```
+5. To get your screen back you need to reattach to it with `screen -x` or `screen -x PID`.
+
+You can close and terminate any screen you are attached to and working in at any time by typing exit.
+
+
+##Quick Reference
+| Description          | Command                    |
+| -------------------- | -------------------------- |
+| Start New Screen     | screen -S "your username"  |
+| Create New Window    | Ctrl-a c
+| List your screens    | screen -ls                 |
+| Exit Screen          | exit                       |
+| Detach Screen        | Ctrl-a d                   |
+| Re-attach Screen     | screen -x or screen -x PID |
+| Split Horizontally   | Ctrl-a S                   |
+| Split Vertically     | Ctrl-a                     |
+| Move Between Windows | Ctrl-a Tab                 |
+| Name Session         | Ctrl-a A                   |
+| Log Session          | Ctrl-a H                   |
+| Note Session         | Ctrl-a h                   |
+
+
+For a full Quick Reference list see: (SCREEN Quick Reference)[http://aperiodic.net/screen/quick_reference]

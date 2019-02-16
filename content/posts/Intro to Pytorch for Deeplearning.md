@@ -235,7 +235,7 @@ print(' '.join('%5s' % classes[labels[j]] for j in range(4)))
 ```
 
 
-![png](Intro%20to%20Pytorch%20for%20Deeplearning_files/Intro%20to%20Pytorch%20for%20Deeplearning_15_0.png)
+![png](/Pictures/intro_pytorch/Intro to Pytorch for Deeplearning_15_0.png)
 
 
      bird   car   dog  deer
@@ -390,7 +390,7 @@ print('GroundTruth: ', ' '.join('%5s' % classes[labels[j]] for j in range(4)))
 ```
 
 
-![png](Intro%20to%20Pytorch%20for%20Deeplearning_files/Intro%20to%20Pytorch%20for%20Deeplearning_24_0.png)
+![png](/Pictures/intro_pytorch/Intro to Pytorch for Deeplearning_24_0.png)
 
 
     GroundTruth:    cat  ship  ship plane
@@ -467,7 +467,7 @@ imshow(torchvision.utils.make_grid(images.cpu()))
 ```
 
 
-![png](Intro%20to%20Pytorch%20for%20Deeplearning_files/Intro%20to%20Pytorch%20for%20Deeplearning_30_0.png)
+![png](/Pictures/intro_pytorch/Intro to Pytorch for Deeplearning_30_0.png)
 
 
 Pytorch is easy to apply and very powerful!

@@ -13,7 +13,7 @@ tags:
 
 <div id="what-is-gnu-screen" class="section level2">
 <h2>What is GNU SCREEN</h2>
-<p>GNU SCREEN (screen) is a text-based program usually described as a window manager or terminal multiplexer. While it does a great many things, its two biggest features are its detachability and its multiplexing. The detachability means that you can run programs from within screen, detach and logout, then log in later, reattach, and the programs will still be there. The multiplexing means that you can have multiple programs running within a single screen session, each within its own window. You can display multiple windows at once, or just switch between them, even if you only have a single terminal window to use.</p>
+<p>GNU SCREEN (screen) is a text-based program usually described as a window manager or terminal multiplexer. While it does a great many things, its two biggest features are its detachability and its multiplexing. The detachability means that you can run programs from within screen, detach and log out, then log in later, reattach, and the programs will still be there. The multiplexing means that you can have multiple programs running within a single screen session, each within its own window. You can display multiple windows at once, or just switch between them, even if you only have a single terminal window to use.</p>
 </div>
 <div id="benefits-of-using-screen" class="section level2">
 <h2>Benefits of using screen</h2>
@@ -21,14 +21,14 @@ tags:
 </div>
 <div id="why-not-just-use-or-crontab" class="section level2">
 <h2>Why not just use ‘&amp;’ or CronTab?</h2>
-<p>Running a MySQL query with ‘&amp;’ alone does not guarantee your query will not be interupted. You will have to use <code>nohup (ignore the hangup signal)</code>. From out experience this did not always work. Screen provides an elegant and user friendly way to run multiple queries without having to fear it being interupted or not being able to return to it at any time.</p>
-<p>CronTab does not let us specify a year. This means if you forget to remove an entry it will run the next year again, automatically, even if you are not with us anymore! It also does not allow us to kick it off manually.</p>
+<p>Running a MySQL query with ‘&amp;’ alone does not guarantee your query will not be interrupted. You will have to use <code>nohup (ignore the hangup signal)</code>. From our experience, this did not always work. Screen provides an elegant and user-friendly way to run multiple queries without having to fear it being interrupted or not being able to return to it at any time.</p>
+<p>CronTab does not let us specify a year. This means if you forget to remove an entry it will run the next year again, automatically, even if you are not with us any longer! It also does not allow us to kick it off manually.</p>
 </div>
 <div id="when-should-i-use-screen" class="section level2">
 <h2>When should I use screen</h2>
-<p>When executing a SQL query or script that will take a long time to complete. You can use screen anytime you like and you might find various personal use cases.</p>
+<p>We would recommend you always you screen when working in PuTTY (Terminal). Have a screen dedicated as your sandbox environment and create additional screens as required for long running queries or any other use case you might encounter.</p>
 <blockquote>
-<p>NOTE: Do not use background processes (&amp;). When you detach from your screen it will run in the background and you can start a new screen.</p>
+<p>NOTE: Do not use background processes (&amp;). When you detach from your screen it will run in the background and you can start a new screen. dsd</p>
 </blockquote>
 </div>
 <div id="how-to-use-screen" class="section level2">
@@ -40,7 +40,7 @@ tags:
 There is a screen on:
     45.pieter     (02/08/19 14:01:16)     (Attached)
 1 Socket in /run/screen/S-root.</code></pre>
-Here I can see I have a Socket named <code>45.pieter</code> and I am currently connected to it since it is Attached.</li>
+<p>Here I can see I have a Socket named <code>45.pieter</code> and I am currently connected to it since it is Attached.</p></li>
 <li><p>Now you can run your commands as you normally would. For Example:</p>
 <pre class="sql"><code>mysql my_test_script.sql &gt; output.log 2&gt; err.log</code></pre></li>
 <li><p>To detach from a session and let it run in the background press <code>Ctrl+a</code> this tells screen you will be inputting a command and then press <code>d</code> to detach from this session. You should see a message like: <code>[detached from 45.pieter]</code> You are now free to close your terminal. You will see this socket is now detached when you run <code>screen -ls</code>.</p>
@@ -50,18 +50,20 @@ There is a screen on:
 1 Socket in /run/screen/S-root.</code></pre></li>
 <li><p>To get your screen back you need to reattach to it with <code>screen -dR</code> or <code>screen -dR pieter</code> if you need to connect to a specific one.</p></li>
 </ol>
-<p>You can close and terminate any screen you are attached to and working in at any time by pressing <code>Ctrl+a</code> and then typing <code>:quit</code>. A short way is simply typing <code>exit</code> but you do carry the risk of exiting Putty completely.</p>
-If you close your ssh connection without detaching, or lose your network connection: 1. run `screen -dR
-<screen name>
-<p>The -dR means “find my screen session, detach it from wherever it’s attached if it’s attached, and reattach it here, if I don’t already have a session, create one”</p>
+<p>You can close and terminate any screen you are attached to and working in at any time by pressing <code>Ctrl+a</code> and then typing <code>:quit</code>. A short way is simply typing <code>exit</code> but you do carry the risk of exiting PuTTY completely.</p>
+<p>If you close your ssh connection without detaching or lose your network connection: run <code>screen -dR &lt;screen name&gt;</code> The -dR means “find my screen session, detach it from wherever it’s attached if it’s attached, and reattach it here, if I don’t already have a session, create one”</p>
 </div>
-<div id="dos-and-donts" class="section level2">
-<h2>DOs and DON’Ts</h2>
+<div id="recommended-usage-guidelines" class="section level2">
+<h2>Recommended Usage Guidelines</h2>
 <ul>
-<li>Do create a screen, with a descriptive name, for each big query you are running.</li>
-<li>Do close your screen sessions when you are done using them.</li>
-<li>Don’t use nohup and/or ‘&amp;’ in screen. It is not necessary.</li>
-<li>Dont</li>
+<li>Use descriptive screen names. This will help you keep track of what they are for. For example: <code>pieter_sandbox</code> or <code>pieter_prodLoad</code>.</li>
+<li>Use multiple SCREENs to separate your big loads from quick ad-hoc work and investigations.</li>
+<li>All expected long running queries should be done in SCREEN to prevent interruptions or delays.</li>
+<li>Don’t use nohup or &amp;. Instead of running multiple queries with &amp;, you should now create multiple screens for each query.</li>
+<li>You can still open multiple terminals and you will be able to see your screens across them.</li>
+<li>The <code>&gt;</code> and <code>2&gt;</code> command line operators let you write your script results to a file (&gt;) and write an error log (2&gt;). For example: <code>mysql my_test_script.sql &gt; output.txt 2&gt; err.log</code> or <code>mysql -e &quot;SELECT * FROM tableName&quot; &gt; output.log 2&gt; err.log</code></li>
+<li>Do good housekeeping by exiting (<code>Ctrl+a :quit</code>) your screen when you are no longer going to use it.</li>
+<li>You can use split windows within SCREEN if you feel it will make you more productive. It works well if you are connecting to various servers and running commands. It is less useful to run multiple SQL queries and can sometimes cause issues which will require a force quit.</li>
 </ul>
 </div>
 <div id="quick-reference" class="section level2">
@@ -88,7 +90,7 @@ If you close your ssh connection without detaching, or lose your network connect
 </tr>
 <tr class="even">
 <td>Exit Screen</td>
-<td>exit</td>
+<td>exit / Ctrl+a :quit</td>
 </tr>
 <tr class="odd">
 <td>Detach Screen</td>
@@ -124,6 +126,6 @@ If you close your ssh connection without detaching, or lose your network connect
 </tr>
 </tbody>
 </table>
-<p>To force quit a screen session: <code>screen -S sessionname -p 0 -X quit</code></p>
+<p>To force quit a screen session: <code>screen -S &lt;sessionname&gt; -p 0 -X quit</code></p>
 <p>For a full Quick Reference list see: <a href="http://aperiodic.net/screen/quick_reference">SCREEN Quick Reference</a></p>
 </div>

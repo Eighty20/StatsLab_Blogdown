@@ -11,7 +11,7 @@ tags:
 
 ## What is GNU SCREEN
 
-GNU SCREEN (screen) is a text-based program usually described as a window manager or terminal multiplexer. While it does a great many things, its two biggest features are its detachability and its multiplexing. The detachability means that you can run programs from within screen, detach and logout, then log in later, reattach, and the programs will still be there. The multiplexing means that you can have multiple programs running within a single screen session, each within its own window. You can display multiple windows at once, or just switch between them, even if you only have a single terminal window to use.
+GNU SCREEN (screen) is a text-based program usually described as a window manager or terminal multiplexer. While it does a great many things, its two biggest features are its detachability and its multiplexing. The detachability means that you can run programs from within screen, detach and log out, then log in later, reattach, and the programs will still be there. The multiplexing means that you can have multiple programs running within a single screen session, each within its own window. You can display multiple windows at once, or just switch between them, even if you only have a single terminal window to use.
 
 ## Benefits of using screen
 
@@ -21,15 +21,15 @@ Using the detach feature, you can save screen processes when logging out and res
 
 ## Why not just use '&' or CronTab?
 
-Running a MySQL query with '&' alone does not guarantee your query will not be interupted. You will have to use `nohup (ignore the hangup signal)`. From out experience this did not always work. Screen provides an elegant and user friendly way to run multiple queries without having to fear it being interupted or not being able to return to it at any time.
+Running a MySQL query with '&' alone does not guarantee your query will not be interrupted. You will have to use `nohup (ignore the hangup signal)`. From our experience, this did not always work. Screen provides an elegant and user-friendly way to run multiple queries without having to fear it being interrupted or not being able to return to it at any time.
 
-CronTab does not let us specify a year. This means if you forget to remove an entry it will run the next year again, automatically, even if you are not with us anymore! It also does not allow us to kick it off manually.
+CronTab does not let us specify a year. This means if you forget to remove an entry it will run the next year again, automatically, even if you are not with us any longer! It also does not allow us to kick it off manually.
 
 ## When should I use screen
-When executing a SQL query or script that will take a long time to complete.
-You can use screen anytime you like and you might find various personal use cases.
 
-> NOTE: Do not use background processes (&). When you detach from your screen it will run in the background and you can start a new screen.
+We would recommend you always you screen when working in PuTTY (Terminal). Have a screen dedicated as your sandbox environment and create additional screens as required for long running queries or any other use case you might encounter.
+
+> NOTE: Do not use background processes (&). When you detach from your screen it will run in the background and you can start a new screen. dsd 
 
 ## How to use screen
 
@@ -42,6 +42,7 @@ You can use screen anytime you like and you might find various personal use case
     1 Socket in /run/screen/S-root.
     ```
 Here I can see I have a Socket named `45.pieter` and I am currently connected to it since it is Attached.
+
 3. Now you can run your commands as you normally would.
 For Example:
     ```sql
@@ -58,19 +59,24 @@ You are now free to close your terminal. You will see this socket is now detache
         137.pieter      (02/08/19 15:24:35)     (Detached)
     1 Socket in /run/screen/S-root.
     ```
-1. To get your screen back you need to reattach to it with `screen -dR` or `screen -dR pieter` if you need to connect to a specific one.
 
-You can close and terminate any screen you are attached to and working in at any time by pressing `Ctrl+a` and then typing `:quit`. A short way is simply typing `exit` but you do carry the risk of exiting Putty completely.
+5. To get your screen back you need to reattach to it with `screen -dR` or `screen -dR pieter` if you need to connect to a specific one.
 
-If you close your ssh connection without detaching, or lose your network connection:
-	1. run `screen -dR <screen name>
+You can close and terminate any screen you are attached to and working in at any time by pressing `Ctrl+a` and then typing `:quit`. A short way is simply typing `exit` but you do carry the risk of exiting PuTTY completely.
+
+If you close your ssh connection without detaching or lose your network connection: run `screen -dR <screen name>`
 The -dR means "find my screen session, detach it from wherever it's attached if it's attached, and reattach it here, if I don't already have a session, create one"
 
-## DOs and DON'Ts
- - Do create a screen, with a descriptive name, for each big query you are running.
- - Do close your screen sessions when you are done using them.
- - Don't use nohup and/or '&' in screen. It is not necessary.
- - Dont
+## Recommended Usage Guidelines
+
+ - Use descriptive screen names. This will help you keep track of what they are for. For example: `pieter_sandbox` or `pieter_prodLoad`.
+ - Use multiple SCREENs to separate your big loads from quick ad-hoc work and investigations.
+ - All expected long running queries should be done in SCREEN to prevent interruptions or delays. 
+ - Don't use nohup or &. Instead of running multiple queries with &, you should now create multiple screens for each query.
+ - You can still open multiple terminals and you will be able to see your screens across them.
+ - The `>` and `2>` command line operators let you write your script results to a file (>) and write an error log (2>). For example: `mysql my_test_script.sql > output.txt 2> err.log` or `mysql -e "SELECT * FROM tableName" > output.log 2> err.log`
+ - Do good housekeeping by exiting (`Ctrl+a :quit`) your screen when you are no longer going to use it. 
+ - You can use split windows within SCREEN if you feel it will make you more productive. It works well if you are connecting to various servers and running commands. It is less useful to run multiple SQL queries and can sometimes cause issues which will require a force quit.
 
 ## Quick Reference
 
@@ -79,17 +85,17 @@ The -dR means "find my screen session, detach it from wherever it's attached if 
 | Start New Screen     | screen -dR "your username/screen name"  |
 | Create New Window    | Ctrl-a c
 | List your screens    | screen -ls                 |
-| Exit Screen          | exit                       |
+| Exit Screen          | exit / Ctrl+a :quit        |
 | Detach Screen        | Ctrl-a d                   |
 | Re-attach Screen     | screen -x or screen -x PID |
 | Split Horizontally   | Ctrl-a S                   |
-| Split Vertically     | Ctrl-a \|                   |
+| Split Vertically     | Ctrl-a \|                  |
 | Move Between Windows | Ctrl-a Tab                 |
 | Name Session         | Ctrl-a A                   |
 | Log Session          | Ctrl-a H                   |
 | Note Session         | Ctrl-a h                   |
 
-To force quit a screen session: `screen -S sessionname -p 0 -X quit`
+To force quit a screen session: `screen -S <sessionname> -p 0 -X quit`
 
 
 For a full Quick Reference list see: [SCREEN Quick Reference](http://aperiodic.net/screen/quick_reference)

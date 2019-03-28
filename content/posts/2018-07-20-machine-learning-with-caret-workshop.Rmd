@@ -1,5 +1,5 @@
 ---
-title: Machine learning artistry
+title: Supervised Machine Learning
 author: Stefan
 date: '2018-07-20'
 slug: machine-learning-with-caret-workshop
@@ -19,10 +19,6 @@ tags:
 ## Overview
 
 This blog serves as the reference material for our workshop on using caret for machine learning workflow in R.  
-
-More importantly, this blog is maticulously designed so as to be an all encompassing post about using caret as your first angle of attack for supervised learning.  
-
-Because of this I have designed each section to be wholly independent and address a specific use case. I also highlight some intuition throughout the post but most intuition will be caught, and not taught, during the workshop.  
 
 ## libraries
 

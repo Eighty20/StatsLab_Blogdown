@@ -1,5 +1,12 @@
 ---
 title: "Important Predictors of Spend Behaviour"
+author: Anri
+date: 2021-09-01
+slug: Important_Predictors_of_Spend_Behaviour
+categories:
+  - General
+tags:
+  - modelling
 output: 
   html_document:
     toc: yes
@@ -89,17 +96,17 @@ start_time &lt;- Sys.time()
 #analysis
 library(dplyr)
 library(randomForest)
-library(adabag)
+#library(adabag)
 #data loading
-library(DBI)
-library(RODBC)
+#library(DBI)
+#library(RODBC)
 #performance
-library(doParallel)
-library(foreach)
+#library(doParallel)
+#library(foreach)
 library(ggplot2)
 
-db&lt;-odbcConnect( &quot;sbsa_prod&quot;)
-con &lt;- dbConnect(odbc::odbc(), &quot;sbsa_prod&quot;, bigint=&quot;integer&quot; )
+#db&lt;-odbcConnect( &quot;sbsa_prod&quot;)
+#con &lt;- dbConnect(odbc::odbc(), &quot;sbsa_prod&quot;, bigint=&quot;integer&quot; )
 
 # Script Variables
 script_num &lt;- 8
@@ -491,12 +498,11 @@ MyComp_Cust_variable_importance_record$sign &lt;- (MyComp_Cust_variable_importan
 <div id="example-of-results" class="section level2">
 <h2>Example of Results</h2>
 <p>Having a look at predictors in the Affluency category for Retailer R2 General Merchandise Spend it can be seen that derived income is the most important predictor when establishing whether a customer shops at our stores or at our competitors. This variable is ranked the 4th most important across all predictors. The average derived income for our customers is R24,261 while the average derived income at our competitors is R30,874. This tells us that customers spending at our competitors are earning a higher income on average.</p>
-<pre class="r"><code>data &lt;- readRDS(file = &#39;~/git_repos/StatsLab_Blogdown/static/data/MyComp_Cust_variable_importance_record.RDS&#39;)
-plot_data &lt;- data %&gt;% filter(Retailer == &#39;R2&#39; &amp; Category == &#39;General M&#39; &amp; pred_category == &#39;Affluency&#39;)
+<pre class="r"><code>#data &lt;- readRDS(file = &#39;../../static/data/MyComp_Cust_variable_importance_record.RDS&#39;)
+#plot_data &lt;- data %&gt;% filter(Retailer == &#39;R2&#39; &amp; Category == &#39;General M&#39; &amp; pred_category == &#39;Affluency&#39;)
 
-p &lt;- ggplot(plot_data, aes(x = reorder(variable_name, variable_importance), y = variable_importance)) +
-  geom_col( width = 0.7) + coord_flip() + ylab(&quot;Variable Importance&quot;) + xlab(&quot;Predictor&quot;)
-p</code></pre>
-<p><img src="/posts/2021-09-01-important-predictors-of-spend-behaviour_files/figure-html/results_plot-1.png" width="672" /></p>
+#p &lt;- ggplot(plot_data, aes(x = reorder(variable_name, variable_importance), y = variable_importance)) +
+#  geom_col( width = 0.7) + coord_flip() + ylab(&quot;Variable Importance&quot;) + xlab(&quot;Predictor&quot;)
+#p</code></pre>
 </div>
 </div>

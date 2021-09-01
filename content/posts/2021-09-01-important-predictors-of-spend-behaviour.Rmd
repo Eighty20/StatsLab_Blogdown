@@ -1,5 +1,12 @@
 ---
 title: "Important Predictors of Spend Behaviour"
+author: Anri
+date: 2021-09-01
+slug: Important_Predictors_of_Spend_Behaviour
+categories:
+  - General
+tags:
+  - modelling
 output: 
   html_document:
     toc: yes
@@ -87,17 +94,17 @@ start_time <- Sys.time()
 #analysis
 library(dplyr)
 library(randomForest)
-library(adabag)
+#library(adabag)
 #data loading
-library(DBI)
-library(RODBC)
+#library(DBI)
+#library(RODBC)
 #performance
-library(doParallel)
-library(foreach)
+#library(doParallel)
+#library(foreach)
 library(ggplot2)
 
-db<-odbcConnect( "sbsa_prod")
-con <- dbConnect(odbc::odbc(), "sbsa_prod", bigint="integer" )
+#db<-odbcConnect( "sbsa_prod")
+#con <- dbConnect(odbc::odbc(), "sbsa_prod", bigint="integer" )
 
 # Script Variables
 script_num <- 8
@@ -517,11 +524,11 @@ Having a look at predictors in the Affluency category for Retailer R2 General Me
 
 ```{r results_plot, message=FALSE}
 
-data <- readRDS(file = '~/git_repos/StatsLab_Blogdown/static/data/MyComp_Cust_variable_importance_record.RDS')
-plot_data <- data %>% filter(Retailer == 'R2' & Category == 'General M' & pred_category == 'Affluency')
+#data <- readRDS(file = '../../static/data/MyComp_Cust_variable_importance_record.RDS')
+#plot_data <- data %>% filter(Retailer == 'R2' & Category == 'General M' & pred_category == 'Affluency')
 
-p <- ggplot(plot_data, aes(x = reorder(variable_name, variable_importance), y = variable_importance)) +
-  geom_col( width = 0.7) + coord_flip() + ylab("Variable Importance") + xlab("Predictor")
+#p <- ggplot(plot_data, aes(x = reorder(variable_name, variable_importance), y = variable_importance)) +
+#  geom_col( width = 0.7) + coord_flip() + ylab("Variable Importance") + xlab("Predictor")
 p
 
 ```

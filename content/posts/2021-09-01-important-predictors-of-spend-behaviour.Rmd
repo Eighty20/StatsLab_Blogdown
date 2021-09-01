@@ -524,11 +524,11 @@ Having a look at predictors in the Affluency category for Retailer R2 General Me
 
 ```{r results_plot, message=FALSE}
 
-#data <- readRDS(file = '../../static/data/MyComp_Cust_variable_importance_record.RDS')
-#plot_data <- data %>% filter(Retailer == 'R2' & Category == 'General M' & pred_category == 'Affluency')
+data <- readRDS(file = '../../static/data/MyComp_Cust_variable_importance_record.RDS')
+plot_data <- data %>% filter(Retailer == 'R2' & Category == 'General M' & pred_category == 'Affluency')
 
-#p <- ggplot(plot_data, aes(x = reorder(variable_name, variable_importance), y = variable_importance)) +
-#  geom_col( width = 0.7) + coord_flip() + ylab("Variable Importance") + xlab("Predictor")
+p <- ggplot(plot_data, aes(x = reorder(variable_name, variable_importance), y = variable_importance)) +
+  geom_col( width = 0.7) + coord_flip() + ylab("Variable Importance") + xlab("Predictor")
 p
 
 ```

@@ -1,0 +1,502 @@
+---
+title: "Important Predictors of Spend Behaviour"
+output: 
+  html_document:
+    toc: yes
+    toc_float: true
+    toc_collapsed: true
+editor_options: 
+  chunk_output_type: console
+---
+
+
+
+<div id="introduction" class="section level1">
+<h1>Introduction:</h1>
+<p>A retailer wishes to understand a variety of shopping behaviour at its stores. For example how does its existing customers compare to its new customers? What about its lost customers compared to its existing customers? Does its customers look different from its competitors? To answer these questions we had a look at establishing which customer characteristics are the most important when categorising customers into the above spend behaviour groups.</p>
+</div>
+<div id="the-model-components" class="section level1">
+<h1>The Model Components:</h1>
+<p>We made use of the Machine Learning technique: Random Forest Modelling of Classification Trees. The response being a binary field where a customer can fall into one of two categories per model:</p>
+<ol style="list-style-type: decimal">
+<li>New Customers vs Lost Customers</li>
+<li>New vs Existing Customers</li>
+<li>Lost vs Existing Customers</li>
+<li>High vs Low Share of Wallet(SoW) Customers</li>
+<li>Increasing vs Decreasing Share of Wallet (SoW) Customers</li>
+<li>Top vs Bottom Spend per Month (SPM) Customers</li>
+<li>Increasing vs Decreasing Spend per Month(SPM) Customers</li>
+<li>My Customers vs Competitor Customers</li>
+</ol>
+<p>Some helpful definitions:</p>
+<ul>
+<li>New Customer: They shopped at the Retailer within the given Spend Category for the first time in 2020</li>
+<li>Existing Customer: Shopped at Retailer Spend Category in 2018,2019 and 2020</li>
+<li>Lost Customer: Shopped at Retailer Spend Category in 2018, 2019 but not in 2020 or 2021</li>
+</ul>
+<p>The predictors in the models consisted of a range of customer characteristics:</p>
+<ul>
+<li>Demographics</li>
+<li>Credit Behaviour</li>
+<li>Affluency</li>
+<li>Broader Industry Spend Behaviour</li>
+<li>Spend Behaviour at Retailer and immediate competitors</li>
+</ul>
+</div>
+<div id="technical-modelling-summary" class="section level1">
+<h1>Technical Modelling Summary</h1>
+<div id="samples-and-field-preperation" class="section level2">
+<h2>Samples and field preperation</h2>
+<ul>
+<li>A sample of ~1 million customers was taken for each model, with 500k belonging to each of the two response groups</li>
+<li>All predictor fields were cleaned before loading into R (Though this could have been done in R as well)</li>
+<li>Missing values were imputed for derived income and age</li>
+<li>Missing credit information was conservatively set to 0</li>
+<li>Any ratios consisting of missing credit information were also set to zero</li>
+<li>All categorical fields are transformed to factor variables</li>
+</ul>
+</div>
+<div id="the-model-run-fit" class="section level2">
+<h2>The Model Run &amp; Fit</h2>
+<ul>
+<li>A model was fit for each Retailer-Spend Category combination for a given resposnse of interest(1-8 listed above)</li>
+<li>Each model had a total of 500 trees built on a training set consisting of 80% of the observations, with 20% held out as a test set</li>
+<li>At each split in the Classification tree only a subset of the available predictors is considered (the square root of the number of predictors) This is to ensure that not only the most dominant variables are considered</li>
+<li>The Goodness of Fit of the model is assessed based on the proportion of correctly classified customers in the test set</li>
+<li>Variable Importance is recorded as the mean decrease in the Gini Coefficent. The Gini Coefficient being the probabilty of incorrectly classifying an individual to the wrong resonse category.</li>
+<li>The algorithm is run in parallel across 7 cores</li>
+</ul>
+</div>
+<div id="model-output" class="section level2">
+<h2>Model Output</h2>
+<ul>
+<li>We pull out the most important predictors per predictor category (Demographics, Credit Behaviour etc) based on the mean deacrease in the Gini Coefficient as a result of including that variable in the model</li>
+<li>We then calculate the average value / most prominant level of that predictor across the response groups to understand how the response groups differ for this predictor variable</li>
+</ul>
+</div>
+</div>
+<div id="sample-code" class="section level1">
+<h1>Sample Code</h1>
+<p>Here we run through the modelling process for the My Customer vs Competitor Customers model on a smaller sample of 50k customers.</p>
+<div id="data-load-analysis-prep" class="section level2">
+<h2>Data Load &amp; Analysis Prep</h2>
+<pre class="r"><code>#################################
+#Script Libraries
+#################################
+rm(list = ls())
+start_time &lt;- Sys.time()
+
+#analysis
+library(dplyr)
+library(randomForest)
+library(adabag)
+#data loading
+library(DBI)
+library(RODBC)
+#performance
+library(doParallel)
+library(foreach)
+library(ggplot2)
+
+db&lt;-odbcConnect( &quot;sbsa_prod&quot;)
+con &lt;- dbConnect(odbc::odbc(), &quot;sbsa_prod&quot;, bigint=&quot;integer&quot; )
+
+# Script Variables
+script_num &lt;- 8
+
+Responses &lt;- c(&#39;New vs Lost Customers&#39;, 
+               &#39;New vs Existing Customers&#39;, 
+               &#39;Lost vs Existing Customers&#39;, 
+               &#39;High vs Low SoW&#39;, 
+               &#39;Increasing vs Decreasing SoW&#39;,
+               &#39;Top vs Bottom SPM Percentile&#39;,
+               &#39;Increasing vs Decreasing Spend&#39;,
+               &#39;My Customer vs Competitor Customers&#39;)
+
+
+Retailer_Category &lt;- list(c(&#39;R2&#39;,&#39;General M&#39;), c(&#39;R2&#39;,&#39;Grocery&#39;), c(&#39;R2&#39;,&#39;All&#39;),
+                          c(&#39;R1&#39;,&#39;General M&#39;), c(&#39;R1&#39;,&#39;All&#39;),
+                          c(&#39;Competitors&#39;,&#39;General M&#39;), c(&#39;Competitors&#39;,&#39;Grocery&#39;), c(&#39;Competitors&#39;,&#39;All&#39;))</code></pre>
+<pre class="r"><code>regtree_input &lt;- dbGetQuery(con, &#39;select * from sds.blog_MVP2reg_data;&#39;)
+pred_categories &lt;- dbGetQuery(con, &#39;select * from sds.mst_reg_pred_categories;&#39;)
+
+saveRDS(regtree_input, file = &#39;imp_pred_spend_behav_data.RDS&#39;)</code></pre>
+</div>
+<div id="fied-prep" class="section level2">
+<h2>Fied Prep</h2>
+<ul>
+<li>Remove unnecessary fields</li>
+<li>Convert all categorical fields to be factors</li>
+<li>Handle missing values</li>
+</ul>
+<pre class="r"><code>#################################
+# Data Cleaning
+#################################
+
+#field selection
+regtree_data &lt;- regtree_input %&gt;% select(-c(age_bin,
+                                            personal_loan_balance_bin,
+                                            credit_card_balance_bin,
+                                            home_loan_balance_bin, 
+                                            vehicle_loan_balance_bin,
+                                            credit_over_debit_spend_bin,
+                                            prop_spend_credit_bin,
+                                            prop_disposable_income_bin,
+                                            prop_cash_bin,
+                                            prop_spend_brand_low_bin,
+                                            prop_spend_brand_medium_bin,
+                                            prop_spend_brand_high_bin
+))
+
+rm(regtree_input)
+
+#################################
+# Field Prep
+## Factor Variables
+#################################
+
+###########
+# Response#
+###########
+
+regtree_data$response_ind &lt;- factor(regtree_data$response_ind)
+
+
+###############
+# Demographics#
+###############
+
+## Province Area
+## Gender
+regtree_data$gender_id &lt;- factor(regtree_data$gender_id)
+#language
+regtree_data$language_id &lt;- factor(regtree_data$language_id)
+## Ethnicity 
+regtree_data$ethnicity_id &lt;- factor(regtree_data$ethnicity_id)
+
+## Marketing
+regtree_data$receives_marketing_id &lt;- factor(regtree_data$receives_marketing_id)
+##segment code
+regtree_data$segment_id &lt;- factor(regtree_data$segment_id)
+## Ucount Member
+regtree_data$ucount_member_id &lt;- factor(regtree_data$ucount_member_id)
+
+
+############
+# Affluency#
+############
+regtree_data$has_house &lt;- factor(regtree_data$has_house)
+regtree_data$has_home_loan &lt;- factor(regtree_data$has_home_loan)
+regtree_data$has_vehicle &lt;- factor(regtree_data$has_vehicle)
+regtree_data$has_vehicle_loan &lt;- factor(regtree_data$has_vehicle_loan)
+regtree_data$has_credit_card &lt;- factor(regtree_data$has_credit_card)
+regtree_data$has_personal_loan &lt;- factor(regtree_data$has_personal_loan)
+regtree_data$receives_regular_income &lt;- factor(regtree_data$receives_regular_income)
+regtree_data$HML_score_bin &lt;- factor(regtree_data$HML_score_bin)
+regtree_data$spend_indicator &lt;- factor(regtree_data$spend_indicator)
+
+
+###################
+# Credit Behaviour#
+###################
+regtree_data$has_credit &lt;- factor(regtree_data$has_credit)
+regtree_data$has_unsecured_credit &lt;- factor(regtree_data$has_unsecured_credit)
+regtree_data$has_secured_credit &lt;- factor(regtree_data$has_secured_credit)
+regtree_data$income_drop_detected &lt;- factor(regtree_data$income_drop_detected)
+
+
+###########################
+#Missing Values Imputation#
+##########################
+
+med_income &lt;- median(regtree_data$derived_income, na.rm = TRUE)
+regtree_data[is.na(regtree_data$derived_income),&quot;derived_income&quot;] &lt;- med_income
+
+regtree_data[is.na(regtree_data$avg_ATV),&quot;avg_ATV&quot;] &lt;- 0
+regtree_data[is.na(regtree_data$avg_SPM),&quot;avg_SPM&quot;] &lt;- 0
+regtree_data[is.na(regtree_data$avg_Freq),&quot;avg_Freq&quot;] &lt;- 0</code></pre>
+</div>
+<div id="the-random-forest-model" class="section level2">
+<h2>The Random Forest Model</h2>
+<pre class="r"><code>############################################
+############## RANDOM FOREST ###############
+############################################
+
+RF_model &lt;- function(regtree_data,
+                     Current_Response,
+                     #Current_Period_Index,
+                     Current_Retailer,
+                     Current_Category,
+                     model_performance_record,
+                     variable_importance_record
+)
+{
+  
+  ##### (1.1) Input data #####
+  regtree_input_data &lt;- regtree_data %&gt;% filter(response_metric == Current_Response &amp;
+                                                  #Period_Index == Current_Period_Index &amp; 
+                                                  Retailer == Current_Retailer &amp; 
+                                                  Category == Current_Category) %&gt;%
+    select(-c(response_metric,Retailer,Category,spend_indicator))
+  ##### (1.2) Test and Training set ##### 
+  
+  ## test set
+  test_ids &lt;- sample(regtree_input_data$party_id,length(unique(regtree_input_data$party_id))/5)
+  test_set &lt;- regtree_input_data %&gt;% filter(party_id %in% test_ids) %&gt;% select(-c(party_id))
+  xtest_set &lt;- test_set %&gt;% select(-response_ind)
+  ytest_set &lt;- test_set %&gt;% select(response_ind)
+  ytest_set$response_ind &lt;- factor(ytest_set$response_ind)
+  rm(test_set)
+  
+
+  ## training set
+  training_set &lt;- regtree_input_data %&gt;% filter(!(party_id %in% test_ids)) %&gt;% select(-c(party_id))
+
+  
+  ## variables
+  num_vars &lt;- sqrt(ncol(training_set) -1)
+  
+  
+  ##### (2.1) RANDOM FOREST #####
+  cl &lt;- makeCluster(7)
+  registerDoParallel(cl)
+  randomForest_output &lt;- foreach(ntree=rep(100, 5),
+                                 .combine = combine, 
+                                 .packages=&#39;randomForest&#39;) %dopar% randomForest(response_ind ~ ., 
+                                                                                data=training_set, 
+                                                                                xtest = xtest_set,
+                                                                                ytest = ytest_set$response_ind,
+                                                                                ntree = ntree, 
+                                                                                replace = T,
+                                                                                mtry = num_vars,
+                                                                                #nodesize = 500, 
+                                                                                #sampsize=27710,
+                                                                                importance=TRUE#,
+                                                                                #proximity=TRUE,
+                                                                                #na.action=na.roughfix,
+                                 ) 
+  stopCluster(cl)
+  
+  ##### (2.2) RANDOM FOREST TEST PERFORMANCE #####
+  
+  ## Current Hit Record
+  current_hit_record &lt;- data.frame(actual = c(ytest_set))
+  current_hit_record &lt;- bind_cols(actual = current_hit_record,randomForest_output$test$predicted)
+  colnames(current_hit_record) &lt;- c(&#39;Actual&#39;, &#39;Predicted&#39;)
+  current_hit_record &lt;- current_hit_record %&gt;% mutate(hit_status = if_else(Actual == Predicted,1,0))
+  current_hit_rate &lt;- sum(current_hit_record$hit_status)/nrow(current_hit_record)
+  
+  
+  ##### (2.3) OOB Error #####
+  
+  ### Error Rate
+  #OOB_error &lt;- c(OOB_error,randomForest_output$err.rate)
+  
+  ### Confusion Matrix
+  #confusion_matrix &lt;- c(confusion_matrix,randomForest_output$confusion)
+  
+  
+  ## Current Model Performance
+  current_model_performance &lt;- bind_cols(Response = Current_Response,
+                                         #Period_Index = Current_Period_Index,
+                                         Retailer = Current_Retailer,
+                                         Category = Current_Category,
+                                         hit_rate = current_hit_rate)
+  
+  
+  ## Appending Current Performance
+  model_performance_record &lt;- bind_rows(model_performance_record,current_model_performance)
+  
+  
+  
+  ##### (3) VARIABLE IMPORTANCE #####
+  
+  ## Variable ranking
+  variable_importance &lt;- as.data.frame(round(importance(randomForest_output), 0)[,4])
+  variable_importance &lt;- bind_cols(variable_name = row.names(variable_importance),variable_importance)
+  colnames(variable_importance) &lt;- c(&#39;variable_name&#39;, &#39;variable_importance&#39;)
+  
+  variable_importance &lt;- merge(x = variable_importance, y = pred_categories, by = c(&#39;variable_name&#39;), all.x = TRUE)
+  variable_importance &lt;- variable_importance %&gt;% arrange(desc(variable_importance)) %&gt;% mutate(variable_rank = row_number())
+  variable_importance &lt;- variable_importance %&gt;% group_by(pred_category) %&gt;% arrange(desc(variable_importance)) %&gt;% mutate(category_rank = row_number())
+  
+  ## Current Variable Importance Record
+  current_variable_importance &lt;- variable_importance %&gt;% filter(category_rank &lt;= 15)
+  current_variable_importance &lt;- bind_cols(Response = rep(Current_Response,nrow(current_variable_importance)),
+                                           Retailer = rep(Current_Retailer,nrow(current_variable_importance)),
+                                           Category = rep(Current_Category,nrow(current_variable_importance)),
+                                           current_variable_importance)
+  
+  ## Appending Current Variable Importance to Record
+  variable_importance_record &lt;- bind_rows(variable_importance_record,current_variable_importance)
+  
+  return(list(variable_importance_record,model_performance_record))
+}</code></pre>
+</div>
+<div id="model-execution-and-record" class="section level2">
+<h2>Model Execution and Record</h2>
+<pre class="r"><code>#################################
+## Model Execution and Record ##
+#################################
+
+Current_Response &lt;- Responses[script_num]
+
+## model performance record
+MyComp_Cust_model_performance_record &lt;- data.frame()
+
+## variable importance record
+MyComp_Cust_variable_importance_record &lt;- data.frame()
+
+
+for (j in 1:length(Retailer_Category)) 
+{
+  Current_Retailer &lt;- Retailer_Category[[j]][1]
+  Current_Category &lt;- Retailer_Category[[j]][2]
+  
+  
+  RF_model_output &lt;- RF_model(regtree_data = regtree_data ,
+                                Current_Response = Current_Response,
+                                Current_Retailer = Current_Retailer,
+                                Current_Category = Current_Category,
+                                model_performance_record = MyComp_Cust_model_performance_record,
+                                variable_importance_record = MyComp_Cust_variable_importance_record
+    )
+    
+    MyComp_Cust_variable_importance_record &lt;- RF_model_output[[1]] 
+    MyComp_Cust_model_performance_record &lt;- RF_model_output[[2]] 
+    
+    saveRDS(MyComp_Cust_variable_importance_record, file = &#39;~/MVP2_RegressionAnalysis/output/R2/MyComp_Cust_variable_importance_record.RDS&#39;)
+    saveRDS(MyComp_Cust_model_performance_record, file = &#39;~/MVP2_RegressionAnalysis/output/R2/MyComp_Cust_model_performance_record.RDS&#39;)
+    
+  } # j loop</code></pre>
+</div>
+<div id="statistics-on-important-variables" class="section level2">
+<h2>Statistics on Important Variables</h2>
+<pre class="r"><code>############################################################
+########### Predictor Avgs by Response Category ############
+############################################################
+
+
+# Data Load
+MyComp_Cust_variable_importance_record &lt;- readRDS(file = &#39;~/MVP2_RegressionAnalysis/output/R2/MyComp_Cust_variable_importance_record.RDS&#39;)
+MyComp_Cust_model_performance_record &lt;- readRDS(file = &#39;~/MVP2_RegressionAnalysis/output/R2/MyComp_Cust_model_performance_record.RDS&#39;)
+rownames(MyComp_Cust_variable_importance_record) &lt;- NULL
+
+#MyComp_Cust_data &lt;- regtree_data
+rm(regtree_data)
+MyComp_Cust_data &lt;- dbGetQuery(con, &#39;select * from sds.blog_MVP2reg_data;&#39;)
+
+
+Retailer_Category &lt;- list(c(&#39;R2&#39;,&#39;General M&#39;), c(&#39;R2&#39;,&#39;Grocery&#39;), c(&#39;R2&#39;,&#39;All&#39;),
+                          c(&#39;R1&#39;,&#39;General M&#39;), c(&#39;R1&#39;,&#39;All&#39;),
+                          c(&#39;Competitors&#39;,&#39;General M&#39;), c(&#39;Competitors&#39;,&#39;Grocery&#39;), c(&#39;Competitors&#39;,&#39;All&#39;))
+
+
+results_store &lt;- data.frame()
+
+
+for (i in 1:length(Retailer_Category))
+{
+  
+  curr_retailer &lt;- Retailer_Category[[i]][1]
+  curr_category &lt;- Retailer_Category[[i]][2]
+  
+  # curr_imp_vars
+  curr_vars &lt;- c(MyComp_Cust_variable_importance_record %&gt;% filter(Retailer == curr_retailer, Category == curr_category) %&gt;% select(variable_name))
+  curr_vars &lt;- as.vector(curr_vars)
+  
+  # fitlering to curr retailer,Category and resulting important fields
+  curr_data &lt;- MyComp_Cust_data[MyComp_Cust_data$Retailer == curr_retailer &amp; MyComp_Cust_data$Category == curr_category,colnames(MyComp_Cust_data) %in% c(&quot;Retailer&quot;, &quot;Category&quot;,&quot;response_ind&quot;,curr_vars$variable_name)]
+  
+  #pos avg of imp fields
+  curr_data_pos &lt;- curr_data[curr_data$response_ind == 1,!(colnames(curr_data) %in% c(&#39;Retailer&#39;,&#39;Category&#39;,&#39;response_ind&#39;,&#39;ethnicity_id&#39;, 
+                                                                                      &#39;gender_id&#39;, &#39;language_id&#39;, &#39;qualification_id&#39;, &#39;segment_id&#39;, 
+                                                                                      &#39;saved_proportion_income_bin&#39;, &#39;prop_income_loan_repayments_bin&#39;, 
+                                                                                      &#39;net_balance_avg_bin&#39;, &#39;leverage_avg_bin&#39;, &#39;debt_to_balance_ratio_bin&#39;, 
+                                                                                      &#39;HML_score_bin&#39;, &#39;age_bin&#39;, &#39;derived_income_bin&#39;))]
+  curr_data_pos &lt;- as.data.frame(colMeans(curr_data_pos, na.rm = TRUE))
+  curr_data_pos$variable_name &lt;- rownames(curr_data_pos)
+  colnames(curr_data_pos) &lt;- c(&#39;pos_resp_avg&#39;, &#39;variable_name&#39;)
+  
+  # pos most prom category (factor variables)
+  curr_fact_data_pos &lt;- curr_data[curr_data$response_ind == 1,colnames(curr_data) %in% c(&#39;ethnicity_id&#39;,&#39;gender_id&#39;, &#39;language_id&#39;, &#39;qualification_id&#39;, &#39;segment_id&#39;, 
+                                                                                         &#39;saved_proportion_income_bin&#39;, &#39;prop_income_loan_repayments_bin&#39;, 
+                                                                                         &#39;net_balance_avg_bin&#39;, &#39;leverage_avg_bin&#39;, &#39;debt_to_balance_ratio_bin&#39;,&#39;HML_score_bin&#39;, &#39;age_bin&#39;, &#39;derived_income_bin&#39;)]
+  
+  pos_fac_resp &lt;- data.frame() 
+  for(j in 1:ncol(curr_fact_data_pos))
+  {
+    curr_group_var &lt;- colnames(curr_fact_data_pos)[j]
+    curr_fact_data_var &lt;- as.data.frame(curr_fact_data_pos[,colnames(curr_fact_data_pos) %in% curr_group_var])
+    colnames(curr_fact_data_var) &lt;- curr_group_var
+    factor_cnts &lt;- curr_fact_data_var %&gt;% group_by_at(1) %&gt;% summarise(count = n())
+    ordered_cnts &lt;- factor_cnts %&gt;% arrange(desc(count))
+    total_cnt &lt;- sum(ordered_cnts$count)
+    
+    #The most prom cat
+    curr_out &lt;- data.frame(prom_cat = ordered_cnts[1,1],prom_pos_prop = ordered_cnts[1,2]/total_cnt, variable_name = colnames(ordered_cnts)[1])
+    names(curr_out) &lt;- c(&#39;prom_pos_cat&#39;, &#39;prom_pos_prop&#39;, &#39;variable_name&#39;)
+    pos_fac_resp &lt;- rbind(pos_fac_resp,curr_out)
+  }
+  
+  #neg avg of imp fields
+  curr_data_neg &lt;- curr_data[curr_data$response_ind == 0,!(colnames(curr_data) %in% c(&#39;Retailer&#39;,&#39;Category&#39;,&#39;response_ind&#39;,&#39;ethnicity_id&#39;,
+                                                                                      &#39;gender_id&#39;, &#39;language_id&#39;, &#39;qualification_id&#39;, &#39;segment_id&#39;, 
+                                                                                      &#39;saved_proportion_income_bin&#39;, &#39;prop_income_loan_repayments_bin&#39;, 
+                                                                                      &#39;net_balance_avg_bin&#39;, &#39;leverage_avg_bin&#39;, &#39;debt_to_balance_ratio_bin&#39;, 
+                                                                                      &#39;HML_score_bin&#39;, &#39;age_bin&#39;, &#39;derived_income_bin&#39;))]
+  curr_data_neg &lt;- as.data.frame(colMeans(curr_data_neg, na.rm = TRUE))
+  
+  curr_data_neg$variable_name &lt;- rownames(curr_data_pos)
+  colnames(curr_data_neg) &lt;- c(&#39;neg_resp_avg&#39;, &#39;variable_name&#39;)
+  
+  # neg most prom category (factor variables)
+  curr_fact_data_neg &lt;- curr_data[curr_data$response_ind == 0,colnames(curr_data) %in% c(&#39;ethnicity_id&#39;,&#39;gender_id&#39;, &#39;language_id&#39;, &#39;qualification_id&#39;, &#39;segment_id&#39;, 
+                                                                                         &#39;saved_proportion_income_bin&#39;, &#39;prop_income_loan_repayments_bin&#39;, 
+                                                                                         &#39;net_balance_avg_bin&#39;, &#39;leverage_avg_bin&#39;, &#39;debt_to_balance_ratio_bin&#39;,&#39;HML_score_bin&#39;, &#39;age_bin&#39;, &#39;derived_income_bin&#39;)]
+  
+  neg_fac_resp &lt;- data.frame() 
+  for(j in 1:ncol(curr_fact_data_neg))
+  {
+    curr_group_var &lt;- colnames(curr_fact_data_neg)[j]
+    curr_fact_data_var &lt;- as.data.frame(curr_fact_data_neg[,colnames(curr_fact_data_neg) %in% curr_group_var])
+    colnames(curr_fact_data_var) &lt;- curr_group_var
+    factor_cnts &lt;- curr_fact_data_var %&gt;% group_by_at(1) %&gt;% summarise(count = n())
+    ordered_cnts &lt;- factor_cnts %&gt;% arrange(desc(count))
+    total_cnt &lt;- sum(ordered_cnts$count)
+    
+    #The most prom cat
+    curr_out &lt;- data.frame(prom_cat = ordered_cnts[1,1],prom_neg_prop = ordered_cnts[1,2]/total_cnt, variable_name = colnames(ordered_cnts)[1])
+    names(curr_out) &lt;- c(&#39;prom_neg_cat&#39;, &#39;prom_neg_prop&#39;, &#39;variable_name&#39;)
+    neg_fac_resp &lt;- rbind(neg_fac_resp,curr_out)
+  }
+  
+  
+  curr_results &lt;- cbind(Retailer = rep(curr_retailer,nrow(curr_data_pos)), Category = rep(curr_category,nrow(curr_data_pos)),curr_data_pos)
+  curr_results &lt;- merge(curr_results,curr_data_neg,by = c(&#39;variable_name&#39;), all = TRUE)
+  
+  curr_fac_results &lt;-  cbind(Retailer = rep(curr_retailer,nrow(pos_fac_resp)), Category = rep(curr_category,nrow(pos_fac_resp)),pos_fac_resp)
+  curr_fac_results &lt;- merge(curr_fac_results,neg_fac_resp,by = c(&#39;variable_name&#39;), all = TRUE)
+  
+  comb_curr_results &lt;- merge(curr_results,curr_fac_results, by = c(&#39;Retailer&#39;,&#39;Category&#39;,&#39;variable_name&#39;), all = TRUE)
+  
+  results_store &lt;- rbind(results_store,comb_curr_results)
+  
+}
+
+
+MyComp_Cust_variable_importance_record &lt;- merge(MyComp_Cust_variable_importance_record,results_store, by = c(&#39;Retailer&#39;,&#39;Category&#39;,&#39;variable_name&#39;), all.x = TRUE)
+MyComp_Cust_variable_importance_record$sign &lt;- (MyComp_Cust_variable_importance_record$pos_resp_avg - MyComp_Cust_variable_importance_record$neg_resp_avg)/abs(MyComp_Cust_variable_importance_record$pos_resp_avg - MyComp_Cust_variable_importance_record$neg_resp_avg)</code></pre>
+</div>
+<div id="example-of-results" class="section level2">
+<h2>Example of Results</h2>
+<p>Having a look at predictors in the Affluency category for Retailer R2 General Merchandise Spend it can be seen that derived income is the most important predictor when establishing whether a customer shops at our stores or at our competitors. This variable is ranked the 4th most important across all predictors. The average derived income for our customers is R24,261 while the average derived income at our competitors is R30,874. This tells us that customers spending at our competitors are earning a higher income on average.</p>
+<pre class="r"><code>data &lt;- readRDS(file = &#39;~/git_repos/StatsLab_Blogdown/static/data/MyComp_Cust_variable_importance_record.RDS&#39;)
+plot_data &lt;- data %&gt;% filter(Retailer == &#39;R2&#39; &amp; Category == &#39;General M&#39; &amp; pred_category == &#39;Affluency&#39;)
+
+p &lt;- ggplot(plot_data, aes(x = reorder(variable_name, variable_importance), y = variable_importance)) +
+  geom_col( width = 0.7) + coord_flip() + ylab(&quot;Variable Importance&quot;) + xlab(&quot;Predictor&quot;)
+p</code></pre>
+<p><img src="/posts/2021-09-01-important-predictors-of-spend-behaviour_files/figure-html/results_plot-1.png" width="672" /></p>
+</div>
+</div>
